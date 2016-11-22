@@ -389,7 +389,5 @@ SIGNON1:       .BYTE     "Z80 SBC Grant Searle",CR,LF
                .BYTE     "ACIA feilipu",CR,LF,0
 SIGNON2:       .BYTE     CR,LF
                .BYTE     "Cold or warm start (C | W)? ",0
- 
-               .ORG      01BFH           ; fill the space to bas32k.asm with $FF
-               .BYTE     $FF
+
                .END
