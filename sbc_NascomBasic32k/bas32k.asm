@@ -28,7 +28,7 @@ LF      .EQU    0AH             ; Line feed
 CS      .EQU    0CH             ; Clear screen
 CR      .EQU    0DH             ; Carriage return
 CTRLO   .EQU    0FH             ; Control "O"
-CTRLQ	.EQU	11H		        ; Control "Q"
+CTRLQ	.EQU	11H		; Control "Q"
 CTRLR   .EQU    12H             ; Control "R"
 CTRLS   .EQU    13H             ; Control "S"
 CTRLU   .EQU    15H             ; Control "U"

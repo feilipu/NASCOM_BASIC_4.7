@@ -28,7 +28,7 @@ LF      .EQU    0AH             ; Line feed
 CS      .EQU    0CH             ; Clear screen
 CR      .EQU    0DH             ; Carriage return
 CTRLO   .EQU    0FH             ; Control "O"
-CTRLQ	.EQU	11H		        ; Control "Q"
+CTRLQ	.EQU	11H		; Control "Q"
 CTRLR   .EQU    12H             ; Control "R"
 CTRLS   .EQU    13H             ; Control "S"
 CTRLU   .EQU    15H             ; Control "U"
@@ -37,7 +37,7 @@ DEL     .EQU    7FH             ; Delete
 
 ; BASIC WORK SPACE LOCATIONS
 
-WRKSPC  .EQU    2045H             ; BASIC Work space
+WRKSPC  .EQU    20D0H               ; <<<< BASIC Work space ** modified for larger Tx/Rx buffers **
 USR     .EQU    WRKSPC+3H           ; "USR (x)" jump
 OUTSUB  .EQU    WRKSPC+6H           ; "OUT p,n"
 OTPORT  .EQU    WRKSPC+7H           ; Port (p)
@@ -69,7 +69,7 @@ LINEAT  .EQU    WRKSPC+5CH           ; Current line number
 BASTXT  .EQU    WRKSPC+5EH           ; Pointer to start of program
 BUFFER  .EQU    WRKSPC+61H           ; Input buffer
 STACK   .EQU    WRKSPC+66H           ; Initial stack
-CURPOS  .EQU    WRKSPC+0ABH          ; Character position on line
+CURPOS  .EQU    WRKSPC+0ABH          ; <<<< Character position on line ** Top of TEMPSTACK **
 LCRFLG  .EQU    WRKSPC+0ACH          ; Locate/Create flag
 TYPE    .EQU    WRKSPC+0ADH          ; Data type flag
 DATFLG  .EQU    WRKSPC+0AEH          ; Literal statement flag
@@ -126,10 +126,10 @@ MO      .EQU    24H             ; Missing operand
 HX      .EQU    26H             ; HEX error
 BN      .EQU    28H             ; BIN error
 
-        .ORG    00150H
+        .ORG    001C0H          ; <<<< Modified to allow for Tx/Rx buffers
 
-COLD:   JP      STARTB          ; Jump for cold start
-WARM:   JP      WARMST          ; Jump for warm start
+COLD:   JP      STARTB          ; Jump in for cold start (001C0H)
+WARM:   JP      WARMST          ; Jump in for warm start (001C3H)
 STARTB: 
         LD      IX,0            ; Flag cold start
         JP      CSTART          ; Jump to initialise
