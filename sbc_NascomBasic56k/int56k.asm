@@ -341,8 +341,6 @@ INIT:
                
                ld        a, SER_RESET   ; Master Reset the ACIA
                out       (SER_CTRL_ADDR),a
-		
-               nop
 
                ld        a, SER_REI|SER_TDI_RTS0|SER_8N1|SER_CLK_DIV_64
                                          ; load the default ACIA configuration
@@ -387,10 +385,10 @@ CHECKWARM:
                JP        $01C3           ; <<<< Start BASIC WARM
               
 
-SIGNON1:       .BYTE     "Z80 SBC by Grant Searle",CR,LF
-               .BYTE     "ACIA by feilipu",CR,LF,0
+SIGNON1:       .BYTE     "Z80 SBC Grant Searle",CR,LF
+               .BYTE     "ACIA feilipu",CR,LF,0
 SIGNON2:       .BYTE     CR,LF
-               .BYTE     "Cold or warm start (C or W)? ",0
+               .BYTE     "Cold or warm start (C | W)? ",0
  
                .ORG      01BFH           ; fill the space to bas56k.asm with $FF
                .BYTE     $FF
