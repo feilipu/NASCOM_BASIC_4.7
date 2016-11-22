@@ -4,6 +4,8 @@ Scanned from source published in 80-BUS NEWS from Vol 2, Issue 3 (May-June 1983)
 
 Adapted for the freeware Zilog Macro Assembler 2.10 to produce the original ROM code (checksum A934H). PA
 
+http://www.nascomhomepage.com/
+
 ==================================================================================
 
 The updates to the original BASIC within this file are copyright Grant Searle.
