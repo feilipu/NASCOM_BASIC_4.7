@@ -65,8 +65,7 @@ SER_IRQ         .EQU   $80    ; IRQ (Either Transmitted or Received Byte)
 SER_RX_BUFSIZE  .EQU     60H  ; Size of the Rx Buffer, 96 Bytes
 SER_RX_FULLSIZE .EQU     SER_RX_BUFSIZE - 08H
                               ; Fullness of the Rx Buffer, when not_RTS is signalled
-SER_RX_EMPTYSIZE .EQU    08H
-                              ; Fullness of the Rx Buffer, when RTS is signalled
+SER_RX_EMPTYSIZE .EQU    08H  ; Fullness of the Rx Buffer, when RTS is signalled
 
 SER_TX_BUFSIZE  .EQU     60H  ; Size of the Tx Buffer, 96 Bytes
 
@@ -132,19 +131,18 @@ serialInt:
         jr z, tx_check              ; if not, go check for bytes to transmit 
 
         in a, (SER_DATA_ADDR)       ; Get the received byte from the ACIA 
-        push af
+        ld l, a                     ; Move Rx byte to l
 
         ld a, (serRxBufUsed)        ; Get the number of bytes in the Rx buffer
         cp SER_RX_BUFSIZE           ; check whether there is space in the buffer
-        jr c, poke_rx               ; not full, so go poke Rx byte
-        pop af                      ; buffer full so drop the Rx byte
+        jr c, poke_rx               ; not full, so go poke Rx byte onto the buffer
         jr tx_check                 ; check if we can send something
 
 poke_rx:
 
+        ld a, l                     ; get Rx byte from l
         ld hl, (serRxInPtr)         ; get the pointer to where we poke
-        pop af                      ; get Rx byte
-        ld (hl), a                  ; write the Rx byte to the serRxIn
+        ld (hl), a                  ; write the Rx byte to the serRxInPtr address
 
         inc hl                      ; move the Rx pointer along
         ld a, l	                    ; move low byte of the Rx pointer
@@ -157,7 +155,7 @@ no_rx_wrap:
         ld (serRxInPtr), hl         ; write where the next byte should be poked
 
         ld hl, serRxBufUsed
-        inc (hl)                    ; atomically increment Rx count
+        inc (hl)                    ; atomically increment Rx buffer count
 
 ; now start doing the Tx stuff
 
@@ -254,7 +252,7 @@ get_no_rx_wrap:
         ld a, (serControl)          ; get the ACIA control echo byte
         and ~SER_TEI_MASK           ; mask out the Tx interrupt bits
         or SER_TDI_RTS0             ; set RTS low.
-        ld (serControl), a	    ; write the ACIA control echo byte back
+        ld (serControl), a          ; write the ACIA control echo byte back
         out (SER_CTRL_ADDR), a      ; set the ACIA CTRL register
         
         ei                          ; critical section end
@@ -340,7 +338,7 @@ INIT:
                LD        (serRxBufUsed),A
                LD        (serTxBufUsed),A
                
-               ld        a, SER_RESET   ; Master Reset the ACIA
+               ld        a, SER_RESET    ; Master Reset the ACIA
                out       (SER_CTRL_ADDR),a
 
                ld        a, SER_REI|SER_TDI_RTS0|SER_8N1|SER_CLK_DIV_64
