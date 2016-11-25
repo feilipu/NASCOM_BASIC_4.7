@@ -135,7 +135,7 @@ serialInt:
         push af
 
         ld a, (serRxBufUsed)        ; Get the number of bytes in the Rx buffer
-        cp SER_RX_BUFSIZE              ; check whether there is space in the buffer
+        cp SER_RX_BUFSIZE           ; check whether there is space in the buffer
         jr c, poke_rx               ; not full, so go poke Rx byte
         pop af                      ; buffer full so drop the Rx byte
         jr tx_check                 ; check if we can send something
@@ -269,14 +269,13 @@ get_clean_up_rx:
 ;------------------------------------------------------------------------------
 TXA:
         push hl                     ; Store HL so we don't clobber it        
-        push af                     ; Store character
+        ld l, a                     ; Store Tx character 
 
-waitForTxChar:        
         ld a, (serTxBufUsed)        ; Get the number of bytes in the Tx buffer
         cp SER_TX_BUFSIZE           ; check whether there is space in the buffer
-        jr nc, waitForTxChar        ; buffer full, so wait till space available
+        jr nc, clean_up_tx          ; buffer full, so abandon Tx
         
-        pop af                      ; Retrieve character
+        ld a, l                     ; Retrieve Tx character
         
 put_poke_tx:
 
