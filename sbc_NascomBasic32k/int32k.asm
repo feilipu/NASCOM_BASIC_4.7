@@ -51,9 +51,9 @@ SER_TEI_MASK    .EQU   $60    ; Mask for the Tx Interrupt & RTS bits
 
 SER_REI         .EQU   $80    ; Receive Interrupt Enabled
 
-SER_RDRF        .EQU   $01	  ; Receive Data Register Full
-SER_TDRE        .EQU   $02	  ; Transmit Data Register Empty
-SER_DCD         .EQU   $04	  ; Data Carrier Detect
+SER_RDRF        .EQU   $01    ; Receive Data Register Full
+SER_TDRE        .EQU   $02    ; Transmit Data Register Empty
+SER_DCD         .EQU   $04    ; Data Carrier Detect
 SER_CTS         .EQU   $08    ; Clear To Send
 SER_FE          .EQU   $10    ; Framing Error (Received Byte)
 SER_OVRN        .EQU   $20    ; Overrun (Received Byte
@@ -63,8 +63,10 @@ SER_IRQ         .EQU   $80    ; IRQ (Either Transmitted or Received Byte)
    
   
 SER_RX_BUFSIZE  .EQU     60H  ; Size of the Rx Buffer, 96 Bytes
-SER_RX_FULLSIZE .EQU     SER_RX_BUFSIZE - 4
-                              ; Size of the Rx Buffer, when not_RTS is signalled
+SER_RX_FULLSIZE .EQU     SER_RX_BUFSIZE - 08H
+                              ; Fullness of the Rx Buffer, when not_RTS is signalled
+SER_RX_EMPTYSIZE .EQU    08H
+                              ; Fullness of the Rx Buffer, when RTS is signalled
 
 SER_TX_BUFSIZE  .EQU     60H  ; Size of the Tx Buffer, 96 Bytes
 
@@ -79,22 +81,22 @@ serTxOutPtr     .EQU     serTxInPtr+2
 serTxBufUsed    .EQU     serTxOutPtr+2
 basicStarted    .EQU     serTxBufUsed+1
 
-                             ; end of ACIA stuff is $80CB
-                             ; set BASIC Work space WRKSPC $80D0
+                               ; end of ACIA stuff is $80CB
+                               ; set BASIC Work space WRKSPC $80D0
 
 TEMPSTACK       .EQU     $817B ; Top of BASIC line input buffer (CURPOS WRKSPC+0ABH)
                                ; so it is "free ram" when BASIC resets
 
 CR              .EQU     0DH
 LF              .EQU     0AH
-CS              .EQU     0CH             ; Clear screen
+CS              .EQU     0CH   ; Clear screen
 
                 .ORG $0000
 ;------------------------------------------------------------------------------
 ; Reset
 
-RST00:          DI                       ;Disable interrupts
-                JP       INIT            ;Initialize Hardware and go
+RST00:          DI             ;Disable interrupts
+                JP       INIT  ;Initialize Hardware and go
 
 ;------------------------------------------------------------------------------
 ; TX a character over RS232 
@@ -244,7 +246,7 @@ get_no_rx_wrap:
         dec (hl)                    ; atomically decrement Rx count
         ld a,(hl)                   ; get the newly decremented Rx count
 
-        cp SER_RX_FULLSIZE          ; compare the count with the preferred full size
+        cp SER_RX_EMPTYSIZE         ; compare the count with the preferred empty size
         jr nc, get_clean_up_rx      ; if the buffer is full, don't change the RTS
 
         di                          ; critical section begin
@@ -252,7 +254,7 @@ get_no_rx_wrap:
         ld a, (serControl)          ; get the ACIA control echo byte
         and ~SER_TEI_MASK           ; mask out the Tx interrupt bits
         or SER_TDI_RTS0             ; set RTS low.
-        ld (serControl), a	        ; write the ACIA control echo byte back
+        ld (serControl), a	    ; write the ACIA control echo byte back
         out (SER_CTRL_ADDR), a      ; set the ACIA CTRL register
         
         ei                          ; critical section end
