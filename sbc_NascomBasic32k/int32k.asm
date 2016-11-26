@@ -62,28 +62,28 @@ SER_IRQ         .EQU   $80    ; IRQ (Either Transmitted or Received Byte)
    
    
   
-SER_RX_BUFSIZE  .EQU     60H  ; Size of the Rx Buffer, 96 Bytes
-SER_RX_FULLSIZE .EQU     SER_RX_BUFSIZE - 08H
+SER_RX_BUFSIZE  .EQU     $F0  ; Size of the Rx Buffer, 239 Bytes
+SER_RX_FULLSIZE .EQU     SER_RX_BUFSIZE - $08
                               ; Fullness of the Rx Buffer, when not_RTS is signalled
-SER_RX_EMPTYSIZE .EQU    08H  ; Fullness of the Rx Buffer, when RTS is signalled
+SER_RX_EMPTYSIZE .EQU    $08  ; Fullness of the Rx Buffer, when RTS is signalled
 
-SER_TX_BUFSIZE  .EQU     60H  ; Size of the Tx Buffer, 96 Bytes
+SER_TX_BUFSIZE  .EQU     $10  ; Size of the Tx Buffer, 15 Bytes
 
 serControl      .EQU     $8000
 serRxBuf        .EQU     serControl+1
-serRxInPtr      .EQU     serRxBuf+SER_RX_BUFSIZE
+serRxInPtr      .EQU     serRxBuf+SER_RX_BUFSIZE+1
 serRxOutPtr     .EQU     serRxInPtr+2
 serRxBufUsed    .EQU     serRxOutPtr+2
 serTxBuf        .EQU     serRxBufUsed+1
-serTxInPtr      .EQU     serTxBuf+SER_TX_BUFSIZE
+serTxInPtr      .EQU     serTxBuf+SER_TX_BUFSIZE+1
 serTxOutPtr     .EQU     serTxInPtr+2
 serTxBufUsed    .EQU     serTxOutPtr+2
 basicStarted    .EQU     serTxBufUsed+1
 
-                               ; end of ACIA stuff is $80CB
-                               ; set BASIC Work space WRKSPC $80D0
+                               ; end of ACIA stuff is $810D
+                               ; set BASIC Work space WRKSPC $8120
 
-TEMPSTACK       .EQU     $817B ; Top of BASIC line input buffer (CURPOS WRKSPC+0ABH)
+TEMPSTACK       .EQU     $81CB ; Top of BASIC line input buffer (CURPOS WRKSPC+0ABH)
                                ; so it is "free ram" when BASIC resets
 
 CR              .EQU     0DH
@@ -245,7 +245,7 @@ get_no_rx_wrap:
         ld a,(hl)                   ; get the newly decremented Rx count
 
         cp SER_RX_EMPTYSIZE         ; compare the count with the preferred empty size
-        jr nc, get_clean_up_rx      ; if the buffer is full, don't change the RTS
+        jr nc, get_clean_up_rx      ; if the buffer is too full, don't change the RTS
 
         di                          ; critical section begin
         
@@ -339,7 +339,7 @@ INIT:
                LD        (serTxBufUsed),A
                
                ld        a, SER_RESET    ; Master Reset the ACIA
-               out       (SER_CTRL_ADDR),a
+               out       (SER_CTRL_ADDR),A
 
                ld        a, SER_REI|SER_TDI_RTS0|SER_8N1|SER_CLK_DIV_64
                                          ; load the default ACIA configuration
@@ -347,8 +347,8 @@ INIT:
                                          ; receive interrupt enabled
                                          ; transmit interrupt disabled
                                     
-               ld        (serControl), a     ; write the ACIA control byte echo
-               out       (SER_CTRL_ADDR), a  ; output to the ACIA control byte
+               ld        (serControl),A     ; write the ACIA control byte echo
+               out       (SER_CTRL_ADDR),A  ; output to the ACIA control byte
                
                IM        1               ; interrupt mode 1
                EI
@@ -384,9 +384,9 @@ CHECKWARM:
                JP        $01C3           ; <<<< Start BASIC WARM
               
 
-SIGNON1:       .BYTE     "Z80 SBC Grant Searle",CR,LF
+SIGNON1:       .BYTE     "SBC Grant Searle",CR,LF
                .BYTE     "ACIA feilipu",CR,LF,0
 SIGNON2:       .BYTE     CR,LF
-               .BYTE     "Cold or warm start (C | W)? ",0
+               .BYTE     "Cold or warm start (C|W) ?",0
 
                .END

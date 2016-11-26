@@ -20,8 +20,13 @@ If the above don't work, please perform an Internet search to see if I have upda
 ==================================================================================
 
 ACIA 6850 interrupt driven serial I/O to run modified NASCOM Basic 4.7.
+
 Full input and output buffering with incoming data hardware handshaking.
 Handshake shows full before the buffer is totally filled to allow run-on from the sender.
 Transmit and receive are interrupt driven.
+
+Receive buffer is 239 bytes, to allow efficient pasting of Basic into the editor.
+Transmit buffer is 15 bytes, because the rc2014 is too slow to fill the buffer.
+Receive and Transmit buffer overflows are silently discarded.
 
 https://feilipu.me/

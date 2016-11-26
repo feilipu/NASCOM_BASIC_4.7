@@ -37,64 +37,64 @@ DEL     .EQU    7FH             ; Delete
 
 ; BASIC WORK SPACE LOCATIONS
 
-WRKSPC  .EQU    80D0H               ; <<<< BASIC Work space ** modified for larger Tx/Rx buffers **
-USR     .EQU    WRKSPC+3H           ; "USR (x)" jump
-OUTSUB  .EQU    WRKSPC+6H           ; "OUT p,n"
-OTPORT  .EQU    WRKSPC+7H           ; Port (p)
-DIVSUP  .EQU    WRKSPC+9H           ; Division support routine
-DIV1    .EQU    WRKSPC+0AH           ; <- Values
-DIV2    .EQU    WRKSPC+0EH           ; <-   to
-DIV3    .EQU    WRKSPC+12H           ; <-   be
-DIV4    .EQU    WRKSPC+15H           ; <-inserted
-SEED    .EQU    WRKSPC+17H           ; Random number seed
-LSTRND  .EQU    WRKSPC+3AH           ; Last random number
-INPSUB  .EQU    WRKSPC+3EH           ; #INP (x)" Routine
-INPORT  .EQU    WRKSPC+3FH           ; PORT (x)
-NULLS   .EQU    WRKSPC+41H           ; Number of nulls
-LWIDTH  .EQU    WRKSPC+42H           ; Terminal width
-COMMAN  .EQU    WRKSPC+43H           ; Width for commas
-NULFLG  .EQU    WRKSPC+44H           ; Null after input byte flag
-CTLOFG  .EQU    WRKSPC+45H           ; Control "O" flag
-LINESC  .EQU    WRKSPC+46H           ; Lines counter
-LINESN  .EQU    WRKSPC+48H           ; Lines number
-CHKSUM  .EQU    WRKSPC+4AH           ; Array load/save check sum
-NMIFLG  .EQU    WRKSPC+4CH           ; Flag for NMI break routine
-BRKFLG  .EQU    WRKSPC+4DH           ; Break flag
-RINPUT  .EQU    WRKSPC+4EH           ; Input reflection
-POINT   .EQU    WRKSPC+51H           ; "POINT" reflection (unused)
-PSET    .EQU    WRKSPC+54H           ; "SET"   reflection
-RESET   .EQU    WRKSPC+57H           ; "RESET" reflection
-STRSPC  .EQU    WRKSPC+5AH           ; Bottom of string space
-LINEAT  .EQU    WRKSPC+5CH           ; Current line number
-BASTXT  .EQU    WRKSPC+5EH           ; Pointer to start of program
-BUFFER  .EQU    WRKSPC+61H           ; Input buffer
-STACK   .EQU    WRKSPC+66H           ; Initial stack
-CURPOS  .EQU    WRKSPC+0ABH          ; <<<< Character position on line ** Top of TEMPSTACK **
-LCRFLG  .EQU    WRKSPC+0ACH          ; Locate/Create flag
-TYPE    .EQU    WRKSPC+0ADH          ; Data type flag
-DATFLG  .EQU    WRKSPC+0AEH          ; Literal statement flag
-LSTRAM  .EQU    WRKSPC+0AFH          ; Last available RAM
-TMSTPT  .EQU    WRKSPC+0B1H          ; Temporary string pointer
-TMSTPL  .EQU    WRKSPC+0B3H          ; Temporary string pool
-TMPSTR  .EQU    WRKSPC+0BFH          ; Temporary string
-STRBOT  .EQU    WRKSPC+0C3H          ; Bottom of string space
-CUROPR  .EQU    WRKSPC+0C5H          ; Current operator in EVAL
-LOOPST  .EQU    WRKSPC+0C7H          ; First statement of loop
-DATLIN  .EQU    WRKSPC+0C9H          ; Line of current DATA item
-FORFLG  .EQU    WRKSPC+0CBH          ; "FOR" loop flag
-LSTBIN  .EQU    WRKSPC+0CCH          ; Last byte entered
-READFG  .EQU    WRKSPC+0CDH          ; Read/Input flag
-BRKLIN  .EQU    WRKSPC+0CEH          ; Line of break
-NXTOPR  .EQU    WRKSPC+0D0H          ; Next operator in EVAL
-ERRLIN  .EQU    WRKSPC+0D2H          ; Line of error
-CONTAD  .EQU    WRKSPC+0D4H          ; Where to CONTinue
-PROGND  .EQU    WRKSPC+0D6H          ; End of program
-VAREND  .EQU    WRKSPC+0D8H          ; End of variables
-ARREND  .EQU    WRKSPC+0DAH          ; End of arrays
-NXTDAT  .EQU    WRKSPC+0DCH          ; Next data item
-FNRGNM  .EQU    WRKSPC+0DEH          ; Name of FN argument
-FNARG   .EQU    WRKSPC+0E0H          ; FN argument value
-FPREG   .EQU    WRKSPC+0E4H          ; Floating point register
+WRKSPC  .EQU    8120H           ; <<<< BASIC Work space ** larger Rx buffer & Tx buffer **
+USR     .EQU    WRKSPC+3H       ; "USR (x)" jump
+OUTSUB  .EQU    WRKSPC+6H       ; "OUT p,n"
+OTPORT  .EQU    WRKSPC+7H       ; Port (p)
+DIVSUP  .EQU    WRKSPC+9H       ; Division support routine
+DIV1    .EQU    WRKSPC+0AH      ; <- Values
+DIV2    .EQU    WRKSPC+0EH      ; <-   to
+DIV3    .EQU    WRKSPC+12H      ; <-   be
+DIV4    .EQU    WRKSPC+15H      ; <-inserted
+SEED    .EQU    WRKSPC+17H      ; Random number seed
+LSTRND  .EQU    WRKSPC+3AH      ; Last random number
+INPSUB  .EQU    WRKSPC+3EH      ; #INP (x)" Routine
+INPORT  .EQU    WRKSPC+3FH      ; PORT (x)
+NULLS   .EQU    WRKSPC+41H      ; Number of nulls
+LWIDTH  .EQU    WRKSPC+42H      ; Terminal width
+COMMAN  .EQU    WRKSPC+43H      ; Width for commas
+NULFLG  .EQU    WRKSPC+44H      ; Null after input byte flag
+CTLOFG  .EQU    WRKSPC+45H      ; Control "O" flag
+LINESC  .EQU    WRKSPC+46H      ; Lines counter
+LINESN  .EQU    WRKSPC+48H      ; Lines number
+CHKSUM  .EQU    WRKSPC+4AH      ; Array load/save check sum
+NMIFLG  .EQU    WRKSPC+4CH      ; Flag for NMI break routine
+BRKFLG  .EQU    WRKSPC+4DH      ; Break flag
+RINPUT  .EQU    WRKSPC+4EH      ; Input reflection
+POINT   .EQU    WRKSPC+51H      ; "POINT" reflection (unused)
+PSET    .EQU    WRKSPC+54H      ; "SET"   reflection
+RESET   .EQU    WRKSPC+57H      ; "RESET" reflection
+STRSPC  .EQU    WRKSPC+5AH      ; Bottom of string space
+LINEAT  .EQU    WRKSPC+5CH      ; Current line number
+BASTXT  .EQU    WRKSPC+5EH      ; Pointer to start of program
+BUFFER  .EQU    WRKSPC+61H      ; Input buffer
+STACK   .EQU    WRKSPC+66H      ; Initial stack
+CURPOS  .EQU    WRKSPC+0ABH     ; <<<< Character position on line ** Top of TEMPSTACK **
+LCRFLG  .EQU    WRKSPC+0ACH     ; Locate/Create flag
+TYPE    .EQU    WRKSPC+0ADH     ; Data type flag
+DATFLG  .EQU    WRKSPC+0AEH     ; Literal statement flag
+LSTRAM  .EQU    WRKSPC+0AFH     ; Last available RAM
+TMSTPT  .EQU    WRKSPC+0B1H     ; Temporary string pointer
+TMSTPL  .EQU    WRKSPC+0B3H     ; Temporary string pool
+TMPSTR  .EQU    WRKSPC+0BFH     ; Temporary string
+STRBOT  .EQU    WRKSPC+0C3H     ; Bottom of string space
+CUROPR  .EQU    WRKSPC+0C5H     ; Current operator in EVAL
+LOOPST  .EQU    WRKSPC+0C7H     ; First statement of loop
+DATLIN  .EQU    WRKSPC+0C9H     ; Line of current DATA item
+FORFLG  .EQU    WRKSPC+0CBH     ; "FOR" loop flag
+LSTBIN  .EQU    WRKSPC+0CCH     ; Last byte entered
+READFG  .EQU    WRKSPC+0CDH     ; Read/Input flag
+BRKLIN  .EQU    WRKSPC+0CEH     ; Line of break
+NXTOPR  .EQU    WRKSPC+0D0H     ; Next operator in EVAL
+ERRLIN  .EQU    WRKSPC+0D2H     ; Line of error
+CONTAD  .EQU    WRKSPC+0D4H     ; Where to CONTinue
+PROGND  .EQU    WRKSPC+0D6H     ; End of program
+VAREND  .EQU    WRKSPC+0D8H     ; End of variables
+ARREND  .EQU    WRKSPC+0DAH     ; End of arrays
+NXTDAT  .EQU    WRKSPC+0DCH     ; Next data item
+FNRGNM  .EQU    WRKSPC+0DEH     ; Name of FN argument
+FNARG   .EQU    WRKSPC+0E0H     ; FN argument value
+FPREG   .EQU    WRKSPC+0E4H     ; Floating point register
 FPEXP   .EQU    FPREG+3         ; Floating point exponent
 SGNRES  .EQU    WRKSPC+0E8H     ; Sign of result
 PBUFF   .EQU    WRKSPC+0E9H     ; Number print buffer
@@ -1921,8 +1921,8 @@ OPRND:  XOR     A               ; Get operand routine
         JP      C,ASCTFP        ; Number - Get value
         CALL    CHKLTR          ; See if a letter
         JP      NC,CONVAR       ; Letter - Find variable
-        CP		'&'				; &H = HEX, &B = BINARY
-        JR		NZ, NOTAMP
+        CP	'&'		; &H = HEX, &B = BINARY
+        JR	NZ, NOTAMP
         CALL    GETCHR          ; Get next character
         CP      'H'             ; Hex number indicated? [function added]
         JP      Z,HEXTFP        ; Convert Hex to FPREG
