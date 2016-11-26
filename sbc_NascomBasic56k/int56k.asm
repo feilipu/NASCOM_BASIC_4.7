@@ -135,10 +135,7 @@ serialInt:
 
         ld a, (serRxBufUsed)        ; Get the number of bytes in the Rx buffer
         cp SER_RX_BUFSIZE           ; check whether there is space in the buffer
-        jr c, poke_rx               ; not full, so go poke Rx byte onto the buffer
-        jr tx_check                 ; check if we can send something
-
-poke_rx:
+        jr nc, tx_check             ; buffer full, check if we can send something
 
         ld a, l                     ; get Rx byte from l
         ld hl, (serRxInPtr)         ; get the pointer to where we poke
@@ -274,9 +271,6 @@ TXA:
         jr nc, clean_up_tx          ; buffer full, so abandon Tx
         
         ld a, l                     ; Retrieve Tx character
-        
-put_poke_tx:
-
         ld hl, (serTxInPtr)         ; get the pointer to where we poke
         ld (hl), a                  ; write the Tx byte to the serTxInPtr   
         inc hl                      ; move the Tx pointer along
@@ -338,17 +332,17 @@ INIT:
                LD        (serRxBufUsed),A
                LD        (serTxBufUsed),A
                
-               ld        a, SER_RESET    ; Master Reset the ACIA
-               out       (SER_CTRL_ADDR),A
+               LD        A, SER_RESET    ; Master Reset the ACIA
+               OUT       (SER_CTRL_ADDR),A
 
-               ld        a, SER_REI|SER_TDI_RTS0|SER_8N1|SER_CLK_DIV_64
+               LD        A, SER_REI|SER_TDI_RTS0|SER_8N1|SER_CLK_DIV_64
                                          ; load the default ACIA configuration
                                          ; 8n1 at 115200 baud
                                          ; receive interrupt enabled
                                          ; transmit interrupt disabled
                                     
-               ld        (serControl),A     ; write the ACIA control byte echo
-               out       (SER_CTRL_ADDR),A  ; output to the ACIA control byte
+               LD        (serControl),A     ; write the ACIA control byte echo
+               OUT       (SER_CTRL_ADDR),A  ; output to the ACIA control byte
                
                IM        1               ; interrupt mode 1
                EI
