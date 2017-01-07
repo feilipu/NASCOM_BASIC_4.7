@@ -165,6 +165,21 @@ CCR_LNAD        .EQU   $01    ; Low Noise Address and Data Signals (30% Drive)
 RCR_REFE        .EQU   $80    ; DRAM Refresh Enable (0 Disabled)
 RCR_REFW        .EQU   $40    ; DRAM Refresh 2 or 3 Wait states (0 2 Wait States)
 
+; Interrupt vectors (offsets) for Z180/HD64180 internal interrupts
+
+INT1_VECTOR     .EQU   $00    ; external /INT1 
+INT2_VECTOR     .EQU   $02    ; external /INT2 
+PRT0_VECTOR     .EQU   $04    ; PRT channel 0 
+PRT1_VECTOR     .EQU   $06    ; PRT channel 1 
+DMA0_VECTOR     .EQU   $08    ; DMA channel 0 
+DMA1_VECTOR     .EQU   $0A    ; DMA Channel 1 
+CSIO_VECTOR     .EQU   $0C    ; Clocked serial I/O 
+ASCI0_VECTOR    .EQU   $0E    ; Async channel 0 
+ASCI1_VECTOR    .EQU   $10    ; Async channel 1 
+INCAP_VECTOR    .EQU   $12    ; input capture 
+OUTCMP_VECTOR   .EQU   $14    ; output compare 
+TIMOV_VECTOR    .EQU   $16    ; timer overflow 
+
 ;==================================================================================
 ;
 ; DEFINES SECTION
@@ -226,7 +241,7 @@ RST10:           JP      RXA
 RST18:           JP      CKINCHAR
 
 ;------------------------------------------------------------------------------
-; INTERRUPT VECTOR ASCI Channel 0 [ IL = $01 for Vectors at $20 - $2F ]
+; INTERRUPT VECTOR ASCI Channel 0 [ IL = $01 for Vectors at $20 - $36 ]
 
                 .ORG     002EH
                 JP       serialInt
