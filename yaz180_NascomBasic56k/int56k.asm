@@ -165,6 +165,12 @@ CCR_LNAD        .EQU   $01    ; Low Noise Address and Data Signals (30% Drive)
 RCR_REFE        .EQU   $80    ; DRAM Refresh Enable (0 Disabled)
 RCR_REFW        .EQU   $40    ; DRAM Refresh 2 or 3 Wait states (0 2 Wait States)
 
+; Operation Mode Control Reg
+
+OMCR_M1E        .EQU   $80    ; M1 Enable (0 Disabled)
+OMCR_M1TE       .EQU   $40    ; M1 Temporary Enable
+OMCR_IOC        .EQU   $20    ; IO Control (1 64180 Mode)
+
 ; Interrupt vectors (offsets) for Z180/HD64180 internal interrupts
 
 INT1_VECTOR     .EQU   $00    ; external /INT1 
@@ -243,7 +249,7 @@ RST18:           JP      CKINCHAR
 ;------------------------------------------------------------------------------
 ; INTERRUPT VECTOR ASCI Channel 0 [ IL = $01 for Vectors at $20 - $36 ]
 
-                .ORG     0020H+ASCI0_VECTOR
+                .ORG     0020H+ASCI1_VECTOR
                 JP       serialInt
 
 ;------------------------------------------------------------------------------
@@ -264,11 +270,11 @@ serialInt:
 
 ; start doing the Rx stuff
 
-        in0 a, (STAT0)              ; get the status of the ASCI
+        in0 a, (STAT1)              ; get the status of the ASCI
         and SER_RDRF                ; check whether a byte has been received
         jr z, tx_check              ; if not, go check for bytes to transmit 
 
-        in0 a, (RDR0)               ; Get the received byte from the ASCI 
+        in0 a, (RDR1)               ; Get the received byte from the ASCI 
         ld l, a                     ; Move Rx byte to l
 
         ld a, (serRxBufUsed)        ; Get the number of bytes in the Rx buffer
@@ -300,13 +306,13 @@ tx_check:
         or a                        ; check whether it is zero
         jr z, tie_clear             ; if the count is zero, then disable the Tx Interrupt
 
-        in0 a, (STAT0)              ; get the status of the ASCI
+        in0 a, (STAT1)              ; get the status of the ASCI
         and SER_TDRE                ; check whether a byte can be transmitted
         jr z, tx_end                ; if not, then end
 
         ld hl, (serTxOutPtr)        ; get the pointer to place where we pop the Tx byte
         ld a, (hl)                  ; get the Tx byte
-        out0 (TDR0), a              ; output the Tx byte to the ASCI
+        out0 (TDR1), a              ; output the Tx byte to the ASCI
 
         inc hl                      ; move the Tx pointer along
         ld a, l                     ; get the low byte of the Tx pointer
@@ -324,9 +330,9 @@ no_tx_wrap:
         
 tie_clear:
 
-        in0 a, (STAT0)              ; get the ASCI status register
+        in0 a, (STAT1)              ; get the ASCI status register
         and ~SER_TIE                ; mask out (disable) the Tx Interrupt
-        out0 (STAT0), a             ; set the ASCI status register
+        out0 (STAT1), a             ; set the ASCI status register
 
 tx_end:
 
@@ -397,9 +403,9 @@ put_no_tx_wrap:
 
         di                          ; critical section begin
        
-        in0 a, (STAT0)              ; get the ASCI status register
+        in0 a, (STAT1)              ; get the ASCI status register
         or SER_TIE                  ; mask in (enable) the Tx Interrupt
-        out0 (STAT0), a             ; set the ASCI status register
+        out0 (STAT1), a             ; set the ASCI status register
         
         ei                          ; critical section end
         
@@ -431,38 +437,42 @@ INIT:
                                          ; Disable PRT downcounting,
                OUT0      (TCR),A         ; until Int Vector Table initialized
 
+                                         ; Clear I/O Control Reg (ICR)
+               OUT0      (ICR),A         ; Standard I/O Mapping (0 Enabled)
+
                                          ; Clear Refresh Control Reg (RCR)
                OUT0      (RCR),A         ; DRAM Refresh Enable (0 Disabled)
 
                                          ; Set Operation Mode Control Reg (OMCR)
-               OUT0      (OMCR),A        ; X80 Mode (0 Enabled)
-
-                                         ; Bypass PHI = crystal / 2
-                                         ; if using ZS8180 or Z80182 at High-Speed
-               LD	     A,CCR_XTAL_X2   ; Set Hi-Speed flag: PHI = crystal
-               OUT0      (CCR),A         ; CPU Control Reg (CCR)
-
-               EX        (SP),IY         ; (settle)
-               EX        (SP),IY         ; (settle)
+               LD        A,OMCR_M1E      ; Enable M1, but disable 64180 I/O RD Mode
+               OUT0      (OMCR),A        ; X80 Mode (M1E Enabled, OIC Disabled)
 
                                          ; Set internal clock = crystal x 2
                                          ; if using ZS8180 or Z80182 at High-Speed
                LD        A,CMR_X2        ; Set Hi-Speed flag
                OUT0	     (CMR),A         ; CPU Clock Multiplier Reg (CMR)
 
+                                         ; Bypass PHI = internal clock / 2
+                                         ; if using ZS8180 or Z80182 at High-Speed
+;              LD	     A,CCR_XTAL_X2   ; Set Hi-Speed flag: PHI = internal clock
+;              OUT0      (CCR),A         ; CPU Control Reg (CCR)
+               
+               EX        (SP),IY         ; (settle)
+               EX        (SP),IY         ; (settle)               
+
                                          ; Set Logical Addresses
-                                         ; $8000-$FFFF RAM CA1
-                                         ; $4000-$7FFF RAM BANK
+                                         ; $8000-$FFFF RAM CA1 -> 80H
+                                         ; $4000-$7FFF RAM BANK -> 04H
                                          ; $2000-$3FFF RAM CA0
                                          ; $0000-$1FFF Flash CA0
                LD        A,84H           ; Set New Common / Bank Areas
                OUT0      (CBAR),A        ; for RAM
 
                                          ; Physical Addresses
-               LD        A,80H           ; Set New Common 1 Area $80000
+               LD        A,80H           ; Set Common 1 Area $80000 -> 80H
                OUT0      (CBR),A
                
-               LD        A,40H           ; Set New Bank Area $40000
+               LD        A,40H           ; Set Bank Area $40000 -> 40H
                OUT0      (BBR),A
 
                LD        HL,TEMPSTACK    ; Temp stack
@@ -489,22 +499,22 @@ INIT:
                                          ; transmit interrupt disabled
                                          
                LD        A,SER_RE|SER_TE|SER_8N1
-               OUT0      (CNTLA0),A      ; output to the ASCI0 control A reg
+               OUT0      (CNTLA1),A      ; output to the ASCI1 control A reg
 
                                          ; PHI / PS / SS / DR = BAUD Rate
                                          ; PHI = 18.432MHz
                                          ; BAUD = 115200 = 18432000 / 10 / 1 / 16 
                                          ; PS 0, SS_DIV_1 0, DR 0           
                XOR        A              ; BAUD = 115200
-               OUT0      (CNTLB0),A      ; output to the ASCI0 control B reg
-
-               LD        A,SER_RIE       ; receive interrupt enabled
-               OUT0      (STAT0),A       ; output to the ASCI0 status reg
-
-                                         ; set interrupt vector for ASCI Channel 0
+               OUT0      (CNTLB1),A      ; output to the ASCI0 control B reg
+               
+                                         ; set interrupt vector for ASCI Channel 1
                LD        A,$20           ; IL = $20 [001xxxxx] for Vectors at $20 - $36
-               OUT0      (IL),A          ; output to the Interrupt Vector Low reg
-                                         
+               OUT0      (IL),A          ; output to the Interrupt Vector Low reg               
+               
+               LD        A,SER_RIE       ; receive interrupt enabled
+               OUT0      (STAT1),A       ; output to the ASCI1 status reg
+                                 
                IM        1               ; interrupt mode 1 for INT0 (unused)
                EI                        ; enable interrupts
 
