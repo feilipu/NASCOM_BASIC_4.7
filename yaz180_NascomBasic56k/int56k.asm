@@ -243,7 +243,7 @@ RST18:           JP      CKINCHAR
 ;------------------------------------------------------------------------------
 ; INTERRUPT VECTOR ASCI Channel 0 [ IL = $01 for Vectors at $20 - $36 ]
 
-                .ORG     002EH
+                .ORG     0020H+ASCI0_VECTOR
                 JP       serialInt
 
 ;------------------------------------------------------------------------------
@@ -424,16 +424,19 @@ PRINT:         LD        A,(HL)          ; Get character
 ;------------------------------------------------------------------------------
 INIT:
                XOR       A               ; $00
-                                         
+
                                          ; Disable external interrupts  
                OUT0      (ITC),A         ; until Int Vector Table initialized
-               
+
                                          ; Disable PRT downcounting,
                OUT0      (TCR),A         ; until Int Vector Table initialized
-                
+
                                          ; Clear Refresh Control Reg (RCR)
                OUT0      (RCR),A         ; DRAM Refresh Enable (0 Disabled)
-                
+
+                                         ; Set Operation Mode Control Reg (OMCR)
+               OUT0      (OMCR),A        ; X80 Mode (0 Enabled)
+
                                          ; Bypass PHI = crystal / 2
                                          ; if using ZS8180 or Z80182 at High-Speed
                LD	     A,CCR_XTAL_X2   ; Set Hi-Speed flag: PHI = crystal
@@ -454,17 +457,17 @@ INIT:
                                          ; $0000-$1FFF Flash CA0
                LD        A,84H           ; Set New Common / Bank Areas
                OUT0      (CBAR),A        ; for RAM
-               
+
                                          ; Physical Addresses
                LD        A,80H           ; Set New Common 1 Area $80000
                OUT0      (CBR),A
                
                LD        A,40H           ; Set New Bank Area $40000
                OUT0      (BBR),A
-               
+
                LD        HL,TEMPSTACK    ; Temp stack
                LD        SP,HL           ; Set up a temporary stack
-               
+
                LD        HL,serRxBuf     ; Initialise Rx Buffer
                LD        (serRxInPtr),HL
                LD        (serRxOutPtr),HL
@@ -472,11 +475,11 @@ INIT:
                LD        HL,serTxBuf     ; Initialise Tx Buffer
                LD        (serTxInPtr),HL
                LD        (serTxOutPtr),HL              
-               
+
                XOR       A               ; 0 the accumulator
                LD        (serRxBufUsed),A
                LD        (serTxBufUsed),A
-               
+
                                          ; load the default ASCI configuration
                                          ; 
                                          ; BAUD = 115200 8n1
@@ -487,24 +490,24 @@ INIT:
                                          
                LD        A,SER_RE|SER_TE|SER_8N1
                OUT0      (CNTLA0),A      ; output to the ASCI0 control A reg
-               
+
                                          ; PHI / PS / SS / DR = BAUD Rate
                                          ; PHI = 18.432MHz
                                          ; BAUD = 115200 = 18432000 / 10 / 1 / 16 
                                          ; PS 0, SS_DIV_1 0, DR 0           
                XOR        A              ; BAUD = 115200
                OUT0      (CNTLB0),A      ; output to the ASCI0 control B reg
-               
+
                LD        A,SER_RIE       ; receive interrupt enabled
                OUT0      (STAT0),A       ; output to the ASCI0 status reg
-               
+
                                          ; set interrupt vector for ASCI Channel 0
-               LD        A,$20           ; IL = $20 [001] for Vectors at $20 - $2F
+               LD        A,$20           ; IL = $20 [001xxxxx] for Vectors at $20 - $36
                OUT0      (IL),A          ; output to the Interrupt Vector Low reg
                                          
                IM        1               ; interrupt mode 1 for INT0 (unused)
                EI                        ; enable interrupts
-               
+
                LD        HL,SIGNON1      ; Sign-on message
                CALL      PRINT           ; Output string
                LD        A,(basicStarted); Check the BASIC STARTED flag
@@ -534,7 +537,6 @@ CHECKWARM:
                LD        A,$0A
                RST       08H
                JP        $01C3           ; <<<< Start BASIC WARM
-              
 
 SIGNON1:       .BYTE     "YAZ180 - feilipu",CR,LF,0
 SIGNON2:       .BYTE     CR,LF

@@ -165,369 +165,386 @@
 0165   0000             RCR_REFE        .EQU   $80    ; DRAM Refresh Enable (0 Disabled)
 0166   0000             RCR_REFW        .EQU   $40    ; DRAM Refresh 2 or 3 Wait states (0 2 Wait States)
 0167   0000             
-0168   0000             ;==================================================================================
-0169   0000             ;
-0170   0000             ; DEFINES SECTION
-0171   0000             
-0172   0000                                            ; end of ASCI stuff is $210D
-0173   0000                                            ; set BASIC Work space WRKSPC $2120
-0174   0000             
-0175   0000             TEMPSTACK       .EQU     $21CB ; Top of BASIC line input buffer (CURPOS WRKSPC+0ABH)
-0176   0000                                            ; so it is "free ram" when BASIC resets
-0177   0000             
-0178   0000             CR              .EQU     0DH
-0179   0000             LF              .EQU     0AH
-0180   0000             CS              .EQU     0CH   ; Clear screen
-0181   0000             
-0182   0000             ;==================================================================================
-0183   0000             ;
-0184   0000             ; VARIABLES SECTION
-0185   0000             
-0186   0000             SER_RX_BUFSIZE  .EQU     $F0  ; Size of the Rx Buffer, 239 Bytes
-0187   0000             SER_TX_BUFSIZE  .EQU     $10  ; Size of the Tx Buffer, 15 Bytes
-0188   0000                  
-0189   0000             serRxBuf        .EQU     $2000
-0190   0000             serRxInPtr      .EQU     serRxBuf+SER_RX_BUFSIZE+1
-0191   0000             serRxOutPtr     .EQU     serRxInPtr+2
-0192   0000             serRxBufUsed    .EQU     serRxOutPtr+2
-0193   0000             serTxBuf        .EQU     serRxBufUsed+1
-0194   0000             serTxInPtr      .EQU     serTxBuf+SER_TX_BUFSIZE+1
-0195   0000             serTxOutPtr     .EQU     serTxInPtr+2
-0196   0000             serTxBufUsed    .EQU     serTxOutPtr+2
-0197   0000             basicStarted    .EQU     serTxBufUsed+1
-0198   0000             
-0199   0000             ;==================================================================================
-0200   0000             ;
-0201   0000             ; CODE SECTION 
-0202   0000             
-0203   0000                             .ORG $0000
-0204   0000             ;------------------------------------------------------------------------------
-0205   0000             ; Reset
-0206   0000             
-0207   0000 F3          RST00:          DI             ;Disable interrupts
-0208   0001 C3 F3 00                    JP       INIT  ;Initialize Hardware and go
-0209   0004             
-0210   0004             ;------------------------------------------------------------------------------
-0211   0004             ; TX a character over RS232 
-0212   0004             
-0213   0008                             .ORG     0008H
-0214   0008 C3 BB 00    RST08:           JP      TXA
-0215   000B             
-0216   000B             ;------------------------------------------------------------------------------
-0217   000B             ; RX a character over RS232 Channel A [Console], hold here until char ready.
-0218   000B             
-0219   0010                             .ORG 0010H
-0220   0010 C3 9C 00    RST10:           JP      RXA
-0221   0013             
-0222   0013             ;------------------------------------------------------------------------------
-0223   0013             ; Check serial status
-0224   0013             
-0225   0018                             .ORG 0018H
-0226   0018 C3 E5 00    RST18:           JP      CKINCHAR
-0227   001B             
-0228   001B             ;------------------------------------------------------------------------------
-0229   001B             ; INTERRUPT VECTOR ASCI Channel 0 [ IL = $01 for Vectors at $20 - $2F ]
-0230   001B             
-0231   002E                             .ORG     002EH
-0232   002E C3 40 00                    JP       serialInt
-0233   0031             
-0234   0031             ;------------------------------------------------------------------------------
-0235   0031             ; RST 38 - INTERRUPT VECTOR INT0 [ with IM 1 ] - UNUSED but floating currently
-0236   0031             
-0237   0038                             .ORG     0038H
-0238   0038 F3          RST38:          DI             ;Disable interrupts
-0239   0039 C3 F3 00                    JP       INIT  ;Initialize Hardware and go
-0240   003C                             
-0241   003C             ;------------------------------------------------------------------------------
-0242   003C             ; ASCI Code
-0243   003C             
-0244   0040                             .ORG     0040H                              
-0245   0040             serialInt:
-0246   0040             
-0247   0040 F5                  push af
-0248   0041 E5                  push hl
-0249   0042             
-0250   0042             ; start doing the Rx stuff
-0251   0042             
-0252   0042 ED 38 04            in0 a, (STAT0)              ; get the status of the ASCI
-0253   0045 E6 80               and SER_RDRF                ; check whether a byte has been received
-0254   0047 28 20               jr z, tx_check              ; if not, go check for bytes to transmit 
-0255   0049             
-0256   0049 ED 38 08            in0 a, (RDR0)               ; Get the received byte from the ASCI 
-0257   004C 6F                  ld l, a                     ; Move Rx byte to l
-0258   004D             
-0259   004D 3A F5 20            ld a, (serRxBufUsed)        ; Get the number of bytes in the Rx buffer
-0260   0050 FE F0               cp SER_RX_BUFSIZE           ; check whether there is space in the buffer
-0261   0052 30 15               jr nc, tx_check             ; buffer full, check if we can send something
-0262   0054             
-0263   0054 7D                  ld a, l                     ; get Rx byte from l
-0264   0055 2A F1 20            ld hl, (serRxInPtr)         ; get the pointer to where we poke
-0265   0058 77                  ld (hl), a                  ; write the Rx byte to the serRxInPtr address
-0266   0059             
-0267   0059 23                  inc hl                      ; move the Rx pointer along
-0268   005A 7D                  ld a, l	                    ; move low byte of the Rx pointer
-0269   005B FE F0               cp (serRxBuf + SER_RX_BUFSIZE) & $FF
-0270   005D 20 03               jr nz, no_rx_wrap
-0271   005F 21 00 20            ld hl, serRxBuf             ; we wrapped, so go back to start of buffer
-0272   0062                 	
-0273   0062             no_rx_wrap:
-0274   0062             
-0275   0062 22 F1 20            ld (serRxInPtr), hl         ; write where the next byte should be poked
-0276   0065             
-0277   0065 21 F5 20            ld hl, serRxBufUsed
-0278   0068 34                  inc (hl)                    ; atomically increment Rx buffer count
-0279   0069             
-0280   0069             ; now start doing the Tx stuff
-0281   0069             
-0282   0069             tx_check:
-0283   0069             
-0284   0069 3A 0B 21            ld a, (serTxBufUsed)        ; get the number of bytes in the Tx buffer
-0285   006C B7                  or a                        ; check whether it is zero
-0286   006D 28 20               jr z, tie_clear             ; if the count is zero, then disable the Tx Interrupt
-0287   006F             
-0288   006F ED 38 04            in0 a, (STAT0)              ; get the status of the ASCI
-0289   0072 E6 02               and SER_TDRE                ; check whether a byte can be transmitted
-0290   0074 28 21               jr z, tx_end                ; if not, then end
-0291   0076             
-0292   0076 2A 09 21            ld hl, (serTxOutPtr)        ; get the pointer to place where we pop the Tx byte
-0293   0079 7E                  ld a, (hl)                  ; get the Tx byte
-0294   007A ED 39 06            out0 (TDR0), a              ; output the Tx byte to the ASCI
-0295   007D             
-0296   007D 23                  inc hl                      ; move the Tx pointer along
-0297   007E 7D                  ld a, l                     ; get the low byte of the Tx pointer
-0298   007F FE 06               cp (serTxBuf + SER_TX_BUFSIZE) & $FF
-0299   0081 20 03               jr nz, no_tx_wrap
-0300   0083 21 F6 20            ld hl, serTxBuf             ; we wrapped, so go back to start of buffer
-0301   0086             
-0302   0086             no_tx_wrap:
-0303   0086             
-0304   0086 22 09 21            ld (serTxOutPtr), hl        ; write where the next byte should be popped
-0305   0089             
-0306   0089 21 0B 21            ld hl, serTxBufUsed
-0307   008C 35                  dec (hl)                    ; atomically decrement current Tx count
-0308   008D 20 08               jr nz, tx_end               ; if we've more Tx bytes to send, we're done for now
-0309   008F                     
-0310   008F             tie_clear:
-0311   008F             
-0312   008F ED 38 04            in0 a, (STAT0)              ; get the ASCI status register
-0313   0092 E6 FE               and ~SER_TIE                ; mask out (disable) the Tx Interrupt
-0314   0094 ED 39 04            out0 (STAT0), a             ; set the ASCI status register
-0315   0097             
-0316   0097             tx_end:
-0317   0097             
-0318   0097 E1                  pop hl
-0319   0098 F1                  pop af
-0320   0099                     
-0321   0099 FB                  ei
-0322   009A ED 4D               reti
-0323   009C             
-0324   009C             ;------------------------------------------------------------------------------
-0325   009C             RXA:
-0326   009C             waitForRxChar:
-0327   009C             
-0328   009C 3A F5 20            ld a, (serRxBufUsed)        ; get the number of bytes in the Rx buffer
-0329   009F             
-0330   009F B7                  or a                        ; see if there are zero bytes available
-0331   00A0 28 FA               jr z, waitForRxChar         ; wait, if there are no bytes available
-0332   00A2                     
-0333   00A2 E5                  push hl                     ; Store HL so we don't clobber it
-0334   00A3             
-0335   00A3 2A F3 20            ld hl, (serRxOutPtr)        ; get the pointer to place where we pop the Rx byte
-0336   00A6 7E                  ld a, (hl)                  ; get the Rx byte
-0337   00A7 F5                  push af                     ; save the Rx byte on stack
-0338   00A8             
-0339   00A8 23                  inc hl                      ; move the Rx pointer along
-0340   00A9 7D                  ld a, l                     ; get the low byte of the Rx pointer
-0341   00AA FE F0               cp (serRxBuf + SER_RX_BUFSIZE) & $FF
-0342   00AC 20 03               jr nz, get_no_rx_wrap
-0343   00AE 21 00 20            ld hl, serRxBuf             ; we wrapped, so go back to start of buffer
-0344   00B1             
-0345   00B1             get_no_rx_wrap:
-0346   00B1             
-0347   00B1 22 F3 20            ld (serRxOutPtr), hl        ; write where the next byte should be popped
-0348   00B4             
-0349   00B4 21 F5 20            ld hl,serRxBufUsed
-0350   00B7 35                  dec (hl)                    ; atomically decrement Rx count
-0351   00B8             
-0352   00B8 F1                  pop af                      ; get the Rx byte from stack
-0353   00B9 E1                  pop hl                      ; recover HL
-0354   00BA             
-0355   00BA C9                  ret                         ; char ready in A
-0356   00BB             
-0357   00BB             ;------------------------------------------------------------------------------
-0358   00BB             TXA:
-0359   00BB E5                  push hl                     ; Store HL so we don't clobber it        
-0360   00BC 6F                  ld l, a                     ; Store Tx character 
-0361   00BD             
-0362   00BD 3A 0B 21            ld a, (serTxBufUsed)        ; Get the number of bytes in the Tx buffer
-0363   00C0 FE 10               cp SER_TX_BUFSIZE           ; check whether there is space in the buffer
-0364   00C2 30 1F               jr nc, clean_up_tx          ; buffer full, so abandon Tx
-0365   00C4                     
-0366   00C4 7D                  ld a, l                     ; Retrieve Tx character
-0367   00C5 2A 07 21            ld hl, (serTxInPtr)         ; get the pointer to where we poke
-0368   00C8 77                  ld (hl), a                  ; write the Tx byte to the serTxInPtr   
-0369   00C9 23                  inc hl                      ; move the Tx pointer along
-0370   00CA             
-0371   00CA 7D                  ld a, l                     ; move low byte of the Tx pointer
-0372   00CB FE 06               cp (serTxBuf + SER_TX_BUFSIZE) & $FF
-0373   00CD 20 03               jr nz, put_no_tx_wrap
-0374   00CF 21 F6 20            ld hl, serTxBuf             ; we wrapped, so go back to start of buffer
-0375   00D2             
-0376   00D2             put_no_tx_wrap:
-0377   00D2             
-0378   00D2 22 07 21            ld (serTxInPtr), hl         ; write where the next byte should be poked
-0379   00D5             
-0380   00D5 21 0B 21            ld hl, serTxBufUsed
-0381   00D8 34                  inc (hl)                    ; atomic increment of Tx count
-0382   00D9             
-0383   00D9 F3                  di                          ; critical section begin
-0384   00DA                    
-0385   00DA ED 38 04            in0 a, (STAT0)              ; get the ASCI status register
-0386   00DD F6 01               or SER_TIE                  ; mask in (enable) the Tx Interrupt
-0387   00DF ED 39 04            out0 (STAT0), a             ; set the ASCI status register
-0388   00E2                     
-0389   00E2 FB                  ei                          ; critical section end
-0390   00E3                     
-0391   00E3             clean_up_tx:        
-0392   00E3                     
-0393   00E3 E1                  pop hl                      ; recover HL
-0394   00E4             
-0395   00E4 C9                  ret
-0396   00E5             
-0397   00E5             ;------------------------------------------------------------------------------
-0398   00E5 3A F5 20    CKINCHAR:      LD        A,(serRxBufUsed)
-0399   00E8 FE 00                      CP        $0
-0400   00EA C9                         RET
-0401   00EB             
-0402   00EB 7E          PRINT:         LD        A,(HL)          ; Get character
-0403   00EC B7                         OR        A               ; Is it $00 ?
-0404   00ED C8                         RET       Z               ; Then RETurn on terminator
-0405   00EE CF                         RST       08H             ; Print it
-0406   00EF 23                         INC       HL              ; Next Character
-0407   00F0 18 F9                      JR        PRINT           ; Continue until $00
-0408   00F2 C9                         RET
-0409   00F3             ;------------------------------------------------------------------------------
-0410   00F3             INIT:
-0411   00F3 AF                         XOR       A               ; $00
-0412   00F4                                                      
-0413   00F4                                                      ; Disable external interrupts  
-0414   00F4 ED 39 34                   OUT0      (ITC),A         ; until Int Vector Table initialized
-0415   00F7                            
-0416   00F7                                                      ; Disable PRT downcounting,
-0417   00F7 ED 39 10                   OUT0      (TCR),A         ; until Int Vector Table initialized
-0418   00FA                             
-0419   00FA                                                      ; Clear Refresh Control Reg (RCR)
-0420   00FA ED 39 36                   OUT0      (RCR),A         ; DRAM Refresh Enable (0 Disabled)
-0421   00FD                             
-0422   00FD                                                      ; Bypass PHI = crystal / 2
-0423   00FD                                                      ; if using ZS8180 or Z80182 at High-Speed
-0424   00FD 3E 80                      LD	     A,CCR_XTAL_X2   ; Set Hi-Speed flag: PHI = crystal
-0425   00FF ED 39 1F                   OUT0      (CCR),A         ; CPU Control Reg (CCR)
-0426   0102             
-0427   0102 FD E3                      EX        (SP),IY         ; (settle)
-0428   0104 FD E3                      EX        (SP),IY         ; (settle)
-0429   0106             
-0430   0106                                                      ; Set internal clock = crystal x 2
-0431   0106                                                      ; if using ZS8180 or Z80182 at High-Speed
-0432   0106 3E 80                      LD        A,CMR_X2        ; Set Hi-Speed flag
-0433   0108 ED 39 1E                   OUT0	     (CMR),A         ; CPU Clock Multiplier Reg (CMR)
-0434   010B             
-0435   010B                                                      ; Set Logical Addresses
-0436   010B                                                      ; $8000-$FFFF RAM CA1
-0437   010B                                                      ; $4000-$7FFF RAM BANK
-0438   010B                                                      ; $2000-$3FFF RAM CA0
-0439   010B                                                      ; $0000-$1FFF Flash CA0
-0440   010B 3E 84                      LD        A,84H           ; Set New Common / Bank Areas
-0441   010D ED 39 3A                   OUT0      (CBAR),A        ; for RAM
-0442   0110                            
-0443   0110                                                      ; Physical Addresses
-0444   0110 3E 80                      LD        A,80H           ; Set New Common 1 Area $80000
-0445   0112 ED 39 38                   OUT0      (CBR),A
-0446   0115                            
-0447   0115 3E 40                      LD        A,40H           ; Set New Bank Area $40000
-0448   0117 ED 39 39                   OUT0      (BBR),A
-0449   011A                            
-0450   011A 21 CB 21                   LD        HL,TEMPSTACK    ; Temp stack
-0451   011D F9                         LD        SP,HL           ; Set up a temporary stack
-0452   011E                            
-0453   011E 21 00 20                   LD        HL,serRxBuf     ; Initialise Rx Buffer
-0454   0121 22 F1 20                   LD        (serRxInPtr),HL
-0455   0124 22 F3 20                   LD        (serRxOutPtr),HL
-0456   0127             
-0457   0127 21 F6 20                   LD        HL,serTxBuf     ; Initialise Tx Buffer
-0458   012A 22 07 21                   LD        (serTxInPtr),HL
-0459   012D 22 09 21                   LD        (serTxOutPtr),HL              
-0460   0130                            
-0461   0130 AF                         XOR       A               ; 0 the accumulator
-0462   0131 32 F5 20                   LD        (serRxBufUsed),A
-0463   0134 32 0B 21                   LD        (serTxBufUsed),A
-0464   0137                            
-0465   0137                                                      ; load the default ASCI configuration
-0466   0137                                                      ; 
-0467   0137                                                      ; BAUD = 115200 8n1
-0468   0137                                                      ; receive enabled
-0469   0137                                                      ; transmit enabled                                         
-0470   0137                                                      ; receive interrupt enabled
-0471   0137                                                      ; transmit interrupt disabled
-0472   0137                                                      
-0473   0137 3E 64                      LD        A,SER_RE|SER_TE|SER_8N1
-0474   0139 ED 39 00                   OUT0      (CNTLA0),A      ; output to the ASCI0 control A reg
-0475   013C                            
-0476   013C                                                      ; PHI / PS / SS / DR = BAUD Rate
-0477   013C                                                      ; PHI = 18.432MHz
-0478   013C                                                      ; BAUD = 115200 = 18432000 / 10 / 1 / 16 
-0479   013C                                                      ; PS 0, SS_DIV_1 0, DR 0           
-0480   013C AF                         XOR        A              ; BAUD = 115200
-0481   013D ED 39 02                   OUT0      (CNTLB0),A      ; output to the ASCI0 control B reg
-0482   0140                            
-0483   0140 3E 08                      LD        A,SER_RIE       ; receive interrupt enabled
-0484   0142 ED 39 04                   OUT0      (STAT0),A       ; output to the ASCI0 status reg
-0485   0145                            
-0486   0145                                                      ; set interrupt vector for ASCI Channel 0
-0487   0145 3E 20                      LD        A,$20           ; IL = $20 [001] for Vectors at $20 - $2F
-0488   0147 ED 39 33                   OUT0      (IL),A          ; output to the Interrupt Vector Low reg
-0489   014A                                                      
-0490   014A ED 56                      IM        1               ; interrupt mode 1 for INT0 (unused)
-0491   014C FB                         EI                        ; enable interrupts
-0492   014D                            
-0493   014D 21 86 01                   LD        HL,SIGNON1      ; Sign-on message
-0494   0150 CD EB 00                   CALL      PRINT           ; Output string
-0495   0153 3A 0C 21                   LD        A,(basicStarted); Check the BASIC STARTED flag
-0496   0156 FE 59                      CP        'Y'             ; to see if this is power-up
-0497   0158 20 16                      JR        NZ,COLDSTART    ; If not BASIC started then always do cold start
-0498   015A 21 99 01                   LD        HL,SIGNON2      ; Cold/warm message
-0499   015D CD EB 00                   CALL      PRINT           ; Output string
-0500   0160             CORW:
-0501   0160 CD 9C 00                   CALL      RXA
-0502   0163 E6 DF                      AND       %11011111       ; lower to uppercase
-0503   0165 FE 43                      CP        'C'
-0504   0167 20 0F                      JR        NZ, CHECKWARM
-0505   0169 CF                         RST       08H
-0506   016A 3E 0D                      LD        A,$0D
-0507   016C CF                         RST       08H
-0508   016D 3E 0A                      LD        A,$0A
-0509   016F CF                         RST       08H
-0510   0170 3E 59       COLDSTART:     LD        A,'Y'           ; Set the BASIC STARTED flag
-0511   0172 32 0C 21                   LD        (basicStarted),A
-0512   0175 C3 C0 01                   JP        $01C0           ; <<<< Start BASIC COLD
-0513   0178             CHECKWARM:
-0514   0178 FE 57                      CP        'W'
-0515   017A 20 E4                      JR        NZ, CORW
-0516   017C CF                         RST       08H
-0517   017D 3E 0D                      LD        A,$0D
-0518   017F CF                         RST       08H
-0519   0180 3E 0A                      LD        A,$0A
-0520   0182 CF                         RST       08H
-0521   0183 C3 C3 01                   JP        $01C3           ; <<<< Start BASIC WARM
-0522   0186                           
-0523   0186             
-0524   0186 59415A313830SIGNON1:       .BYTE     "YAZ180 - feilipu",CR,LF,0
-0524   018C 202D206665696C6970750D0A00
-0525   0199 0D 0A       SIGNON2:       .BYTE     CR,LF
-0526   019B 436F6C64206F               .BYTE     "Cold or warm start (C|W) ?",0
-0526   01A1 72207761726D2073746172742028437C5729203F00
-0527   01B6             
-0528   01B6                            .END
+0168   0000             ; Interrupt vectors (offsets) for Z180/HD64180 internal interrupts
+0169   0000             
+0170   0000             INT1_VECTOR     .EQU   $00    ; external /INT1 
+0171   0000             INT2_VECTOR     .EQU   $02    ; external /INT2 
+0172   0000             PRT0_VECTOR     .EQU   $04    ; PRT channel 0 
+0173   0000             PRT1_VECTOR     .EQU   $06    ; PRT channel 1 
+0174   0000             DMA0_VECTOR     .EQU   $08    ; DMA channel 0 
+0175   0000             DMA1_VECTOR     .EQU   $0A    ; DMA Channel 1 
+0176   0000             CSIO_VECTOR     .EQU   $0C    ; Clocked serial I/O 
+0177   0000             ASCI0_VECTOR    .EQU   $0E    ; Async channel 0 
+0178   0000             ASCI1_VECTOR    .EQU   $10    ; Async channel 1 
+0179   0000             INCAP_VECTOR    .EQU   $12    ; input capture 
+0180   0000             OUTCMP_VECTOR   .EQU   $14    ; output compare 
+0181   0000             TIMOV_VECTOR    .EQU   $16    ; timer overflow 
+0182   0000             
+0183   0000             ;==================================================================================
+0184   0000             ;
+0185   0000             ; DEFINES SECTION
+0186   0000             
+0187   0000                                            ; end of ASCI stuff is $210D
+0188   0000                                            ; set BASIC Work space WRKSPC $2120
+0189   0000             
+0190   0000             TEMPSTACK       .EQU     $21CB ; Top of BASIC line input buffer (CURPOS WRKSPC+0ABH)
+0191   0000                                            ; so it is "free ram" when BASIC resets
+0192   0000             
+0193   0000             CR              .EQU     0DH
+0194   0000             LF              .EQU     0AH
+0195   0000             CS              .EQU     0CH   ; Clear screen
+0196   0000             
+0197   0000             ;==================================================================================
+0198   0000             ;
+0199   0000             ; VARIABLES SECTION
+0200   0000             
+0201   0000             SER_RX_BUFSIZE  .EQU     $F0  ; Size of the Rx Buffer, 239 Bytes
+0202   0000             SER_TX_BUFSIZE  .EQU     $10  ; Size of the Tx Buffer, 15 Bytes
+0203   0000                  
+0204   0000             serRxBuf        .EQU     $2000
+0205   0000             serRxInPtr      .EQU     serRxBuf+SER_RX_BUFSIZE+1
+0206   0000             serRxOutPtr     .EQU     serRxInPtr+2
+0207   0000             serRxBufUsed    .EQU     serRxOutPtr+2
+0208   0000             serTxBuf        .EQU     serRxBufUsed+1
+0209   0000             serTxInPtr      .EQU     serTxBuf+SER_TX_BUFSIZE+1
+0210   0000             serTxOutPtr     .EQU     serTxInPtr+2
+0211   0000             serTxBufUsed    .EQU     serTxOutPtr+2
+0212   0000             basicStarted    .EQU     serTxBufUsed+1
+0213   0000             
+0214   0000             ;==================================================================================
+0215   0000             ;
+0216   0000             ; CODE SECTION 
+0217   0000             
+0218   0000                             .ORG $0000
+0219   0000             ;------------------------------------------------------------------------------
+0220   0000             ; Reset
+0221   0000             
+0222   0000 F3          RST00:          DI             ;Disable interrupts
+0223   0001 C3 F3 00                    JP       INIT  ;Initialize Hardware and go
+0224   0004             
+0225   0004             ;------------------------------------------------------------------------------
+0226   0004             ; TX a character over RS232 
+0227   0004             
+0228   0008                             .ORG     0008H
+0229   0008 C3 BB 00    RST08:           JP      TXA
+0230   000B             
+0231   000B             ;------------------------------------------------------------------------------
+0232   000B             ; RX a character over RS232 Channel A [Console], hold here until char ready.
+0233   000B             
+0234   0010                             .ORG 0010H
+0235   0010 C3 9C 00    RST10:           JP      RXA
+0236   0013             
+0237   0013             ;------------------------------------------------------------------------------
+0238   0013             ; Check serial status
+0239   0013             
+0240   0018                             .ORG 0018H
+0241   0018 C3 E5 00    RST18:           JP      CKINCHAR
+0242   001B             
+0243   001B             ;------------------------------------------------------------------------------
+0244   001B             ; INTERRUPT VECTOR ASCI Channel 0 [ IL = $01 for Vectors at $20 - $36 ]
+0245   001B             
+0246   002E                             .ORG     0020H+ASCI0_VECTOR
+0247   002E C3 40 00                    JP       serialInt
+0248   0031             
+0249   0031             ;------------------------------------------------------------------------------
+0250   0031             ; RST 38 - INTERRUPT VECTOR INT0 [ with IM 1 ] - UNUSED
+0251   0031             
+0252   0038                             .ORG     0038H
+0253   0038 F3          RST38:          DI             ;Disable interrupts
+0254   0039 C3 F3 00                    JP       INIT  ;Initialize Hardware and go
+0255   003C                             
+0256   003C             ;------------------------------------------------------------------------------
+0257   003C             ; ASCI Code
+0258   003C             
+0259   0040                             .ORG     0040H                              
+0260   0040             serialInt:
+0261   0040             
+0262   0040 F5                  push af
+0263   0041 E5                  push hl
+0264   0042             
+0265   0042             ; start doing the Rx stuff
+0266   0042             
+0267   0042 ED 38 04            in0 a, (STAT0)              ; get the status of the ASCI
+0268   0045 E6 80               and SER_RDRF                ; check whether a byte has been received
+0269   0047 28 20               jr z, tx_check              ; if not, go check for bytes to transmit 
+0270   0049             
+0271   0049 ED 38 08            in0 a, (RDR0)               ; Get the received byte from the ASCI 
+0272   004C 6F                  ld l, a                     ; Move Rx byte to l
+0273   004D             
+0274   004D 3A F5 20            ld a, (serRxBufUsed)        ; Get the number of bytes in the Rx buffer
+0275   0050 FE F0               cp SER_RX_BUFSIZE           ; check whether there is space in the buffer
+0276   0052 30 15               jr nc, tx_check             ; buffer full, check if we can send something
+0277   0054             
+0278   0054 7D                  ld a, l                     ; get Rx byte from l
+0279   0055 2A F1 20            ld hl, (serRxInPtr)         ; get the pointer to where we poke
+0280   0058 77                  ld (hl), a                  ; write the Rx byte to the serRxInPtr address
+0281   0059             
+0282   0059 23                  inc hl                      ; move the Rx pointer along
+0283   005A 7D                  ld a, l	                    ; move low byte of the Rx pointer
+0284   005B FE F0               cp (serRxBuf + SER_RX_BUFSIZE) & $FF
+0285   005D 20 03               jr nz, no_rx_wrap
+0286   005F 21 00 20            ld hl, serRxBuf             ; we wrapped, so go back to start of buffer
+0287   0062                 	
+0288   0062             no_rx_wrap:
+0289   0062             
+0290   0062 22 F1 20            ld (serRxInPtr), hl         ; write where the next byte should be poked
+0291   0065             
+0292   0065 21 F5 20            ld hl, serRxBufUsed
+0293   0068 34                  inc (hl)                    ; atomically increment Rx buffer count
+0294   0069             
+0295   0069             ; now start doing the Tx stuff
+0296   0069             
+0297   0069             tx_check:
+0298   0069             
+0299   0069 3A 0B 21            ld a, (serTxBufUsed)        ; get the number of bytes in the Tx buffer
+0300   006C B7                  or a                        ; check whether it is zero
+0301   006D 28 20               jr z, tie_clear             ; if the count is zero, then disable the Tx Interrupt
+0302   006F             
+0303   006F ED 38 04            in0 a, (STAT0)              ; get the status of the ASCI
+0304   0072 E6 02               and SER_TDRE                ; check whether a byte can be transmitted
+0305   0074 28 21               jr z, tx_end                ; if not, then end
+0306   0076             
+0307   0076 2A 09 21            ld hl, (serTxOutPtr)        ; get the pointer to place where we pop the Tx byte
+0308   0079 7E                  ld a, (hl)                  ; get the Tx byte
+0309   007A ED 39 06            out0 (TDR0), a              ; output the Tx byte to the ASCI
+0310   007D             
+0311   007D 23                  inc hl                      ; move the Tx pointer along
+0312   007E 7D                  ld a, l                     ; get the low byte of the Tx pointer
+0313   007F FE 06               cp (serTxBuf + SER_TX_BUFSIZE) & $FF
+0314   0081 20 03               jr nz, no_tx_wrap
+0315   0083 21 F6 20            ld hl, serTxBuf             ; we wrapped, so go back to start of buffer
+0316   0086             
+0317   0086             no_tx_wrap:
+0318   0086             
+0319   0086 22 09 21            ld (serTxOutPtr), hl        ; write where the next byte should be popped
+0320   0089             
+0321   0089 21 0B 21            ld hl, serTxBufUsed
+0322   008C 35                  dec (hl)                    ; atomically decrement current Tx count
+0323   008D 20 08               jr nz, tx_end               ; if we've more Tx bytes to send, we're done for now
+0324   008F                     
+0325   008F             tie_clear:
+0326   008F             
+0327   008F ED 38 04            in0 a, (STAT0)              ; get the ASCI status register
+0328   0092 E6 FE               and ~SER_TIE                ; mask out (disable) the Tx Interrupt
+0329   0094 ED 39 04            out0 (STAT0), a             ; set the ASCI status register
+0330   0097             
+0331   0097             tx_end:
+0332   0097             
+0333   0097 E1                  pop hl
+0334   0098 F1                  pop af
+0335   0099                     
+0336   0099 FB                  ei
+0337   009A ED 4D               reti
+0338   009C             
+0339   009C             ;------------------------------------------------------------------------------
+0340   009C             RXA:
+0341   009C             waitForRxChar:
+0342   009C             
+0343   009C 3A F5 20            ld a, (serRxBufUsed)        ; get the number of bytes in the Rx buffer
+0344   009F             
+0345   009F B7                  or a                        ; see if there are zero bytes available
+0346   00A0 28 FA               jr z, waitForRxChar         ; wait, if there are no bytes available
+0347   00A2                     
+0348   00A2 E5                  push hl                     ; Store HL so we don't clobber it
+0349   00A3             
+0350   00A3 2A F3 20            ld hl, (serRxOutPtr)        ; get the pointer to place where we pop the Rx byte
+0351   00A6 7E                  ld a, (hl)                  ; get the Rx byte
+0352   00A7 F5                  push af                     ; save the Rx byte on stack
+0353   00A8             
+0354   00A8 23                  inc hl                      ; move the Rx pointer along
+0355   00A9 7D                  ld a, l                     ; get the low byte of the Rx pointer
+0356   00AA FE F0               cp (serRxBuf + SER_RX_BUFSIZE) & $FF
+0357   00AC 20 03               jr nz, get_no_rx_wrap
+0358   00AE 21 00 20            ld hl, serRxBuf             ; we wrapped, so go back to start of buffer
+0359   00B1             
+0360   00B1             get_no_rx_wrap:
+0361   00B1             
+0362   00B1 22 F3 20            ld (serRxOutPtr), hl        ; write where the next byte should be popped
+0363   00B4             
+0364   00B4 21 F5 20            ld hl,serRxBufUsed
+0365   00B7 35                  dec (hl)                    ; atomically decrement Rx count
+0366   00B8             
+0367   00B8 F1                  pop af                      ; get the Rx byte from stack
+0368   00B9 E1                  pop hl                      ; recover HL
+0369   00BA             
+0370   00BA C9                  ret                         ; char ready in A
+0371   00BB             
+0372   00BB             ;------------------------------------------------------------------------------
+0373   00BB             TXA:
+0374   00BB E5                  push hl                     ; Store HL so we don't clobber it        
+0375   00BC 6F                  ld l, a                     ; Store Tx character 
+0376   00BD             
+0377   00BD 3A 0B 21            ld a, (serTxBufUsed)        ; Get the number of bytes in the Tx buffer
+0378   00C0 FE 10               cp SER_TX_BUFSIZE           ; check whether there is space in the buffer
+0379   00C2 30 1F               jr nc, clean_up_tx          ; buffer full, so abandon Tx
+0380   00C4                     
+0381   00C4 7D                  ld a, l                     ; Retrieve Tx character
+0382   00C5 2A 07 21            ld hl, (serTxInPtr)         ; get the pointer to where we poke
+0383   00C8 77                  ld (hl), a                  ; write the Tx byte to the serTxInPtr   
+0384   00C9 23                  inc hl                      ; move the Tx pointer along
+0385   00CA             
+0386   00CA 7D                  ld a, l                     ; move low byte of the Tx pointer
+0387   00CB FE 06               cp (serTxBuf + SER_TX_BUFSIZE) & $FF
+0388   00CD 20 03               jr nz, put_no_tx_wrap
+0389   00CF 21 F6 20            ld hl, serTxBuf             ; we wrapped, so go back to start of buffer
+0390   00D2             
+0391   00D2             put_no_tx_wrap:
+0392   00D2             
+0393   00D2 22 07 21            ld (serTxInPtr), hl         ; write where the next byte should be poked
+0394   00D5             
+0395   00D5 21 0B 21            ld hl, serTxBufUsed
+0396   00D8 34                  inc (hl)                    ; atomic increment of Tx count
+0397   00D9             
+0398   00D9 F3                  di                          ; critical section begin
+0399   00DA                    
+0400   00DA ED 38 04            in0 a, (STAT0)              ; get the ASCI status register
+0401   00DD F6 01               or SER_TIE                  ; mask in (enable) the Tx Interrupt
+0402   00DF ED 39 04            out0 (STAT0), a             ; set the ASCI status register
+0403   00E2                     
+0404   00E2 FB                  ei                          ; critical section end
+0405   00E3                     
+0406   00E3             clean_up_tx:        
+0407   00E3                     
+0408   00E3 E1                  pop hl                      ; recover HL
+0409   00E4             
+0410   00E4 C9                  ret
+0411   00E5             
+0412   00E5             ;------------------------------------------------------------------------------
+0413   00E5 3A F5 20    CKINCHAR:      LD        A,(serRxBufUsed)
+0414   00E8 FE 00                      CP        $0
+0415   00EA C9                         RET
+0416   00EB             
+0417   00EB 7E          PRINT:         LD        A,(HL)          ; Get character
+0418   00EC B7                         OR        A               ; Is it $00 ?
+0419   00ED C8                         RET       Z               ; Then RETurn on terminator
+0420   00EE CF                         RST       08H             ; Print it
+0421   00EF 23                         INC       HL              ; Next Character
+0422   00F0 18 F9                      JR        PRINT           ; Continue until $00
+0423   00F2 C9                         RET
+0424   00F3             ;------------------------------------------------------------------------------
+0425   00F3             INIT:
+0426   00F3 AF                         XOR       A               ; $00
+0427   00F4             
+0428   00F4                                                      ; Disable external interrupts  
+0429   00F4 ED 39 34                   OUT0      (ITC),A         ; until Int Vector Table initialized
+0430   00F7             
+0431   00F7                                                      ; Disable PRT downcounting,
+0432   00F7 ED 39 10                   OUT0      (TCR),A         ; until Int Vector Table initialized
+0433   00FA             
+0434   00FA                                                      ; Clear Refresh Control Reg (RCR)
+0435   00FA ED 39 36                   OUT0      (RCR),A         ; DRAM Refresh Enable (0 Disabled)
+0436   00FD             
+0437   00FD                                                      ; Set Operation Mode Control Reg (OMCR)
+0438   00FD ED 39 3E                   OUT0      (OMCR),A        ; X80 Mode (0 Enabled)
+0439   0100             
+0440   0100                                                      ; Bypass PHI = crystal / 2
+0441   0100                                                      ; if using ZS8180 or Z80182 at High-Speed
+0442   0100 3E 80                      LD	     A,CCR_XTAL_X2   ; Set Hi-Speed flag: PHI = crystal
+0443   0102 ED 39 1F                   OUT0      (CCR),A         ; CPU Control Reg (CCR)
+0444   0105             
+0445   0105 FD E3                      EX        (SP),IY         ; (settle)
+0446   0107 FD E3                      EX        (SP),IY         ; (settle)
+0447   0109             
+0448   0109                                                      ; Set internal clock = crystal x 2
+0449   0109                                                      ; if using ZS8180 or Z80182 at High-Speed
+0450   0109 3E 80                      LD        A,CMR_X2        ; Set Hi-Speed flag
+0451   010B ED 39 1E                   OUT0	     (CMR),A         ; CPU Clock Multiplier Reg (CMR)
+0452   010E             
+0453   010E                                                      ; Set Logical Addresses
+0454   010E                                                      ; $8000-$FFFF RAM CA1
+0455   010E                                                      ; $4000-$7FFF RAM BANK
+0456   010E                                                      ; $2000-$3FFF RAM CA0
+0457   010E                                                      ; $0000-$1FFF Flash CA0
+0458   010E 3E 84                      LD        A,84H           ; Set New Common / Bank Areas
+0459   0110 ED 39 3A                   OUT0      (CBAR),A        ; for RAM
+0460   0113             
+0461   0113                                                      ; Physical Addresses
+0462   0113 3E 80                      LD        A,80H           ; Set New Common 1 Area $80000
+0463   0115 ED 39 38                   OUT0      (CBR),A
+0464   0118                            
+0465   0118 3E 40                      LD        A,40H           ; Set New Bank Area $40000
+0466   011A ED 39 39                   OUT0      (BBR),A
+0467   011D             
+0468   011D 21 CB 21                   LD        HL,TEMPSTACK    ; Temp stack
+0469   0120 F9                         LD        SP,HL           ; Set up a temporary stack
+0470   0121             
+0471   0121 21 00 20                   LD        HL,serRxBuf     ; Initialise Rx Buffer
+0472   0124 22 F1 20                   LD        (serRxInPtr),HL
+0473   0127 22 F3 20                   LD        (serRxOutPtr),HL
+0474   012A             
+0475   012A 21 F6 20                   LD        HL,serTxBuf     ; Initialise Tx Buffer
+0476   012D 22 07 21                   LD        (serTxInPtr),HL
+0477   0130 22 09 21                   LD        (serTxOutPtr),HL              
+0478   0133             
+0479   0133 AF                         XOR       A               ; 0 the accumulator
+0480   0134 32 F5 20                   LD        (serRxBufUsed),A
+0481   0137 32 0B 21                   LD        (serTxBufUsed),A
+0482   013A             
+0483   013A                                                      ; load the default ASCI configuration
+0484   013A                                                      ; 
+0485   013A                                                      ; BAUD = 115200 8n1
+0486   013A                                                      ; receive enabled
+0487   013A                                                      ; transmit enabled                                         
+0488   013A                                                      ; receive interrupt enabled
+0489   013A                                                      ; transmit interrupt disabled
+0490   013A                                                      
+0491   013A 3E 64                      LD        A,SER_RE|SER_TE|SER_8N1
+0492   013C ED 39 00                   OUT0      (CNTLA0),A      ; output to the ASCI0 control A reg
+0493   013F             
+0494   013F                                                      ; PHI / PS / SS / DR = BAUD Rate
+0495   013F                                                      ; PHI = 18.432MHz
+0496   013F                                                      ; BAUD = 115200 = 18432000 / 10 / 1 / 16 
+0497   013F                                                      ; PS 0, SS_DIV_1 0, DR 0           
+0498   013F AF                         XOR        A              ; BAUD = 115200
+0499   0140 ED 39 02                   OUT0      (CNTLB0),A      ; output to the ASCI0 control B reg
+0500   0143             
+0501   0143 3E 08                      LD        A,SER_RIE       ; receive interrupt enabled
+0502   0145 ED 39 04                   OUT0      (STAT0),A       ; output to the ASCI0 status reg
+0503   0148             
+0504   0148                                                      ; set interrupt vector for ASCI Channel 0
+0505   0148 3E 20                      LD        A,$20           ; IL = $20 [001xxxxx] for Vectors at $20 - $36
+0506   014A ED 39 33                   OUT0      (IL),A          ; output to the Interrupt Vector Low reg
+0507   014D                                                      
+0508   014D ED 56                      IM        1               ; interrupt mode 1 for INT0 (unused)
+0509   014F FB                         EI                        ; enable interrupts
+0510   0150             
+0511   0150 21 89 01                   LD        HL,SIGNON1      ; Sign-on message
+0512   0153 CD EB 00                   CALL      PRINT           ; Output string
+0513   0156 3A 0C 21                   LD        A,(basicStarted); Check the BASIC STARTED flag
+0514   0159 FE 59                      CP        'Y'             ; to see if this is power-up
+0515   015B 20 16                      JR        NZ,COLDSTART    ; If not BASIC started then always do cold start
+0516   015D 21 9C 01                   LD        HL,SIGNON2      ; Cold/warm message
+0517   0160 CD EB 00                   CALL      PRINT           ; Output string
+0518   0163             CORW:
+0519   0163 CD 9C 00                   CALL      RXA
+0520   0166 E6 DF                      AND       %11011111       ; lower to uppercase
+0521   0168 FE 43                      CP        'C'
+0522   016A 20 0F                      JR        NZ, CHECKWARM
+0523   016C CF                         RST       08H
+0524   016D 3E 0D                      LD        A,$0D
+0525   016F CF                         RST       08H
+0526   0170 3E 0A                      LD        A,$0A
+0527   0172 CF                         RST       08H
+0528   0173 3E 59       COLDSTART:     LD        A,'Y'           ; Set the BASIC STARTED flag
+0529   0175 32 0C 21                   LD        (basicStarted),A
+0530   0178 C3 C0 01                   JP        $01C0           ; <<<< Start BASIC COLD
+0531   017B             CHECKWARM:
+0532   017B FE 57                      CP        'W'
+0533   017D 20 E4                      JR        NZ, CORW
+0534   017F CF                         RST       08H
+0535   0180 3E 0D                      LD        A,$0D
+0536   0182 CF                         RST       08H
+0537   0183 3E 0A                      LD        A,$0A
+0538   0185 CF                         RST       08H
+0539   0186 C3 C3 01                   JP        $01C3           ; <<<< Start BASIC WARM
+0540   0189             
+0541   0189 59415A313830SIGNON1:       .BYTE     "YAZ180 - feilipu",CR,LF,0
+0541   018F 202D206665696C6970750D0A00
+0542   019C 0D 0A       SIGNON2:       .BYTE     CR,LF
+0543   019E 436F6C64206F               .BYTE     "Cold or warm start (C|W) ?",0
+0543   01A4 72207761726D2073746172742028437C5729203F00
+0544   01B9             
+0545   01B9                            .END
 
 
 
@@ -535,45 +552,49 @@ Label        Value      Label        Value      Label        Value
 ------------------      ------------------      ------------------
 ASEXT0        0012      ASEXT1        0013      ASTC0L        001A      
 ASTC0H        001B      ASTC1L        001C      ASTC1H        001D      
-BCR0L         0026      BCR0H         0027      BCR1L         002E      
-BCR1H         002F      BBR           0039      CNTLA0        0000      
-CNTLA1        0001      CNTLB0        0002      CNTLB1        0003      
-CNTR          000A      CMR           001E      CCR           001F      
-CBR           0038      CBAR          003A      CMR_X2        0080      
-CMR_LN_XTAL   0040      CCR_XTAL_X2   0080      CCR_STANDBY   0040      
-CCR_BREXT     0020      CCR_LNPHI     0010      CCR_IDLE      0008      
-CCR_LNIO      0004      CCR_LNCPUCTL  0002      CCR_LNAD      0001      
+ASCI0_VECTOR  000E      ASCI1_VECTOR  0010      BCR0L         0026      
+BCR0H         0027      BCR1L         002E      BCR1H         002F      
+BBR           0039      CNTLA0        0000      CNTLA1        0001      
+CNTLB0        0002      CNTLB1        0003      CNTR          000A      
+CMR           001E      CCR           001F      CBR           0038      
+CBAR          003A      CMR_X2        0080      CMR_LN_XTAL   0040      
+CCR_XTAL_X2   0080      CCR_STANDBY   0040      CCR_BREXT     0020      
+CCR_LNPHI     0010      CCR_IDLE      0008      CCR_LNIO      0004      
+CCR_LNCPUCTL  0002      CCR_LNAD      0001      CSIO_VECTOR   000C      
 CR            000D      CS            000C      CKINCHAR      00E5      
-CORW          0160      COLDSTART     0170      CHECKWARM     0178      
+CORW          0163      COLDSTART     0173      CHECKWARM     017B      
 DAR0L         0023      DAR0H         0024      DAR0B         0025      
 DSTAT         0030      DMODE         0031      DCNTL         0032      
-FRC           0018      IAR1L         002B      IAR1H         002C      
-IL            0033      ITC           0034      ICR           003F      
-INIT          00F3      LF            000A      MAR1L         0028      
-MAR1H         0029      MAR1B         002A      OMCR          003E      
-PRINT         00EB      RDR0          0008      RDR1          0009      
-RLDR0L        000E      RLDR0H        000F      RLDR1L        0016      
-RLDR1H        0017      RCR           0036      RCR_REFE      0080      
-RCR_REFW      0040      RST00         0000      RST08         0008      
-RST10         0010      RST18         0018      RST38         0038      
-RXA           009C      STAT0         0004      STAT1         0005      
-SAR0L         0020      SAR0H         0021      SAR0B         0022      
-SER_MPE       0080      SER_RE        0040      SER_TE        0020      
-SER_RTS0      0010      SER_EFR       0008      SER_7N1       0000      
-SER_7N2       0001      SER_7P1       0002      SER_7P2       0003      
-SER_8N1       0004      SER_8N2       0005      SER_8P1       0006      
-SER_8P2       0007      SER_MPBT      0080      SER_MP        0040      
-SER_PS        0020      SER_PEO       0010      SER_DR        0008      
-SER_SS_DIV_1  0000      SER_SS_DIV_2  0001      SER_SS_DIV_4  0002      
-SER_SS_DIV_8  0003      SER_SS_DIV_16 0004      SER_SS_DIV_32 0005      
-SER_SS_DIV_64 0006      SER_SS_EXT    0007      SER_RDRF      0080      
-SER_OVRN      0040      SER_PE        0020      SER_FE        0010      
-SER_RIE       0008      SER_DCD0      0004      SER_CTS1      0004      
-SER_TDRE      0002      SER_TIE       0001      SER_RX_BUFSIZE 00F0      
-SER_TX_BUFSIZE 0010      SIGNON1       0186      SIGNON2       0199      
-TDR0          0006      TDR1          0007      TRDR          000B      
-TMDR0L        000C      TMDR0H        000D      TCR           0010      
-TMDR1L        0014      TMDR1H        0015      TEMPSTACK     21CB      
+DMA0_VECTOR   0008      DMA1_VECTOR   000A      FRC           0018      
+IAR1L         002B      IAR1H         002C      IL            0033      
+ITC           0034      ICR           003F      INT1_VECTOR   0000      
+INT2_VECTOR   0002      INCAP_VECTOR  0012      INIT          00F3      
+LF            000A      MAR1L         0028      MAR1H         0029      
+MAR1B         002A      OMCR          003E      OUTCMP_VECTOR 0014      
+PRT0_VECTOR   0004      PRT1_VECTOR   0006      PRINT         00EB      
+RDR0          0008      RDR1          0009      RLDR0L        000E      
+RLDR0H        000F      RLDR1L        0016      RLDR1H        0017      
+RCR           0036      RCR_REFE      0080      RCR_REFW      0040      
+RST00         0000      RST08         0008      RST10         0010      
+RST18         0018      RST38         0038      RXA           009C      
+STAT0         0004      STAT1         0005      SAR0L         0020      
+SAR0H         0021      SAR0B         0022      SER_MPE       0080      
+SER_RE        0040      SER_TE        0020      SER_RTS0      0010      
+SER_EFR       0008      SER_7N1       0000      SER_7N2       0001      
+SER_7P1       0002      SER_7P2       0003      SER_8N1       0004      
+SER_8N2       0005      SER_8P1       0006      SER_8P2       0007      
+SER_MPBT      0080      SER_MP        0040      SER_PS        0020      
+SER_PEO       0010      SER_DR        0008      SER_SS_DIV_1  0000      
+SER_SS_DIV_2  0001      SER_SS_DIV_4  0002      SER_SS_DIV_8  0003      
+SER_SS_DIV_16 0004      SER_SS_DIV_32 0005      SER_SS_DIV_64 0006      
+SER_SS_EXT    0007      SER_RDRF      0080      SER_OVRN      0040      
+SER_PE        0020      SER_FE        0010      SER_RIE       0008      
+SER_DCD0      0004      SER_CTS1      0004      SER_TDRE      0002      
+SER_TIE       0001      SER_RX_BUFSIZE 00F0      SER_TX_BUFSIZE 0010      
+SIGNON1       0189      SIGNON2       019C      TDR0          0006      
+TDR1          0007      TRDR          000B      TMDR0L        000C      
+TMDR0H        000D      TCR           0010      TMDR1L        0014      
+TMDR1H        0015      TIMOV_VECTOR  0016      TEMPSTACK     21CB      
 TXA           00BB      basicStarted  210C      clean_up_tx   00E3      
 get_no_rx_wrap 00B1      no_rx_wrap    0062      no_tx_wrap    0086      
 put_no_tx_wrap 00D2      serRxBuf      2000      serRxInPtr    20F1      
