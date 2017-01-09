@@ -90,12 +90,33 @@ CBAR            .EQU    $3A     ; MMU Common/Bank Area Reg
 OMCR            .EQU    $3E     ; Operation Mode Control Reg
 ICR             .EQU    $3F     ; I/O Control Reg
 
+
+;==================================================================================
+;
+; Interrupt vectors (offsets) for Z180/HD64180 internal interrupts
+;
+
+VECTOR_BASE     .EQU   $20      ; Vector Base address <<< SET THIS AS DESIRED >>>
+
+VECTOR_INT1     .EQU   VECTOR_BASE+$00    ; external /INT1 
+VECTOR_INT2     .EQU   VECTOR_BASE+$02    ; external /INT2 
+VECTOR_PRT0     .EQU   VECTOR_BASE+$04    ; PRT channel 0 
+VECTOR_PRT1     .EQU   VECTOR_BASE+$06    ; PRT channel 1 
+VECTOR_DMA0     .EQU   VECTOR_BASE+$08    ; DMA channel 0 
+VECTOR_DMA1     .EQU   VECTOR_BASE+$0A    ; DMA Channel 1 
+VECTOR_CSIO     .EQU   VECTOR_BASE+$0C    ; Clocked serial I/O 
+VECTOR_ASCI0    .EQU   VECTOR_BASE+$0E    ; Async channel 0 
+VECTOR_ASCI1    .EQU   VECTOR_BASE+$10    ; Async channel 1 
+VECTOR_INCAP    .EQU   VECTOR_BASE+$12    ; input capture 
+VECTOR_OUTCMP   .EQU   VECTOR_BASE+$14    ; output compare 
+VECTOR_TIMOV    .EQU   VECTOR_BASE+$16    ; timer overflow 
+
 ;==================================================================================
 ;
 ; Some bit definitions used with the Z-180 on-chip peripherals:
 ;
 
-; ASCI Control Reg A
+; ASCI Control Reg A (CNTLAn)
 
 SER_MPE         .EQU   $80    ; Multi Processor Enable
 SER_RE          .EQU   $40    ; Receive Enable
@@ -112,7 +133,8 @@ SER_8N2         .EQU   $05    ; 8 Bits No Parity 2 Stop Bits
 SER_8P1         .EQU   $06    ; 8 Bits    Parity 1 Stop Bit
 SER_8P2         .EQU   $07    ; 8 Bits    Parity 2 Stop Bits
 
-; ASCI Control Reg B
+; ASCI Control Reg B (CNTLBn)
+                              ; BAUD Rate = PHI / PS / SS / DR
 
 SER_MPBT        .EQU   $80    ; Multi Processor Bit Transmit
 SER_MP          .EQU   $40    ; Multi Processor
@@ -120,7 +142,6 @@ SER_PS          .EQU   $20    ; Prescale PHI by 10 (PS 0) or 30 (PS 1)
 SER_PEO         .EQU   $10    ; Parity Even or Odd
 SER_DR          .EQU   $08    ; Divide SS by 16 (DR 0) or 64 (DR 1)
 
-                              ; Baud Rate Selection
 SER_SS_DIV_1    .EQU   $00    ; Divide PS by  1
 SER_SS_DIV_2    .EQU   $01    ; Divide PS by  2
 SER_SS_DIV_4    .EQU   $02    ; Divide PS by  4
@@ -130,9 +151,7 @@ SER_SS_DIV_32   .EQU   $05    ; Divide PS by 32
 SER_SS_DIV_64   .EQU   $06    ; Divide PS by 64
 SER_SS_EXT      .EQU   $07    ; External Clock Source <= PHI / 40
 
-                              ; BAUD Rate = PHI / PS / SS / DR
-
-; ASCI Status Reg
+; ASCI Status Reg (STATn)
 
 SER_RDRF        .EQU   $80    ; Receive Data Register Full
 SER_OVRN        .EQU   $40    ; Overrun (Received Byte)
@@ -165,26 +184,11 @@ CCR_LNAD        .EQU   $01    ; Low Noise Address and Data Signals (30% Drive)
 RCR_REFE        .EQU   $80    ; DRAM Refresh Enable (0 Disabled)
 RCR_REFW        .EQU   $40    ; DRAM Refresh 2 or 3 Wait states (0 2 Wait States)
 
-; Operation Mode Control Reg
+; Operation Mode Control Reg (OMCR)
 
 OMCR_M1E        .EQU   $80    ; M1 Enable (0 Disabled)
 OMCR_M1TE       .EQU   $40    ; M1 Temporary Enable
 OMCR_IOC        .EQU   $20    ; IO Control (1 64180 Mode)
-
-; Interrupt vectors (offsets) for Z180/HD64180 internal interrupts
-
-INT1_VECTOR     .EQU   $00    ; external /INT1 
-INT2_VECTOR     .EQU   $02    ; external /INT2 
-PRT0_VECTOR     .EQU   $04    ; PRT channel 0 
-PRT1_VECTOR     .EQU   $06    ; PRT channel 1 
-DMA0_VECTOR     .EQU   $08    ; DMA channel 0 
-DMA1_VECTOR     .EQU   $0A    ; DMA Channel 1 
-CSIO_VECTOR     .EQU   $0C    ; Clocked serial I/O 
-ASCI0_VECTOR    .EQU   $0E    ; Async channel 0 
-ASCI1_VECTOR    .EQU   $10    ; Async channel 1 
-INCAP_VECTOR    .EQU   $12    ; input capture 
-OUTCMP_VECTOR   .EQU   $14    ; output compare 
-TIMOV_VECTOR    .EQU   $16    ; timer overflow 
 
 ;==================================================================================
 ;
@@ -247,22 +251,27 @@ RST10:           JP      RXA
 RST18:           JP      CKINCHAR
 
 ;------------------------------------------------------------------------------
-; INTERRUPT VECTOR ASCI Channel 0 [ IL = $01 for Vectors at $20 - $36 ]
+; INTERRUPT VECTOR ASCI Channel 1 [ Vector at $30 ]
 
-                .ORG     0020H+ASCI1_VECTOR
+                .ORG     VECTOR_ASCI1
                 JP       serialInt
 
 ;------------------------------------------------------------------------------
 ; RST 38 - INTERRUPT VECTOR INT0 [ with IM 1 ] - UNUSED
 
                 .ORG     0038H
-RST38:          DI             ;Disable interrupts
-                JP       INIT  ;Initialize Hardware and go
-                
+RST38:          RETI           ; just return
+
+;------------------------------------------------------------------------------
+; NMI - INTERRUPT VECTOR NMI - UNUSED
+
+                .ORG     0066H
+NMI:            RETN           ; just return
+  
 ;------------------------------------------------------------------------------
 ; ASCI Code
 
-                .ORG     0040H                              
+                .ORG     0080H                              
 serialInt:
 
         push af
@@ -429,19 +438,25 @@ PRINT:         LD        A,(HL)          ; Get character
                RET
 ;------------------------------------------------------------------------------
 INIT:
-               XOR       A               ; $00
+                                         ; set interrupt vector base
+               LD        A,VECTOR_BASE   ; IL = $20 [001xxxxx] for Vectors at $20 - $36
+               OUT0      (IL),A          ; output to the Interrupt Vector Low reg
+                                        
+               IM        1               ; interrupt mode 1 for INT0 (unused)
+                     
+               XOR       A               ; Zero Accumulator
 
                                          ; Disable external interrupts  
                OUT0      (ITC),A         ; until Int Vector Table initialized
-
+               
                                          ; Disable PRT downcounting,
                OUT0      (TCR),A         ; until Int Vector Table initialized
+               
+                                         ; Clear Refresh Control Reg (RCR)
+               OUT0      (RCR),A         ; DRAM Refresh Enable (0 Disabled)
 
                                          ; Clear I/O Control Reg (ICR)
                OUT0      (ICR),A         ; Standard I/O Mapping (0 Enabled)
-
-                                         ; Clear Refresh Control Reg (RCR)
-               OUT0      (RCR),A         ; DRAM Refresh Enable (0 Disabled)
 
                                          ; Set Operation Mode Control Reg (OMCR)
                LD        A,OMCR_M1E      ; Enable M1, but disable 64180 I/O RD Mode
@@ -452,10 +467,10 @@ INIT:
                LD        A,CMR_X2        ; Set Hi-Speed flag
                OUT0	     (CMR),A         ; CPU Clock Multiplier Reg (CMR)
 
-                                         ; Bypass PHI = internal clock / 2
-                                         ; if using ZS8180 or Z80182 at High-Speed
-;              LD	     A,CCR_XTAL_X2   ; Set Hi-Speed flag: PHI = internal clock
-;              OUT0      (CCR),A         ; CPU Control Reg (CCR)
+  ;                                      ; Bypass PHI = internal clock / 2
+  ;                                      ; if using ZS8180 or Z80182 at High-Speed
+  ;            LD	     A,CCR_XTAL_X2   ; Set Hi-Speed flag: PHI = internal clock
+  ;            OUT0      (CCR),A         ; CPU Control Reg (CCR)
                
                EX        (SP),IY         ; (settle)
                EX        (SP),IY         ; (settle)               
@@ -469,10 +484,10 @@ INIT:
                OUT0      (CBAR),A        ; for RAM
 
                                          ; Physical Addresses
-               LD        A,80H           ; Set Common 1 Area $80000 -> 80H
+               LD        A,78H           ; Set Common 1 Area - Physical $80000 -> 78H
                OUT0      (CBR),A
                
-               LD        A,40H           ; Set Bank Area $40000 -> 40H
+               LD        A,3CH           ; Set Bank Area - Physical $40000 -> 3CH
                OUT0      (BBR),A
 
                LD        HL,TEMPSTACK    ; Temp stack
@@ -507,17 +522,27 @@ INIT:
                                          ; PS 0, SS_DIV_1 0, DR 0           
                XOR        A              ; BAUD = 115200
                OUT0      (CNTLB1),A      ; output to the ASCI0 control B reg
-               
-                                         ; set interrupt vector for ASCI Channel 1
-               LD        A,$20           ; IL = $20 [001xxxxx] for Vectors at $20 - $36
-               OUT0      (IL),A          ; output to the Interrupt Vector Low reg               
-               
+                              
                LD        A,SER_RIE       ; receive interrupt enabled
                OUT0      (STAT1),A       ; output to the ASCI1 status reg
-                                 
-               IM        1               ; interrupt mode 1 for INT0 (unused)
-               EI                        ; enable interrupts
 
+               EI                        ; enable interrupts
+               
+;===============================================================
+;              BEGIN OF TEST SECTION
+
+TEST:
+               LD        A,SER_TDRE      ; prepare Tx test
+               TSTIO     STAT1           ; test whether we can transmit on ASCI1
+               JR        Z, TEST         ; if not, then loop
+
+               LD        A,$55           ; load an 'U'
+               OUT0      (TDR1),A        ; Tx it!
+               JP        TEST            ; do it forever
+               
+;              END OF TEST SECTION                 
+;===============================================================
+           
                LD        HL,SIGNON1      ; Sign-on message
                CALL      PRINT           ; Output string
                LD        A,(basicStarted); Check the BASIC STARTED flag
@@ -537,7 +562,7 @@ CORW:
                RST       08H
 COLDSTART:     LD        A,'Y'           ; Set the BASIC STARTED flag
                LD        (basicStarted),A
-               JP        $01C0           ; <<<< Start BASIC COLD
+               JP        $0200           ; <<<< Start BASIC COLD
 CHECKWARM:
                CP        'W'
                JR        NZ, CORW
@@ -546,7 +571,7 @@ CHECKWARM:
                RST       08H
                LD        A,$0A
                RST       08H
-               JP        $01C3           ; <<<< Start BASIC WARM
+               JP        $0203           ; <<<< Start BASIC WARM
 
 SIGNON1:       .BYTE     "YAZ180 - feilipu",CR,LF,0
 SIGNON2:       .BYTE     CR,LF
