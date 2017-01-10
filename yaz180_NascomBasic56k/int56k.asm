@@ -227,8 +227,8 @@ basicStarted    .EQU     serTxBufUsed+1
 ;------------------------------------------------------------------------------
 ; Reset
 
-RST00:          DI             ;Disable interrupts
-                JP       INIT  ;Initialize Hardware and go
+RST00:          DI             ; Disable interrupts
+                JP       INIT  ; Initialize Hardware and go
 
 ;------------------------------------------------------------------------------
 ; TX a character over RS232 
@@ -437,11 +437,11 @@ PRINT:         LD        A,(HL)          ; Get character
 ;------------------------------------------------------------------------------
 INIT:
                                          ; Set I/O Control Reg (ICR)
-               LD        A,IO_BASE       ; ICR = $00 [xx000000] for I/O Registers at $00 - $3F
+               LD        A,IO_BASE       ; ICR = $00 [xx00 0000] for I/O Registers at $00 - $3F
                OUT0      (ICR),A         ; Standard I/O Mapping (0 Enabled)
 
                                          ; Set interrupt vector base (IL)
-               LD        A,VECTOR_BASE   ; IL = $20 [001xxxxx] for Vectors at $20 - $36
+               LD        A,VECTOR_BASE   ; IL = $20 [001x xxxx] for Vectors at $20 - $30
                OUT0      (IL),A          ; Output to the Interrupt Vector Low reg
                                         
                IM        1               ; Interrupt mode 1 for INT0 (unused)
@@ -464,7 +464,7 @@ INIT:
 
   ;                                      ; Bypass PHI = internal clock / 2
   ;                                      ; if using ZS8180 or Z80182 at High-Speed
-  ;            LD	       A,CCR_XTAL_X2   ; Set Hi-Speed flag: PHI = internal clock
+  ;            LD        A,CCR_XTAL_X2   ; Set Hi-Speed flag: PHI = internal clock
   ;            OUT0      (CCR),A         ; CPU Control Reg (CCR)
                
                EX        (SP),IY         ; (settle)
