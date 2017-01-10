@@ -108,9 +108,6 @@ VECTOR_DMA1     .EQU   VECTOR_BASE+$0A    ; DMA Channel 1
 VECTOR_CSIO     .EQU   VECTOR_BASE+$0C    ; Clocked serial I/O 
 VECTOR_ASCI0    .EQU   VECTOR_BASE+$0E    ; Async channel 0 
 VECTOR_ASCI1    .EQU   VECTOR_BASE+$10    ; Async channel 1 
-VECTOR_INCAP    .EQU   VECTOR_BASE+$12    ; input capture 
-VECTOR_OUTCMP   .EQU   VECTOR_BASE+$14    ; output compare 
-VECTOR_TIMOV    .EQU   VECTOR_BASE+$16    ; timer overflow 
 
 ;==================================================================================
 ;
