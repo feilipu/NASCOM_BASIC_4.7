@@ -277,8 +277,8 @@ serialInt:
 
 ; start doing the Rx stuff
 
-        in0 a, (STAT1)              ; get the status of the ASCI
-        and SER_RDRF                ; check whether a byte has been received
+        ld a, SER_RDRF              ; prepare Rx test
+        tstio STAT1                 ; test whether we have received on ASCI1
         jr z, tx_check              ; if not, go check for bytes to transmit 
 
         in0 a, (RDR1)               ; Get the received byte from the ASCI 
@@ -313,8 +313,8 @@ tx_check:
         or a                        ; check whether it is zero
         jr z, tie_clear             ; if the count is zero, then disable the Tx Interrupt
 
-        in0 a, (STAT1)              ; get the status of the ASCI
-        and SER_TDRE                ; check whether a byte can be transmitted
+        ld a, SER_TDRE              ; prepare Tx test
+        tstio STAT1                 ; test whether we can transmit on ASCI1
         jr z, tx_end                ; if not, then end
 
         ld hl, (serTxOutPtr)        ; get the pointer to place where we pop the Tx byte
