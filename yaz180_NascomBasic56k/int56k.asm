@@ -20,75 +20,76 @@
 ;
 ; Z180 Register Mnemonics
 ;
+I0_BASE         .EQU    $00     ; Internal I/O Base Address (ICR) <<< SET THIS AS DESIRED >>>
 
-CNTLA0          .EQU    $00     ; ASCI Control Reg A Ch 0
-CNTLA1          .EQU    $01     ; ASCI Control Reg A Ch 1
-CNTLB0          .EQU    $02     ; ASCI Control Reg B Ch 0
-CNTLB1          .EQU    $03     ; ASCI Control Reg B Ch 1
-STAT0           .EQU    $04     ; ASCI Status  Reg   Ch 0
-STAT1           .EQU    $05     ; ASCI Status  Reg   Ch 1
-TDR0            .EQU    $06     ; ASCI Tx Data Reg   Ch 0
-TDR1            .EQU    $07     ; ASCI Tx Data Reg   Ch 1
-RDR0            .EQU    $08     ; ASCI Rx Data Reg   Ch 0
-RDR1            .EQU    $09     ; ASCI Rx Data Reg   Ch 1
+CNTLA0          .EQU    I0_BASE+$00     ; ASCI Control Reg A Ch 0
+CNTLA1          .EQU    I0_BASE+$01     ; ASCI Control Reg A Ch 1
+CNTLB0          .EQU    I0_BASE+$02     ; ASCI Control Reg B Ch 0
+CNTLB1          .EQU    I0_BASE+$03     ; ASCI Control Reg B Ch 1
+STAT0           .EQU    I0_BASE+$04     ; ASCI Status  Reg   Ch 0
+STAT1           .EQU    I0_BASE+$05     ; ASCI Status  Reg   Ch 1
+TDR0            .EQU    I0_BASE+$06     ; ASCI Tx Data Reg   Ch 0
+TDR1            .EQU    I0_BASE+$07     ; ASCI Tx Data Reg   Ch 1
+RDR0            .EQU    I0_BASE+$08     ; ASCI Rx Data Reg   Ch 0
+RDR1            .EQU    I0_BASE+$09     ; ASCI Rx Data Reg   Ch 1
 
-ASEXT0          .EQU    $12     ; ASCI Extension Control Reg Ch 0 (Z8S180 & higher Only)
-ASEXT1          .EQU    $13     ; ASCI Extension Control Reg Ch 1 (Z8S180 & higher Only)
+ASEXT0          .EQU    I0_BASE+$12     ; ASCI Extension Control Reg Ch 0 (Z8S180 & higher Only)
+ASEXT1          .EQU    I0_BASE+$13     ; ASCI Extension Control Reg Ch 1 (Z8S180 & higher Only)
 
-ASTC0L          .EQU    $1A     ; ASCI Time Constant Ch 0 Low (Z8S180 & higher Only)
-ASTC0H          .EQU    $1B     ; ASCI Time Constant Ch 0 High (Z8S180 & higher Only)
-ASTC1L          .EQU    $1C     ; ASCI Time Constant Ch 1 Low (Z8S180 & higher Only)
-ASTC1H          .EQU    $1D     ; ASCI Time Constant Ch 1 High (Z8S180 & higher Only)
+ASTC0L          .EQU    I0_BASE+$1A     ; ASCI Time Constant Ch 0 Low (Z8S180 & higher Only)
+ASTC0H          .EQU    I0_BASE+$1B     ; ASCI Time Constant Ch 0 High (Z8S180 & higher Only)
+ASTC1L          .EQU    I0_BASE+$1C     ; ASCI Time Constant Ch 1 Low (Z8S180 & higher Only)
+ASTC1H          .EQU    I0_BASE+$1D     ; ASCI Time Constant Ch 1 High (Z8S180 & higher Only)
 
-CNTR            .EQU    $0A     ; CSI/O Control Reg
-TRDR            .EQU    $0B     ; CSI/O Tx/Rx Data Reg
+CNTR            .EQU    I0_BASE+$0A     ; CSI/O Control Reg
+TRDR            .EQU    I0_BASE+$0B     ; CSI/O Tx/Rx Data Reg
 
-TMDR0L          .EQU    $0C     ; Timer Data Reg Ch 0 Low
-TMDR0H          .EQU    $0D     ; Timer Data Reg Ch 0 High
-RLDR0L          .EQU    $0E     ; Timer Reload Reg Ch 0 Low
-RLDR0H          .EQU    $0F     ; Timer Reload Reg Ch 0 High
-TCR             .EQU    $10     ; Timer Control Reg
+TMDR0L          .EQU    I0_BASE+$0C     ; Timer Data Reg Ch 0 Low
+TMDR0H          .EQU    I0_BASE+$0D     ; Timer Data Reg Ch 0 High
+RLDR0L          .EQU    I0_BASE+$0E     ; Timer Reload Reg Ch 0 Low
+RLDR0H          .EQU    I0_BASE+$0F     ; Timer Reload Reg Ch 0 High
+TCR             .EQU    I0_BASE+$10     ; Timer Control Reg
 
-TMDR1L          .EQU    $14     ; Timer Data Reg Ch 1 Low
-TMDR1H          .EQU    $15     ; Timer Data Reg Ch 1 High
-RLDR1L          .EQU    $16     ; Timer Reload Reg Ch 1 Low
-RLDR1H          .EQU    $17     ; Timer Reload Reg Ch 1 High
+TMDR1L          .EQU    I0_BASE+$14     ; Timer Data Reg Ch 1 Low
+TMDR1H          .EQU    I0_BASE+$15     ; Timer Data Reg Ch 1 High
+RLDR1L          .EQU    I0_BASE+$16     ; Timer Reload Reg Ch 1 Low
+RLDR1H          .EQU    I0_BASE+$17     ; Timer Reload Reg Ch 1 High
 
-FRC             .EQU    $18     ; Free-Running Counter
+FRC             .EQU    I0_BASE+$18     ; Free-Running Counter
 
-CMR             .EQU    $1E     ; CPU Clock Multiplier Reg (Z8S180 & higher Only)
-CCR             .EQU    $1F     ; CPU Control Reg (Z8S180 & higher Only)
+CMR             .EQU    I0_BASE+$1E     ; CPU Clock Multiplier Reg (Z8S180 & higher Only)
+CCR             .EQU    I0_BASE+$1F     ; CPU Control Reg (Z8S180 & higher Only)
 
-SAR0L           .EQU    $20     ; DMA Source Addr Reg Ch0-Low
-SAR0H           .EQU    $21     ; DMA Source Addr Reg Ch0-High
-SAR0B           .EQU    $22     ; DMA Source Addr Reg Ch0-Bank
-DAR0L           .EQU    $23     ; DMA Dest Addr Reg Ch0-Low
-DAR0H           .EQU    $24     ; DMA Dest Addr Reg Ch0-High
-DAR0B           .EQU    $25     ; DMA Dest ADDR REG CH0-Bank
-BCR0L           .EQU    $26     ; DMA Byte Count Reg Ch0-Low
-BCR0H           .EQU    $27     ; DMA Byte Count Reg Ch0-High
-MAR1L           .EQU    $28     ; DMA Memory Addr Reg Ch1-Low
-MAR1H           .EQU    $29     ; DMA Memory Addr Reg Ch1-High
-MAR1B           .EQU    $2A     ; DMA Memory Addr Reg Ch1-Bank
-IAR1L           .EQU    $2B     ; DMA I/O Addr Reg Ch1-Low
-IAR1H           .EQU    $2C     ; DMA I/O Addr Reg Ch2-High
-BCR1L           .EQU    $2E     ; DMA Byte Count Reg Ch1-Low
-BCR1H           .EQU    $2F     ; DMA Byte Count Reg Ch1-High
-DSTAT           .EQU    $30     ; DMA Status Reg
-DMODE           .EQU    $31     ; DMA Mode Reg
-DCNTL           .EQU    $32     ; DMA/Wait Control Reg
+SAR0L           .EQU    I0_BASE+$20     ; DMA Source Addr Reg Ch0-Low
+SAR0H           .EQU    I0_BASE+$21     ; DMA Source Addr Reg Ch0-High
+SAR0B           .EQU    I0_BASE+$22     ; DMA Source Addr Reg Ch0-Bank
+DAR0L           .EQU    I0_BASE+$23     ; DMA Dest Addr Reg Ch0-Low
+DAR0H           .EQU    I0_BASE+$24     ; DMA Dest Addr Reg Ch0-High
+DAR0B           .EQU    I0_BASE+$25     ; DMA Dest ADDR REG CH0-Bank
+BCR0L           .EQU    I0_BASE+$26     ; DMA Byte Count Reg Ch0-Low
+BCR0H           .EQU    I0_BASE+$27     ; DMA Byte Count Reg Ch0-High
+MAR1L           .EQU    I0_BASE+$28     ; DMA Memory Addr Reg Ch1-Low
+MAR1H           .EQU    I0_BASE+$29     ; DMA Memory Addr Reg Ch1-High
+MAR1B           .EQU    I0_BASE+$2A     ; DMA Memory Addr Reg Ch1-Bank
+IAR1L           .EQU    I0_BASE+$2B     ; DMA I/O Addr Reg Ch1-Low
+IAR1H           .EQU    I0_BASE+$2C     ; DMA I/O Addr Reg Ch2-High
+BCR1L           .EQU    I0_BASE+$2E     ; DMA Byte Count Reg Ch1-Low
+BCR1H           .EQU    I0_BASE+$2F     ; DMA Byte Count Reg Ch1-High
+DSTAT           .EQU    I0_BASE+$30     ; DMA Status Reg
+DMODE           .EQU    I0_BASE+$31     ; DMA Mode Reg
+DCNTL           .EQU    I0_BASE+$32     ; DMA/Wait Control Reg
 
-IL              .EQU    $33     ; INT Vector Low Reg
-ITC             .EQU    $34     ; INT/TRAP Control Reg
+IL              .EQU    I0_BASE+$33     ; INT Vector Low Reg
+ITC             .EQU    I0_BASE+$34     ; INT/TRAP Control Reg
 
-RCR             .EQU    $36     ; Refresh Control Reg
+RCR             .EQU    I0_BASE+$36     ; Refresh Control Reg
 
-CBR             .EQU    $38     ; MMU Common Base Reg
-BBR             .EQU    $39     ; MMU Bank Base Reg
-CBAR            .EQU    $3A     ; MMU Common/Bank Area Reg
+CBR             .EQU    I0_BASE+$38     ; MMU Common Base Reg
+BBR             .EQU    I0_BASE+$39     ; MMU Bank Base Reg
+CBAR            .EQU    I0_BASE+$3A     ; MMU Common/Bank Area Reg
 
-OMCR            .EQU    $3E     ; Operation Mode Control Reg
-ICR             .EQU    $3F     ; I/O Control Reg
+OMCR            .EQU    I0_BASE+$3E     ; Operation Mode Control Reg
+ICR             .EQU    I0_BASE+$3F     ; I/O Control Reg
 
 
 ;==================================================================================
@@ -96,7 +97,7 @@ ICR             .EQU    $3F     ; I/O Control Reg
 ; Interrupt vectors (offsets) for Z180/HD64180 internal interrupts
 ;
 
-VECTOR_BASE     .EQU   $20      ; Vector Base address <<< SET THIS AS DESIRED >>>
+VECTOR_BASE     .EQU   $20      ; Vector Base address (IL) <<< SET THIS AS DESIRED >>>
 
 VECTOR_INT1     .EQU   VECTOR_BASE+$00    ; external /INT1 
 VECTOR_INT2     .EQU   VECTOR_BASE+$02    ; external /INT2 
@@ -438,38 +439,35 @@ PRINT:         LD        A,(HL)          ; Get character
                RET
 ;------------------------------------------------------------------------------
 INIT:
-                                         ; set interrupt vector base
+                                         ; Set I/O Control Reg (ICR)
+               LD        A,IO_BASE       ; ICR = $00 [xx000000] for I/O Registers at $00 - $3F
+               OUT0      (ICR),A         ; Standard I/O Mapping (0 Enabled)
+
+                                         ; Set interrupt vector base (IL)
                LD        A,VECTOR_BASE   ; IL = $20 [001xxxxx] for Vectors at $20 - $36
-               OUT0      (IL),A          ; output to the Interrupt Vector Low reg
+               OUT0      (IL),A          ; Output to the Interrupt Vector Low reg
                                         
-               IM        1               ; interrupt mode 1 for INT0 (unused)
+               IM        1               ; Interrupt mode 1 for INT0 (unused)
                      
                XOR       A               ; Zero Accumulator
 
-                                         ; Disable external interrupts  
-               OUT0      (ITC),A         ; until Int Vector Table initialized
-               
-                                         ; Disable PRT downcounting,
-               OUT0      (TCR),A         ; until Int Vector Table initialized
-               
+               OUT0      (ITC),A         ; Disable external interrupts
+               OUT0      (TCR),A         ; Disable PRT downcounting
                                          ; Clear Refresh Control Reg (RCR)
                OUT0      (RCR),A         ; DRAM Refresh Enable (0 Disabled)
 
-                                         ; Clear I/O Control Reg (ICR)
-               OUT0      (ICR),A         ; Standard I/O Mapping (0 Enabled)
-
                                          ; Set Operation Mode Control Reg (OMCR)
-               LD        A,OMCR_M1E      ; Enable M1, but disable 64180 I/O RD Mode
+               LD        A,OMCR_M1E      ; Enable M1, but disable 64180 I/O _RD Mode
                OUT0      (OMCR),A        ; X80 Mode (M1E Enabled, OIC Disabled)
 
-                                         ; Set internal clock = crystal x 2
+                                         ; Set internal clock = crystal x 2 = 36.864MHz
                                          ; if using ZS8180 or Z80182 at High-Speed
                LD        A,CMR_X2        ; Set Hi-Speed flag
                OUT0	     (CMR),A         ; CPU Clock Multiplier Reg (CMR)
 
   ;                                      ; Bypass PHI = internal clock / 2
   ;                                      ; if using ZS8180 or Z80182 at High-Speed
-  ;            LD	     A,CCR_XTAL_X2   ; Set Hi-Speed flag: PHI = internal clock
+  ;            LD	       A,CCR_XTAL_X2   ; Set Hi-Speed flag: PHI = internal clock
   ;            OUT0      (CCR),A         ; CPU Control Reg (CCR)
                
                EX        (SP),IY         ; (settle)
@@ -484,10 +482,10 @@ INIT:
                OUT0      (CBAR),A        ; for RAM
 
                                          ; Physical Addresses
-               LD        A,78H           ; Set Common 1 Area - Physical $80000 -> 78H
+               LD        A,78H           ; Set Common 1 Area Physical $80000 -> 78H
                OUT0      (CBR),A
                
-               LD        A,3CH           ; Set Bank Area - Physical $40000 -> 3CH
+               LD        A,3CH           ; Set Bank Area Physical $40000 -> 3CH
                OUT0      (BBR),A
 
                LD        HL,TEMPSTACK    ; Temp stack
@@ -521,7 +519,7 @@ INIT:
                                          ; BAUD = 115200 = 18432000 / 10 / 1 / 16 
                                          ; PS 0, SS_DIV_1 0, DR 0           
                XOR        A              ; BAUD = 115200
-               OUT0      (CNTLB1),A      ; output to the ASCI0 control B reg
+               OUT0      (CNTLB1),A      ; output to the ASCI1 control B reg
                               
                LD        A,SER_RIE       ; receive interrupt enabled
                OUT0      (STAT1),A       ; output to the ASCI1 status reg
