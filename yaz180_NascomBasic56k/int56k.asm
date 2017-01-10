@@ -269,8 +269,8 @@ RST28:          RETI           ; just return
                 .ORG     0030H
 RST30:          RETI           ; just return
 
-------------------------------------------------------------------------------
- RST 38 - INTERRUPT VECTOR INT0 [ with IM 1 ]
+;------------------------------------------------------------------------------
+; RST 38 - INTERRUPT VECTOR INT0 [ with IM 1 ]
 
                 .ORG     0038H
 RST38:          RETI           ; just return
@@ -284,7 +284,7 @@ NMI:            RETN           ; just return
 
 ;==================================================================================
 ;
-; INTERNAL INTERRUPT VECTOR SECTION 
+; Z180 INTERRUPT VECTOR SECTION 
 ;
 
 ;------------------------------------------------------------------------------
@@ -586,7 +586,7 @@ CORW:
                RST       08H
 COLDSTART:     LD        A,'Y'           ; Set the BASIC STARTED flag
                LD        (basicStarted),A
-               JP        $0220           ; <<<< Start BASIC COLD
+               JP        $0290           ; <<<< Start BASIC COLD
 CHECKWARM:
                CP        'W'
                JR        NZ, CORW
@@ -595,7 +595,7 @@ CHECKWARM:
                RST       08H
                LD        A,$0A
                RST       08H
-               JP        $0223           ; <<<< Start BASIC WARM
+               JP        $0293           ; <<<< Start BASIC WARM
 
 SIGNON1:       .BYTE     "YAZ180 - feilipu",CR,LF,0
 SIGNON2:       .BYTE     CR,LF
