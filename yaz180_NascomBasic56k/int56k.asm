@@ -460,7 +460,7 @@ INIT:
                                          ; Set internal clock = crystal x 2 = 36.864MHz
                                          ; if using ZS8180 or Z80182 at High-Speed
                LD        A,CMR_X2        ; Set Hi-Speed flag
-               OUT0	     (CMR),A         ; CPU Clock Multiplier Reg (CMR)
+               OUT0      (CMR),A         ; CPU Clock Multiplier Reg (CMR)
 
   ;                                      ; Bypass PHI = internal clock / 2
   ;                                      ; if using ZS8180 or Z80182 at High-Speed
