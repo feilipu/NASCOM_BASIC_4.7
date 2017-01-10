@@ -126,10 +126,10 @@ MO      .EQU    24H             ; Missing operand
 HX      .EQU    26H             ; HEX error
 BN      .EQU    28H             ; BIN error
 
-        .ORG    00200H          ; <<<< Modified to allow for Z180 Tx/Rx interrupt code
+        .ORG    00220H          ; <<<< Modified to allow for Z180 Tx/Rx interrupt code
 
-COLD:   JP      STARTB          ; Jump in for cold start (00200H)
-WARM:   JP      WARMST          ; Jump in for warm start (00203H)
+COLD:   JP      STARTB          ; Jump in for cold start (00220H)
+WARM:   JP      WARMST          ; Jump in for warm start (00223H)
 STARTB: 
         LD      IX,0            ; Flag cold start
         JP      CSTART          ; Jump to initialise
