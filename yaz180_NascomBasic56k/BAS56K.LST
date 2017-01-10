@@ -128,8 +128,8 @@
 0128   0000             
 0129   0290                     .ORG    00290H          ; <<<< Modified to allow for Z180 Tx/Rx interrupt code
 0130   0290             
-0131   0290 C3 96 02    COLD:   JP      STARTB          ; Jump in for cold start (00290H)
-0132   0293 C3 34 03    WARM:   JP      WARMST          ; Jump in for warm start (00293H)
+0131   0290 C3 96 02    COLD:   JP      STARTB          ; Jump in for cold start (0290H)
+0132   0293 C3 34 03    WARM:   JP      WARMST          ; Jump in for warm start (0293H)
 0133   0296             STARTB: 
 0134   0296 DD 21 00 00         LD      IX,0            ; Flag cold start
 0135   029A C3 A1 02            JP      CSTART          ; Jump to initialise

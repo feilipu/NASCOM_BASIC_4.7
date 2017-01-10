@@ -228,7 +228,7 @@ basicStarted    .EQU     serTxBufUsed+1
 ;------------------------------------------------------------------------------
 ; RESET - Reset
 
-                .ORG $0000
+                .ORG     $0000
 RST00:          DI             ; Disable interrupts
                 JP       INIT  ; Initialize Hardware and go
 
@@ -236,19 +236,19 @@ RST00:          DI             ; Disable interrupts
 ; RST08 - TX a character over ASCI
 
                 .ORG     0008H
-RST08:          JP      TXA
+RST08:          JP       TX1
 
 ;------------------------------------------------------------------------------
 ; RST10 - RX a character over ASCI Channel [Console], hold here until char ready.
 
-                .ORG 0010H
-RST10:          JP      RXA
+                .ORG     0010H
+RST10:          JP       RX1
 
 ;------------------------------------------------------------------------------
 ; RST18 - Check serial status
 
-                .ORG 0018H
-RST18:          JP      CKINCHAR
+                .ORG     0018H
+RST18:          JP       CKINCHAR
 
                 
 ;------------------------------------------------------------------------------
@@ -291,7 +291,7 @@ NMI:            RETN           ; just return
 ; INTERRUPT VECTOR ASCI Channel 1 [ Vector at $90 ]
 
                 .ORG     VECTOR_ASCI1
-                JP       serialInt
+                JR       serialInt
 
 ;==================================================================================
 ;
@@ -379,7 +379,7 @@ tx_end:
         reti
 
 ;------------------------------------------------------------------------------
-RXA:
+RX1:
 waitForRxChar:
 
         ld a, (serRxBufUsed)        ; get the number of bytes in the Rx buffer
@@ -412,7 +412,7 @@ get_no_rx_wrap:
         ret                         ; char ready in A
 
 ;------------------------------------------------------------------------------
-TXA:
+;TX1:
         push hl                     ; Store HL so we don't clobber it        
         ld l, a                     ; Store Tx character 
 
@@ -437,6 +437,8 @@ put_no_tx_wrap:
         ld hl, serTxBufUsed
         inc (hl)                    ; atomic increment of Tx count
 
+clean_up_tx:
+        
         di                          ; critical section begin
        
         in0 a, (STAT1)              ; get the ASCI status register
@@ -444,9 +446,7 @@ put_no_tx_wrap:
         out0 (STAT1), a             ; set the ASCI status register
         
         ei                          ; critical section end
-        
-clean_up_tx:        
-        
+    
         pop hl                      ; recover HL
 
         ret
@@ -555,14 +555,14 @@ INIT:
 ;===============================================================
 ;              BEGIN OF TEST SECTION
 
-TEST:
+TX1:           PUSH      AF              ; Store character
                LD        A,SER_TDRE      ; prepare Tx test
-               TSTIO     STAT1           ; test whether we can transmit on ASCI1
+TEST:          TSTIO     STAT1           ; test whether we can transmit on ASCI1
                JR        Z, TEST         ; if not, then loop
 
-               LD        A,$55           ; load an 'U'
+               POP       AF              ; Retrieve character
                OUT0      (TDR1),A        ; Tx it!
-               JP        TEST            ; do it forever
+               RET
                
 ;              END OF TEST SECTION                 
 ;===============================================================
@@ -575,7 +575,7 @@ TEST:
                LD        HL,SIGNON2      ; Cold/warm message
                CALL      PRINT           ; Output string
 CORW:
-               CALL      RXA
+               CALL      RX1
                AND       %11011111       ; lower to uppercase
                CP        'C'
                JR        NZ, CHECKWARM

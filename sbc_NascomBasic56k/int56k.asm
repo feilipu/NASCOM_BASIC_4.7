@@ -298,7 +298,7 @@ clean_up_tx:
         out (SER_CTRL_ADDR), a      ; set the ACIA CTRL register
         
         ei                          ; critical section end
-        
+    
         pop hl                      ; recover HL
 
         ret

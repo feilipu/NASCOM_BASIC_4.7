@@ -228,7 +228,7 @@
 0228   0000             ;------------------------------------------------------------------------------
 0229   0000             ; RESET - Reset
 0230   0000             
-0231   0000                             .ORG $0000
+0231   0000                             .ORG     $0000
 0232   0000 F3          RST00:          DI             ; Disable interrupts
 0233   0001 C3 B3 01                    JP       INIT  ; Initialize Hardware and go
 0234   0004             
@@ -236,19 +236,19 @@
 0236   0004             ; RST08 - TX a character over ASCI
 0237   0004             
 0238   0008                             .ORG     0008H
-0239   0008 C3 7B 01    RST08:          JP      TXA
+0239   0008 C3 12 02    RST08:          JP       TX1
 0240   000B             
 0241   000B             ;------------------------------------------------------------------------------
 0242   000B             ; RST10 - RX a character over ASCI Channel [Console], hold here until char ready.
 0243   000B             
-0244   0010                             .ORG 0010H
-0245   0010 C3 5C 01    RST10:          JP      RXA
+0244   0010                             .ORG     0010H
+0245   0010 C3 5C 01    RST10:          JP       RX1
 0246   0013             
 0247   0013             ;------------------------------------------------------------------------------
 0248   0013             ; RST18 - Check serial status
 0249   0013             
-0250   0018                             .ORG 0018H
-0251   0018 C3 A5 01    RST18:          JP      CKINCHAR
+0250   0018                             .ORG     0018H
+0251   0018 C3 A5 01    RST18:          JP       CKINCHAR
 0252   001B             
 0253   001B                             
 0254   001B             ;------------------------------------------------------------------------------
@@ -291,13 +291,13 @@
 0291   0068             ; INTERRUPT VECTOR ASCI Channel 1 [ Vector at $90 ]
 0292   0068             
 0293   0090                             .ORG     VECTOR_ASCI1
-0294   0090 C3 00 01                    JP       serialInt
-0295   0093             
-0296   0093             ;==================================================================================
-0297   0093             ;
-0298   0093             ; CODE SECTION
-0299   0093             ;
-0300   0093             
+0294   0090 18 6E                       JR       serialInt
+0295   0092             
+0296   0092             ;==================================================================================
+0297   0092             ;
+0298   0092             ; CODE SECTION
+0299   0092             ;
+0300   0092             
 0301   0100                             .ORG     0100H                              
 0302   0100             serialInt:
 0303   0100             
@@ -379,7 +379,7 @@
 0379   015A ED 4D               reti
 0380   015C             
 0381   015C             ;------------------------------------------------------------------------------
-0382   015C             RXA:
+0382   015C             RX1:
 0383   015C             waitForRxChar:
 0384   015C             
 0385   015C 3A F5 20            ld a, (serRxBufUsed)        ; get the number of bytes in the Rx buffer
@@ -412,13 +412,13 @@
 0412   017A C9                  ret                         ; char ready in A
 0413   017B             
 0414   017B             ;------------------------------------------------------------------------------
-0415   017B             TXA:
+0415   017B             ;TX1:
 0416   017B E5                  push hl                     ; Store HL so we don't clobber it        
 0417   017C 6F                  ld l, a                     ; Store Tx character 
 0418   017D             
 0419   017D 3A 0B 21            ld a, (serTxBufUsed)        ; Get the number of bytes in the Tx buffer
 0420   0180 FE 10               cp SER_TX_BUFSIZE           ; check whether there is space in the buffer
-0421   0182 30 1F               jr nc, clean_up_tx          ; buffer full, so abandon Tx
+0421   0182 30 15               jr nc, clean_up_tx          ; buffer full, so abandon Tx
 0422   0184                     
 0423   0184 7D                  ld a, l                     ; Retrieve Tx character
 0424   0185 2A 07 21            ld hl, (serTxInPtr)         ; get the pointer to where we poke
@@ -437,16 +437,16 @@
 0437   0195 21 0B 21            ld hl, serTxBufUsed
 0438   0198 34                  inc (hl)                    ; atomic increment of Tx count
 0439   0199             
-0440   0199 F3                  di                          ; critical section begin
-0441   019A                    
-0442   019A ED 38 05            in0 a, (STAT1)              ; get the ASCI status register
-0443   019D F6 01               or SER_TIE                  ; mask in (enable) the Tx Interrupt
-0444   019F ED 39 05            out0 (STAT1), a             ; set the ASCI status register
-0445   01A2                     
-0446   01A2 FB                  ei                          ; critical section end
-0447   01A3                     
-0448   01A3             clean_up_tx:        
-0449   01A3                     
+0440   0199             clean_up_tx:
+0441   0199                     
+0442   0199 F3                  di                          ; critical section begin
+0443   019A                    
+0444   019A ED 38 05            in0 a, (STAT1)              ; get the ASCI status register
+0445   019D F6 01               or SER_TIE                  ; mask in (enable) the Tx Interrupt
+0446   019F ED 39 05            out0 (STAT1), a             ; set the ASCI status register
+0447   01A2                     
+0448   01A2 FB                  ei                          ; critical section end
+0449   01A3                 
 0450   01A3 E1                  pop hl                      ; recover HL
 0451   01A4             
 0452   01A4 C9                  ret
@@ -555,55 +555,55 @@
 0555   0212             ;===============================================================
 0556   0212             ;              BEGIN OF TEST SECTION
 0557   0212             
-0558   0212             TEST:
-0559   0212 3E 02                      LD        A,SER_TDRE      ; prepare Tx test
-0560   0214 ED 74 05                   TSTIO     STAT1           ; test whether we can transmit on ASCI1
-0561   0217 28 F9                      JR        Z, TEST         ; if not, then loop
-0562   0219             
-0563   0219 3E 55                      LD        A,$55           ; load an 'U'
+0558   0212 F5          TX1:           PUSH      AF              ; Store character
+0559   0213 3E 02                      LD        A,SER_TDRE      ; prepare Tx test
+0560   0215 ED 74 05    TEST:          TSTIO     STAT1           ; test whether we can transmit on ASCI1
+0561   0218 28 FB                      JR        Z, TEST         ; if not, then loop
+0562   021A             
+0563   021A F1                         POP       AF              ; Retrieve character
 0564   021B ED 39 07                   OUT0      (TDR1),A        ; Tx it!
-0565   021E C3 12 02                   JP        TEST            ; do it forever
-0566   0221                            
-0567   0221             ;              END OF TEST SECTION                 
-0568   0221             ;===============================================================
-0569   0221                        
-0570   0221 21 5A 02                   LD        HL,SIGNON1      ; Sign-on message
-0571   0224 CD AB 01                   CALL      PRINT           ; Output string
-0572   0227 3A 0C 21                   LD        A,(basicStarted); Check the BASIC STARTED flag
-0573   022A FE 59                      CP        'Y'             ; to see if this is power-up
-0574   022C 20 16                      JR        NZ,COLDSTART    ; If not BASIC started then always do cold start
-0575   022E 21 6D 02                   LD        HL,SIGNON2      ; Cold/warm message
-0576   0231 CD AB 01                   CALL      PRINT           ; Output string
-0577   0234             CORW:
-0578   0234 CD 5C 01                   CALL      RXA
-0579   0237 E6 DF                      AND       %11011111       ; lower to uppercase
-0580   0239 FE 43                      CP        'C'
-0581   023B 20 0F                      JR        NZ, CHECKWARM
-0582   023D CF                         RST       08H
-0583   023E 3E 0D                      LD        A,$0D
-0584   0240 CF                         RST       08H
-0585   0241 3E 0A                      LD        A,$0A
-0586   0243 CF                         RST       08H
-0587   0244 3E 59       COLDSTART:     LD        A,'Y'           ; Set the BASIC STARTED flag
-0588   0246 32 0C 21                   LD        (basicStarted),A
-0589   0249 C3 90 02                   JP        $0290           ; <<<< Start BASIC COLD
-0590   024C             CHECKWARM:
-0591   024C FE 57                      CP        'W'
-0592   024E 20 E4                      JR        NZ, CORW
-0593   0250 CF                         RST       08H
-0594   0251 3E 0D                      LD        A,$0D
-0595   0253 CF                         RST       08H
-0596   0254 3E 0A                      LD        A,$0A
-0597   0256 CF                         RST       08H
-0598   0257 C3 93 02                   JP        $0293           ; <<<< Start BASIC WARM
-0599   025A             
-0600   025A 59415A313830SIGNON1:       .BYTE     "YAZ180 - feilipu",CR,LF,0
-0600   0260 202D206665696C6970750D0A00
-0601   026D 0D 0A       SIGNON2:       .BYTE     CR,LF
-0602   026F 436F6C64206F               .BYTE     "Cold or warm start (C|W) ?",0
-0602   0275 72207761726D2073746172742028437C5729203F00
-0603   028A             
-0604   028A                            .END
+0565   021E C9                         RET
+0566   021F                            
+0567   021F             ;              END OF TEST SECTION                 
+0568   021F             ;===============================================================
+0569   021F                        
+0570   021F 21 58 02                   LD        HL,SIGNON1      ; Sign-on message
+0571   0222 CD AB 01                   CALL      PRINT           ; Output string
+0572   0225 3A 0C 21                   LD        A,(basicStarted); Check the BASIC STARTED flag
+0573   0228 FE 59                      CP        'Y'             ; to see if this is power-up
+0574   022A 20 16                      JR        NZ,COLDSTART    ; If not BASIC started then always do cold start
+0575   022C 21 6B 02                   LD        HL,SIGNON2      ; Cold/warm message
+0576   022F CD AB 01                   CALL      PRINT           ; Output string
+0577   0232             CORW:
+0578   0232 CD 5C 01                   CALL      RX1
+0579   0235 E6 DF                      AND       %11011111       ; lower to uppercase
+0580   0237 FE 43                      CP        'C'
+0581   0239 20 0F                      JR        NZ, CHECKWARM
+0582   023B CF                         RST       08H
+0583   023C 3E 0D                      LD        A,$0D
+0584   023E CF                         RST       08H
+0585   023F 3E 0A                      LD        A,$0A
+0586   0241 CF                         RST       08H
+0587   0242 3E 59       COLDSTART:     LD        A,'Y'           ; Set the BASIC STARTED flag
+0588   0244 32 0C 21                   LD        (basicStarted),A
+0589   0247 C3 90 02                   JP        $0290           ; <<<< Start BASIC COLD
+0590   024A             CHECKWARM:
+0591   024A FE 57                      CP        'W'
+0592   024C 20 E4                      JR        NZ, CORW
+0593   024E CF                         RST       08H
+0594   024F 3E 0D                      LD        A,$0D
+0595   0251 CF                         RST       08H
+0596   0252 3E 0A                      LD        A,$0A
+0597   0254 CF                         RST       08H
+0598   0255 C3 93 02                   JP        $0293           ; <<<< Start BASIC WARM
+0599   0258             
+0600   0258 59415A313830SIGNON1:       .BYTE     "YAZ180 - feilipu",CR,LF,0
+0600   025E 202D206665696C6970750D0A00
+0601   026B 0D 0A       SIGNON2:       .BYTE     CR,LF
+0602   026D 436F6C64206F               .BYTE     "Cold or warm start (C|W) ?",0
+0602   0273 72207761726D2073746172742028437C5729203F00
+0603   0288             
+0604   0288                            .END
 
 
 
@@ -620,7 +620,7 @@ CMR_LN_XTAL   0040      CCR_XTAL_X2   0080      CCR_STANDBY   0040
 CCR_BREXT     0020      CCR_LNPHI     0010      CCR_IDLE      0008      
 CCR_LNIO      0004      CCR_LNCPUCTL  0002      CCR_LNAD      0001      
 CR            000D      CS            000C      CKINCHAR      01A5      
-CORW          0234      COLDSTART     0244      CHECKWARM     024C      
+CORW          0232      COLDSTART     0242      CHECKWARM     024A      
 DAR0L         0023      DAR0H         0024      DAR0B         0025      
 DSTAT         0030      DMODE         0031      DCNTL         0032      
 FRC           0018      IO_BASE       0000      IAR1L         002B      
@@ -634,7 +634,7 @@ RLDR0H        000F      RLDR1L        0016      RLDR1H        0017
 RCR           0036      RCR_REFE      0080      RCR_REFW      0040      
 RST00         0000      RST08         0008      RST10         0010      
 RST18         0018      RST20         0020      RST28         0028      
-RST30         0030      RST38         0038      RXA           015C      
+RST30         0030      RST38         0038      RX1           015C      
 STAT0         0004      STAT1         0005      SAR0L         0020      
 SAR0H         0021      SAR0B         0022      SER_MPE       0080      
 SER_RE        0040      SER_TE        0020      SER_RTS0      0010      
@@ -649,15 +649,15 @@ SER_SS_EXT    0007      SER_RDRF      0080      SER_OVRN      0040
 SER_PE        0020      SER_FE        0010      SER_RIE       0008      
 SER_DCD0      0004      SER_CTS1      0004      SER_TDRE      0002      
 SER_TIE       0001      SER_RX_BUFSIZE 00F0      SER_TX_BUFSIZE 0010      
-SIGNON1       025A      SIGNON2       026D      TDR0          0006      
+SIGNON1       0258      SIGNON2       026B      TDR0          0006      
 TDR1          0007      TRDR          000B      TMDR0L        000C      
 TMDR0H        000D      TCR           0010      TMDR1L        0014      
-TMDR1H        0015      TEMPSTACK     21CB      TXA           017B      
-TEST          0212      VECTOR_BASE   0080      VECTOR_INT1   0080      
+TMDR1H        0015      TEMPSTACK     21CB      TX1           0212      
+TEST          0215      VECTOR_BASE   0080      VECTOR_INT1   0080      
 VECTOR_INT2   0082      VECTOR_PRT0   0084      VECTOR_PRT1   0086      
 VECTOR_DMA0   0088      VECTOR_DMA1   008A      VECTOR_CSIO   008C      
 VECTOR_ASCI0  008E      VECTOR_ASCI1  0090      basicStarted  210C      
-clean_up_tx   01A3      get_no_rx_wrap 0171      no_rx_wrap    0122      
+clean_up_tx   0199      get_no_rx_wrap 0171      no_rx_wrap    0122      
 no_tx_wrap    0146      put_no_tx_wrap 0192      serRxBuf      2000      
 serRxInPtr    20F1      serRxOutPtr   20F3      serRxBufUsed  20F5      
 serTxBuf      20F6      serTxInPtr    2107      serTxOutPtr   2109      
