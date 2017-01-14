@@ -105,7 +105,7 @@ VECTOR_DMA0     .EQU   VECTOR_BASE+$08    ; DMA channel 0
 VECTOR_DMA1     .EQU   VECTOR_BASE+$0A    ; DMA Channel 1 
 VECTOR_CSIO     .EQU   VECTOR_BASE+$0C    ; Clocked serial I/O 
 VECTOR_ASCI0    .EQU   VECTOR_BASE+$0E    ; Async channel 0 
-VECTOR_ASCI1    .EQU   VECTOR_BASE+$10    ; Async channel 1
+VECTOR_ASCI0    .EQU   VECTOR_BASE+$10    ; Async channel 1 
 
 ;==================================================================================
 ;
@@ -319,7 +319,7 @@ ASCI0_INTERRUPT:
         in0 a, (STAT0)              ; load the ASCI0 status register
         tst SER_RDRF                ; test whether we have received on ASCI0
         jr z, TX0_CHECK             ; if not, go check for bytes to transmit
-
+        
 RX0_GET:
 
         in0 l, (RDR0)               ; move Rx byte to l from the ASCI0
@@ -337,7 +337,7 @@ RX0_GET:
         cp (serRxBuf + SER_RX_BUFSIZE) & $FF
         jr nz, NO_RX0_WRAP
         ld hl, serRxBuf             ; we wrapped, so go back to start of buffer
-
+    	
 NO_RX0_WRAP:
 
         ld (serRxInPtr), hl         ; write where the next byte should be poked
@@ -378,7 +378,7 @@ NO_TX0_WRAP:
         ld hl, serTxBufUsed
         dec (hl)                    ; atomically decrement current Tx count
         jr nz, TX0_END              ; if we've more Tx bytes to send, we're done for now
-
+        
 TIE0_CLEAR:
 
         in0 a, (STAT0)              ; get the ASCI0 status register

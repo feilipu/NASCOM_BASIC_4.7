@@ -105,7 +105,7 @@ VECTOR_DMA0     .EQU   VECTOR_BASE+$08    ; DMA channel 0
 VECTOR_DMA1     .EQU   VECTOR_BASE+$0A    ; DMA Channel 1 
 VECTOR_CSIO     .EQU   VECTOR_BASE+$0C    ; Clocked serial I/O 
 VECTOR_ASCI0    .EQU   VECTOR_BASE+$0E    ; Async channel 0 
-VECTOR_ASCI1    .EQU   VECTOR_BASE+$10    ; Async channel 1
+VECTOR_ASCI1    .EQU   VECTOR_BASE+$10    ; Async channel 1 
 
 ;==================================================================================
 ;
@@ -248,19 +248,19 @@ RST00:          DI             ; Disable interrupts
 ; RST08 - TX a character over ASCI
 
                 .ORG     0008H
-RST08:          JP       TX0
+RST08:          JP       TX1
 
 ;------------------------------------------------------------------------------
 ; RST10 - RX a character over ASCI Channel [Console], hold here until char ready.
 
                 .ORG     0010H
-RST10:          JP       RX0
+RST10:          JP       RX1
 
 ;------------------------------------------------------------------------------
 ; RST18 - Check serial status
 
                 .ORG     0018H
-RST18:          JP       RX0_CHK
+RST18:          JP       RX1_CHK
              
 ;------------------------------------------------------------------------------
 ; RST 20
@@ -299,10 +299,10 @@ NMI:            RETN           ; just return
 ;
 
 ;------------------------------------------------------------------------------
-; INTERRUPT VECTOR ASCI Channel 0 [ Vector at $8E ]
+; INTERRUPT VECTOR ASCI Channel 1 [ Vector at $90 ]
 
-                .ORG     VECTOR_ASCI0
-                JP       ASCI0_INTERRUPT
+                .ORG     VECTOR_ASCI1
+                JP       ASCI1_INTERRUPT
 
 ;==================================================================================
 ;
@@ -310,23 +310,23 @@ NMI:            RETN           ; just return
 ;
 
                 .ORG     0100H                              
-ASCI0_INTERRUPT:
+ASCI1_INTERRUPT:
 
         push af
         push hl
                                     ; start doing the Rx stuff
 
-        in0 a, (STAT0)              ; load the ASCI0 status register
-        tst SER_RDRF                ; test whether we have received on ASCI0
-        jr z, TX0_CHECK             ; if not, go check for bytes to transmit
+        in0 a, (STAT1)              ; load the ASCI1 status register
+        tst SER_RDRF                ; test whether we have received on ASCI1
+        jr z, TX1_CHECK             ; if not, go check for bytes to transmit
+        
+RX1_GET:
 
-RX0_GET:
-
-        in0 l, (RDR0)               ; move Rx byte to l from the ASCI0
+        in0 l, (RDR1)               ; move Rx byte to l from the ASCI1
 
         ld a, (serRxBufUsed)        ; get the number of bytes in the Rx buffer      
         cp SER_RX_BUFSIZE           ; check whether there is space in the buffer
-        jr nc, TX0_CHECK            ; buffer full, check if we can send something
+        jr nc, TX1_CHECK            ; buffer full, check if we can send something
 
         ld a, l                     ; get Rx byte from l
         ld hl, (serRxInPtr)         ; get the pointer to where we poke
@@ -335,10 +335,10 @@ RX0_GET:
         inc hl                      ; move the Rx pointer along
         ld a, l	                    ; move low byte of the Rx pointer
         cp (serRxBuf + SER_RX_BUFSIZE) & $FF
-        jr nz, NO_RX0_WRAP
+        jr nz, NO_RX1_WRAP
         ld hl, serRxBuf             ; we wrapped, so go back to start of buffer
-
-NO_RX0_WRAP:
+    	
+NO_RX1_WRAP:
 
         ld (serRxInPtr), hl         ; write where the next byte should be poked
 
@@ -346,46 +346,46 @@ NO_RX0_WRAP:
         inc (hl)                    ; atomically increment Rx buffer count
         
                                     ; Z8S180 has 4 byte Rx H/W FIFO
-        in0 a, (STAT0)              ; load the ASCI0 status register
-        tst SER_RDRF                ; test whether we have received on ASCI0
-        jr nz, RX0_GET              ; if still more bytes in H/W FIFO, get them
+        in0 a, (STAT1)              ; load the ASCI1 status register
+        tst SER_RDRF                ; test whether we have received on ASCI1
+        jr nz, RX1_GET              ; if still more bytes in H/W FIFO, get them
 
                                     ; now start doing the Tx stuff
-TX0_CHECK:
+TX1_CHECK:
 
         ld a, (serTxBufUsed)        ; get the number of bytes in the Tx buffer
         or a                        ; check whether it is zero
-        jr z, TIE0_CLEAR            ; if the count is zero, then disable the Tx Interrupt
+        jr z, TIE1_CLEAR            ; if the count is zero, then disable the Tx Interrupt
 
-        in0 a, (STAT0)              ; load the ASCI0 status register
-        tst SER_TDRE                ; test whether we can transmit on ASCI0
-        jr z, TX0_END               ; if not, then end
+        in0 a, (STAT1)              ; load the ASCI1 status register
+        tst SER_TDRE                ; test whether we can transmit on ASCI1
+        jr z, TX1_END               ; if not, then end
 
         ld hl, (serTxOutPtr)        ; get the pointer to place where we pop the Tx byte
         ld a, (hl)                  ; get the Tx byte
-        out0 (TDR0), a              ; output the Tx byte to the ASCI0
+        out0 (TDR1), a              ; output the Tx byte to the ASCI1
 
         inc hl                      ; move the Tx pointer along
         ld a, l                     ; get the low byte of the Tx pointer
         cp (serTxBuf + SER_TX_BUFSIZE) & $FF
-        jr nz, NO_TX0_WRAP
+        jr nz, NO_TX1_WRAP
         ld hl, serTxBuf             ; we wrapped, so go back to start of buffer
 
-NO_TX0_WRAP:
+NO_TX1_WRAP:
 
         ld (serTxOutPtr), hl        ; write where the next byte should be popped
 
         ld hl, serTxBufUsed
         dec (hl)                    ; atomically decrement current Tx count
-        jr nz, TX0_END              ; if we've more Tx bytes to send, we're done for now
+        jr nz, TX1_END              ; if we've more Tx bytes to send, we're done for now
+        
+TIE1_CLEAR:
 
-TIE0_CLEAR:
-
-        in0 a, (STAT0)              ; get the ASCI0 status register
+        in0 a, (STAT1)              ; get the ASCI1 status register
         and ~SER_TIE                ; mask out (disable) the Tx Interrupt
-        out0 (STAT0), a             ; set the ASCI0 status register
+        out0 (STAT1), a             ; set the ASCI1 status register
 
-TX0_END:
+TX1_END:
 
         pop hl
         pop af
@@ -395,13 +395,13 @@ TX0_END:
 
 ;------------------------------------------------------------------------------
 
-RX0:
-WAIT_FOR_RX0_BYTE:
+RX1:
+WAIT_FOR_RX1_BYTE:
 
         ld a, (serRxBufUsed)        ; get the number of bytes in the Rx buffer
 
         or a                        ; see if there are zero bytes available
-        jr z, WAIT_FOR_RX0_BYTE     ; wait, if there are no bytes available
+        jr z, WAIT_FOR_RX1_BYTE     ; wait, if there are no bytes available
         
         push hl                     ; Store HL so we don't clobber it
 
@@ -412,10 +412,10 @@ WAIT_FOR_RX0_BYTE:
         inc hl                      ; move the Rx pointer along
         ld a, l                     ; get the low byte of the Rx pointer
         cp (serRxBuf + SER_RX_BUFSIZE) & $FF
-        jr nz, RX0_NO_WRAP
+        jr nz, RX1_NO_WRAP
         ld hl, serRxBuf             ; we wrapped, so go back to start of buffer
 
-RX0_NO_WRAP:
+RX1_NO_WRAP:
 
         ld (serRxOutPtr), hl        ; write where the next byte should be popped
 
@@ -428,13 +428,13 @@ RX0_NO_WRAP:
         ret                         ; char ready in A
 
 ;------------------------------------------------------------------------------
-TX0:
+TX1:
         push hl                     ; store HL so we don't clobber it        
         ld l, a                     ; store Tx character 
 
         ld a, (serTxBufUsed)        ; get the number of bytes in the Tx buffer
         cp SER_TX_BUFSIZE           ; check whether there is space in the buffer
-        jr nc, CLEAN_UP_TX0         ; buffer full, so abandon Tx
+        jr nc, CLEAN_UP_TX1         ; buffer full, so abandon Tx
 
         ld a, l                     ; retrieve Tx character
         ld hl, (serTxInPtr)         ; get the pointer to where we poke
@@ -443,38 +443,38 @@ TX0:
 
         ld a, l                     ; move low byte of the Tx pointer
         cp (serTxBuf + SER_TX_BUFSIZE) & $FF
-        jr nz, TX0_NO_WRAP
+        jr nz, TX1_NO_WRAP
         ld hl, serTxBuf             ; we wrapped, so go back to start of buffer
 
-TX0_NO_WRAP:
+TX1_NO_WRAP:
 
         ld (serTxInPtr), hl         ; write where the next byte should be poked
 
         ld hl, serTxBufUsed
         inc (hl)                    ; atomic increment of Tx count
 
-        in0 a, (STAT0)              ; load the ASCI0 status register
-        tst SER_TIE                 ; test whether ASCI0 interrupt is set        
-        jp nz, CLEAN_UP_TX0         ; if so then just clean up        
+        in0 a, (STAT1)              ; load the ASCI1 status register
+        tst SER_TIE                 ; test whether ASCI1 interrupt is set        
+        jp nz, CLEAN_UP_TX1         ; if so then just clean up        
 
         di                          ; critical section begin
-        in0 a, (STAT0)              ; so get the ASCI status register   
+        in0 a, (STAT1)              ; so get the ASCI status register   
         or SER_TIE                  ; mask in (enable) the Tx Interrupt
-        out0 (STAT0), a             ; set the ASCI status register
+        out0 (STAT1), a             ; set the ASCI status register
         ei                          ; critical section end
 
-CLEAN_UP_TX0:
+CLEAN_UP_TX1:
 
         pop hl                      ; recover HL
 
                                     ; setting TIE doesn't generate an interrupt       
-        in0 a, (STAT0)              ; load the ASCI0 status register
-        tst SER_TDRE                ; test whether we can transmit on ASCI0  
-        jp nz, ASCI0_INTERRUPT      ; if so manually Tx the first character
+        in0 a, (STAT1)              ; load the ASCI1 status register
+        tst SER_TDRE                ; test whether we can transmit on ASCI1  
+        jp nz, ASCI1_INTERRUPT      ; if so manually Tx the first character
         ret
 
 ;------------------------------------------------------------------------------
-RX0_CHK:       LD        A,(serRxBufUsed)
+RX1_CHK:       LD        A,(serRxBufUsed)
                CP        $0
                RET
 
@@ -562,17 +562,17 @@ INIT:
                                          ; transmit interrupt disabled
                                          
                LD        A,SER_RE|SER_TE|SER_8N1
-               OUT0      (CNTLA0),A      ; output to the ASCI0 control A reg
+               OUT0      (CNTLA1),A      ; output to the ASCI1 control A reg
 
                                          ; PHI / PS / SS / DR = BAUD Rate
                                          ; PHI = 18.432MHz
                                          ; BAUD = 115200 = 18432000 / 10 / 1 / 16 
                                          ; PS 0, SS_DIV_1 0, DR 0           
                XOR        A              ; BAUD = 115200
-               OUT0      (CNTLB0),A      ; output to the ASCI0 control B reg
+               OUT0      (CNTLB1),A      ; output to the ASCI1 control B reg
                               
                LD        A,SER_RIE       ; receive interrupt enabled
-               OUT0      (STAT0),A       ; output to the ASCI0 status reg
+               OUT0      (STAT1),A       ; output to the ASCI1 status reg
 
                EI                        ; enable interrupts
 
@@ -586,7 +586,7 @@ START:
                CALL      PRINT           ; Output string
 
 CORW:
-               CALL      RX0
+               CALL      RX1
                AND       %11011111       ; lower to uppercase
                CP        'C'
                JR        NZ, CHECKWARM
