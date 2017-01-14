@@ -394,7 +394,6 @@ TX0_END:
         ret
 
 ;------------------------------------------------------------------------------
-
 RX0:
 WAIT_FOR_RX0_BYTE:
 
@@ -584,7 +583,6 @@ START:
                JR        NZ,COLDSTART    ; If not BASIC started then always do cold start
                LD        HL,SIGNON2      ; Cold/warm message
                CALL      PRINT           ; Output string
-
 CORW:
                CALL      RX0
                AND       %11011111       ; lower to uppercase

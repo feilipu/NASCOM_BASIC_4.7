@@ -135,10 +135,7 @@ serialInt:
 
         ld a, (serRxBufUsed)        ; Get the number of bytes in the Rx buffer
         cp SER_RX_BUFSIZE           ; check whether there is space in the buffer
-        jr c, poke_rx               ; not full, so go poke Rx byte onto the buffer
-        jr tx_check                 ; check if we can send something
-
-poke_rx:
+        jr nc, tx_check             ; buffer full, check if we can send something
 
         ld a, l                     ; get Rx byte from l
         ld hl, (serRxInPtr)         ; get the pointer to where we poke
@@ -149,7 +146,7 @@ poke_rx:
         cp (serRxBuf + SER_RX_BUFSIZE) & $FF
         jr nz, no_rx_wrap
         ld hl, serRxBuf             ; we wrapped, so go back to start of buffer
-    	
+
 no_rx_wrap:
 
         ld (serRxInPtr), hl         ; write where the next byte should be poked
@@ -272,11 +269,8 @@ TXA:
         ld a, (serTxBufUsed)        ; Get the number of bytes in the Tx buffer
         cp SER_TX_BUFSIZE           ; check whether there is space in the buffer
         jr nc, clean_up_tx          ; buffer full, so abandon Tx
-        
-        ld a, l                     ; Retrieve Tx character
-        
-put_poke_tx:
 
+        ld a, l                     ; Retrieve Tx character
         ld hl, (serTxInPtr)         ; get the pointer to where we poke
         ld (hl), a                  ; write the Tx byte to the serTxInPtr   
         inc hl                      ; move the Tx pointer along
@@ -302,30 +296,35 @@ clean_up_tx:
         or SER_TEI_RTS0             ; set RTS low. if the TEI was not set, it will work again
         ld (serControl), a          ; write the ACIA control echo byte back
         out (SER_CTRL_ADDR), a      ; set the ACIA CTRL register
-        
+
         ei                          ; critical section end
-        
+
         pop hl                      ; recover HL
 
+                                    ; setting TEI doesn't generate an interrupt  
+        in a, (SER_STATUS_ADDR)     ; get the status of the ACIA
+        and SER_TDRE                ; check whether a byte can be transmitted
+        jp nz, serialInt            ; if so manually Tx the first character
         ret
 
 ;------------------------------------------------------------------------------
-CKINCHAR:       LD       A,(serRxBufUsed)
-                CP       $0
-                RET
+CKINCHAR:      LD        A,(serRxBufUsed)
+               CP        $0
+               RET
 
-PRINT:          LD       A,(HL)          ; Get character
-                OR       A               ; Is it $00 ?
-                RET      Z               ; Then RETurn on terminator
-                RST      08H             ; Print it
-                INC      HL              ; Next Character
-                JR       PRINT           ; Continue until $00
-                RET
+PRINT:         LD        A,(HL)          ; Get character
+               OR        A               ; Is it $00 ?
+               RET       Z               ; Then RETurn on terminator
+               RST       08H             ; Print it
+               INC       HL              ; Next Character
+               JP        PRINT           ; Continue until $00
+               RET
+
 ;------------------------------------------------------------------------------
 INIT:
                LD        HL,TEMPSTACK    ; Temp stack
                LD        SP,HL           ; Set up a temporary stack
-               
+
                LD        HL,serRxBuf     ; Initialise Rx Buffer
                LD        (serRxInPtr),HL
                LD        (serRxOutPtr),HL
@@ -333,22 +332,22 @@ INIT:
                LD        HL,serTxBuf     ; Initialise Tx Buffer
                LD        (serTxInPtr),HL
                LD        (serTxOutPtr),HL              
-               
+
                XOR       A               ; 0 the accumulator
                LD        (serRxBufUsed),A
                LD        (serTxBufUsed),A
                
-               ld        a, SER_RESET    ; Master Reset the ACIA
-               out       (SER_CTRL_ADDR),A
+               LD        A, SER_RESET    ; Master Reset the ACIA
+               OUT       (SER_CTRL_ADDR),A
 
-               ld        a, SER_REI|SER_TDI_RTS0|SER_8N1|SER_CLK_DIV_64
+               LD        A, SER_REI|SER_TDI_RTS0|SER_8N1|SER_CLK_DIV_64
                                          ; load the default ACIA configuration
                                          ; 8n1 at 115200 baud
                                          ; receive interrupt enabled
                                          ; transmit interrupt disabled
                                     
-               ld        (serControl),A     ; write the ACIA control byte echo
-               out       (SER_CTRL_ADDR),A  ; output to the ACIA control byte
+               LD        (serControl),A     ; write the ACIA control byte echo
+               OUT       (SER_CTRL_ADDR),A  ; output to the ACIA control byte
                
                IM        1               ; interrupt mode 1
                EI
@@ -382,7 +381,6 @@ CHECKWARM:
                LD        A,$0A
                RST       08H
                JP        $01C3           ; <<<< Start BASIC WARM
-              
 
 SIGNON1:       .BYTE     "SBC Grant Searle",CR,LF
                .BYTE     "ACIA feilipu",CR,LF,0

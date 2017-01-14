@@ -146,7 +146,7 @@ serialInt:
         cp (serRxBuf + SER_RX_BUFSIZE) & $FF
         jr nz, no_rx_wrap
         ld hl, serRxBuf             ; we wrapped, so go back to start of buffer
-    	
+
 no_rx_wrap:
 
         ld (serRxInPtr), hl         ; write where the next byte should be poked
@@ -269,7 +269,7 @@ TXA:
         ld a, (serTxBufUsed)        ; Get the number of bytes in the Tx buffer
         cp SER_TX_BUFSIZE           ; check whether there is space in the buffer
         jr nc, clean_up_tx          ; buffer full, so abandon Tx
-        
+
         ld a, l                     ; Retrieve Tx character
         ld hl, (serTxInPtr)         ; get the pointer to where we poke
         ld (hl), a                  ; write the Tx byte to the serTxInPtr   
@@ -296,30 +296,35 @@ clean_up_tx:
         or SER_TEI_RTS0             ; set RTS low. if the TEI was not set, it will work again
         ld (serControl), a          ; write the ACIA control echo byte back
         out (SER_CTRL_ADDR), a      ; set the ACIA CTRL register
-        
+
         ei                          ; critical section end
-    
+
         pop hl                      ; recover HL
 
+                                    ; setting TEI doesn't generate an interrupt  
+        in a, (SER_STATUS_ADDR)     ; get the status of the ACIA
+        and SER_TDRE                ; check whether a byte can be transmitted
+        jp nz, serialInt            ; if so manually Tx the first character
         ret
 
 ;------------------------------------------------------------------------------
-CKINCHAR:       LD       A,(serRxBufUsed)
-                CP       $0
-                RET
+CKINCHAR:      LD        A,(serRxBufUsed)
+               CP        $0
+               RET
 
-PRINT:          LD       A,(HL)          ; Get character
-                OR       A               ; Is it $00 ?
-                RET      Z               ; Then RETurn on terminator
-                RST      08H             ; Print it
-                INC      HL              ; Next Character
-                JR       PRINT           ; Continue until $00
-                RET
+PRINT:         LD        A,(HL)          ; Get character
+               OR        A               ; Is it $00 ?
+               RET       Z               ; Then RETurn on terminator
+               RST       08H             ; Print it
+               INC       HL              ; Next Character
+               JP        PRINT           ; Continue until $00
+               RET
+
 ;------------------------------------------------------------------------------
 INIT:
                LD        HL,TEMPSTACK    ; Temp stack
                LD        SP,HL           ; Set up a temporary stack
-               
+
                LD        HL,serRxBuf     ; Initialise Rx Buffer
                LD        (serRxInPtr),HL
                LD        (serRxOutPtr),HL
@@ -327,7 +332,7 @@ INIT:
                LD        HL,serTxBuf     ; Initialise Tx Buffer
                LD        (serTxInPtr),HL
                LD        (serTxOutPtr),HL              
-               
+
                XOR       A               ; 0 the accumulator
                LD        (serRxBufUsed),A
                LD        (serTxBufUsed),A
@@ -376,7 +381,6 @@ CHECKWARM:
                LD        A,$0A
                RST       08H
                JP        $01C3           ; <<<< Start BASIC WARM
-              
 
 SIGNON1:       .BYTE     "SBC Grant Searle",CR,LF
                .BYTE     "ACIA feilipu",CR,LF,0
