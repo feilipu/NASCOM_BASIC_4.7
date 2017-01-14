@@ -205,12 +205,8 @@ RAMSTOP_CA1     .EQU     $FFFF ; Top of Common 1 RAM
 RAMSTART        .EQU     RAMSTART_CA0
 RAMSTOP         .EQU     RAMSTOP_CA1
 
-                               ; end of ASCI stuff is $210D
-                               ; set BASIC Work space WRKSPC $2120
-
-TEMPSTACK       .EQU     $21CB ; Top of BASIC line input buffer (CURPOS WRKSPC+0ABH)
-                               ; so it is "free ram" when BASIC resets
-                           
+TEMPSTACK       .EQU     RAMSTOP_CA0+1 ; FOR TESTING
+                          
 CR              .EQU     0DH
 LF              .EQU     0AH
 CS              .EQU     0CH   ; Clear screen
@@ -428,6 +424,26 @@ RX1_NO_WRAP:
         ret                         ; char ready in A
 
 ;------------------------------------------------------------------------------
+;===============================================================
+;              BEGIN OF TEST TX SECTION
+;
+;
+;TX1:
+;        push af                     ; store character
+;
+;TX1_OUT:
+;        in0 a, (STAT1)              ; load the ASCI1 status register
+;        tst SER_TDRE                ; test whether we can transmit on ASCI1     
+;        jr z,TX1_OUT                ; Loop until flag signals ready
+;
+;        pop af                      ; Retrieve character
+;        out0 (TDR1),a               ; Tx it!
+;        ret 
+;
+;               
+;              END OF TEST TX SECTION                 
+;===============================================================
+
 TX1:
         push hl                     ; store HL so we don't clobber it        
         ld l, a                     ; store Tx character 
@@ -575,41 +591,141 @@ INIT:
                OUT0      (STAT1),A       ; output to the ASCI1 status reg
 
                EI                        ; enable interrupts
-
-START:                                     
+                                              
                LD        HL,SIGNON1      ; Sign-on message
-               CALL      PRINT           ; Output string              
-               LD        A,(basicStarted); Check the BASIC STARTED flag
-               CP        'Y'             ; to see if this is power-up
-               JR        NZ,COLDSTART    ; If not BASIC started then always do cold start
-               LD        HL,SIGNON2      ; Cold/warm message
                CALL      PRINT           ; Output string
+               
+               LD        HL,ECHOTXT      ; Activity message
+               CALL      PRINT           ; Output string
+               
+ECHO:
+               CALL      RX1             ; get any byte in Rx buffer
+               CALL      TX1             ; transmit it
+               JP        ECHO            ; repeat infinitely
+               RET
 
-CORW:
-               CALL      RX1
-               AND       %11011111       ; lower to uppercase
-               CP        'C'
-               JR        NZ, CHECKWARM
-               RST       08H
-               LD        A,$0D
-               RST       08H
-               LD        A,$0A
-               RST       08H
-COLDSTART:     LD        A,'Y'           ; Set the BASIC STARTED flag
-               LD        (basicStarted),A
-               JP        $0300           ; <<<< Start BASIC COLD
-CHECKWARM:
-               CP        'W'
-               JR        NZ, CORW
-               RST       08H
-               LD        A,$0D
-               RST       08H
-               LD        A,$0A
-               RST       08H
-               JP        $0303           ; <<<< Start BASIC WARM
+;START:                            
+;               LD       HL,TESTRAM       ; Activity message
+;               CALL     PRINT            ; Output string
+;               
+;               LD       HL,RAMSTART_BANK ; Start at BANK RAM
+;               LD       DE,RAMSTOP_CA1-RAMSTART_BANK ; Number of bytes
+;               CALL     RAMTST
+;                     
+;               JP       NC,START         ; No error so test again
+;               
+;               CALL     TX1              ; Print the Value
+;               LD       A,' '
+;               CALL     TX1
+;               LD       A,H
+;               CALL     TX1              ; Print High Byte of Address
+;               LD       A,L
+;               CALL     TX1              ; Print Low Byte of Address
+;               LD       A,CR
+;               CALL     TX1
+;               LD       A,LF
+;               CALL     TX1
+;               
+;               JP       START
+               
+;------------------------------------------------------------------------------
+RAMTST:
+
+; Entry:  Register pair HL = Base address of test area
+        ; Register pair DE = Size of area in bytes
+        
+; Exit:   If there are no errors then
+        ; Carry flag = 0
+        ; test area contains 0 in all bytes
+        ; else
+        ; Carry flag = 1
+        ; Register pair HL = Address of error
+        ; Register A = Expected value
+        
+; Registers used: AF,BC,DE.HL
+
+                                        ; EXIT WITH NO ERRORS IF AREA SIZE IS 0
+                LD      A,D             ; TEST AREA SIZE
+                OR      E
+                RET     Z               ; EXIT WITH NO ERRORS IF SIZE IS ZERO
+                LD      B,D             ; BC = AREA SIZE
+                LD      C,E
+
+                                        ; FILL MEMORY WITH 0 AND TEST
+                SUB     A
+                CALL    FILCMP
+                RET     C               ; EXIT IF ERROR FOUND
+
+                                        ; FILL MEMORY WITH FF HEX (ALL 1'S) AND TEST
+                LD      A,0FFH
+                CALL    FILCMP
+                RET     C               ; EXIT IF ERROR FOUND
+
+                                        ; FILL MEMORY WITH AA HEX (ALTERNATING 1 & 0)
+                LD      A,0AAH
+                CALL    FILCMP
+                RET     C               ; EXIT IF ERROR FOUND
+
+                                        ; FILL MEMORY WITH 55 HEX (ALTERNATING O & 1)
+                LD      A,055H
+                CALL    FILCMP
+                RET     C               ; EXIT IF ERROR FOUND
+                
+                OR      A               ; NO ERRORS (NOTE OR A CLEARS CARRY)
+                RET                     ; EXIT
+
+;------------------------------------------------------------------------------
+FILCMP:
+                PUSH    HL              ; SAVE BASE ADDRESS
+                PUSH    BC              ; SAVE SIZE OF AREA
+                LD      E,A             ; SAVE TEST VALUE
+                LD      (HL),A          ; STORE TEST VALUE IN FIRST BYTE
+                DEC     BC              ; REMAINING AREA = SIZE - 1
+                LD      A,B             ; CHECK IF ANYTHING IN REMAINING AREA
+                OR      C
+                LD      A,E             ; RESTORE TEST VALUE
+                JR      Z,COMPARE       ; BRANCH IF AREA WAS ONLY 1 BYTE
+                
+                                        ; FILL REST OF AREA USING BLOCK MOVE
+                                        ; EACH ITERATION MOVES TEST VALUE TO
+                                        ; NEXT HIGHER ADDRESS
+                LD      D,H             ; DESTINATION IS ALWAYS SOURCE + 1
+                LD      E,L
+                INC     DE
+                LDIR                    ;FILL MEMORY
+
+
+COMPARE:                                ; NOW THAT MEMORY HAS BEEN FILLED, TEST TO SEE IF
+                                        ; EACH BYTE CAN BE READ BACK CORRECTLY
+                POP     BC              ; RESTORE SIZE OF AREA
+                POP     HL              ; RESTORE BASE ADDRESS
+                PUSH    HL              ; SAVE BASE ADDRESS
+                PUSH    BC              ; SAVE SIZE OF VALUE
+
+CMPLP:                                  ; COMPARE MEMORY AND TEST VALUE
+                CPI
+                JP      NZ,CMPER        ; JUMP IF NOT EQUAL
+                JP      PE,CMPLP        ; CONTINUE THROUGH ENTIRE AREA
+                                        ; NOTE CPI CLEARS P/V FLAG IF IT
+                                        ; DECREMENTS BC TO 0
+                                        
+                                        ; NO ERRORS FOUND, SO CLEAR CARRY
+                POP     BC              ; BC = SIZE OF AREA
+                POP     HL              ; HL = BASE ADDRESS
+                OR      A               ; CLEAR CARRY, INDICATING NO ERRORS
+                RET
+
+CMPER:                                  ; ERROR EXIT, SET CARRY
+                                        ; HL = ADDRESS OF ERROR
+                                        ; A = TEST VALUE
+                POP     BC              ; BC = BASE ADDRESS
+                POP     DE              ; DE = SIZE OF AREA
+                SCF                     ; SET CARRY, INDICATING AN ERROR
+                RET
+                     
+;------------------------------------------------------------------------------
 
 SIGNON1:       .BYTE     "YAZ180 - feilipu",CR,LF,0
-SIGNON2:       .BYTE     CR,LF
-               .BYTE     "Cold or warm start (C|W) ?",0
-                
+TESTRAM:       .BYTE     "Testing RAM BANK & CA1",CR,LF,0
+ECHOTXT:       .BYTE     "Testing ASCI Echo",CR,LF,0
                .END
