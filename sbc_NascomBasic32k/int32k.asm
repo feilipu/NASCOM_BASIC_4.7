@@ -94,8 +94,8 @@ CS              .EQU     0CH   ; Clear screen
 ;------------------------------------------------------------------------------
 ; Reset
 
-RST00:          DI             ;Disable interrupts
-                JP       INIT  ;Initialize Hardware and go
+RST00:           DI            ;Disable interrupts
+                 JP      INIT  ;Initialize Hardware and go
 
 ;------------------------------------------------------------------------------
 ; TX a character over RS232 
@@ -128,14 +128,14 @@ serialInt:
 
         in a, (SER_STATUS_ADDR)     ; get the status of the ACIA
         and SER_RDRF                ; check whether a byte has been received
-        jr z, tx_check              ; if not, go check for bytes to transmit 
+        jr z, im1_tx_check          ; if not, go check for bytes to transmit 
 
         in a, (SER_DATA_ADDR)       ; Get the received byte from the ACIA 
         ld l, a                     ; Move Rx byte to l
 
         ld a, (serRxBufUsed)        ; Get the number of bytes in the Rx buffer
         cp SER_RX_BUFSIZE           ; check whether there is space in the buffer
-        jr nc, tx_check             ; buffer full, check if we can send something
+        jr nc, im1_tx_check         ; buffer full, check if we can send something
 
         ld a, l                     ; get Rx byte from l
         ld hl, (serRxInPtr)         ; get the pointer to where we poke
@@ -144,10 +144,10 @@ serialInt:
         inc hl                      ; move the Rx pointer along
         ld a, l	                    ; move low byte of the Rx pointer
         cp (serRxBuf + SER_RX_BUFSIZE) & $FF
-        jr nz, no_rx_wrap
+        jr nz, im1_rx_no_wrap
         ld hl, serRxBuf             ; we wrapped, so go back to start of buffer
 
-no_rx_wrap:
+im1_rx_no_wrap:
 
         ld (serRxInPtr), hl         ; write where the next byte should be poked
 
@@ -156,15 +156,15 @@ no_rx_wrap:
 
 ; now start doing the Tx stuff
 
-tx_check:
+im1_tx_check:
 
         ld a, (serTxBufUsed)        ; get the number of bytes in the Tx buffer
         or a                        ; check whether it is zero
-        jr z, tei_clear             ; if the count is zero, then disable the Tx Interrupt
+        jr z, im1_tei_clear         ; if the count is zero, then disable the Tx Interrupt
 
         in a, (SER_STATUS_ADDR)     ; get the status of the ACIA
         and SER_TDRE                ; check whether a byte can be transmitted
-        jr z, rts_check             ; if not, go check for the receive RTS selection
+        jr z, im1_rts_check         ; if not, go check for the receive RTS selection
 
         ld hl, (serTxOutPtr)        ; get the pointer to place where we pop the Tx byte
         ld a, (hl)                  ; get the Tx byte
@@ -173,18 +173,18 @@ tx_check:
         inc hl                      ; move the Tx pointer along
         ld a, l                     ; get the low byte of the Tx pointer
         cp (serTxBuf + SER_TX_BUFSIZE) & $FF
-        jr nz, no_tx_wrap
+        jr nz, im1_tx_no_wrap
         ld hl, serTxBuf             ; we wrapped, so go back to start of buffer
 
-no_tx_wrap:
+im1_tx_no_wrap:
 
         ld (serTxOutPtr), hl        ; write where the next byte should be popped
 
         ld hl, serTxBufUsed
         dec (hl)                    ; atomically decrement current Tx count
-        jr nz, tx_end               ; if we've more Tx bytes to send, we're done for now
+        jr nz, im1_txa_end          ; if we've more Tx bytes to send, we're done for now
         
-tei_clear:
+im1_tei_clear:
 
         ld a, (serControl)          ; get the ACIA control echo byte
         and ~SER_TEI_MASK           ; mask out the Tx interrupt bits
@@ -192,11 +192,11 @@ tei_clear:
         ld (serControl), a          ; write the ACIA control byte back
         out (SER_CTRL_ADDR), a      ; Set the ACIA CTRL register
 
-rts_check:
+im1_rts_check:
 
         ld a, (serRxBufUsed)        ; get the current Rx count    	
         cp SER_RX_FULLSIZE          ; compare the count with the preferred full size
-        jr c, tx_end                ; leave the RTS low, and end
+        jr c, im1_txa_end           ; leave the RTS low, and end
 
         ld a, (serControl)          ; get the ACIA control echo byte
         and ~SER_TEI_MASK           ; mask out the Tx interrupt bits
@@ -204,7 +204,7 @@ rts_check:
         ld (serControl), a          ; write the ACIA control echo byte back
         out (SER_CTRL_ADDR), a	    ; Set the ACIA CTRL register
 
-tx_end:
+im1_txa_end:
 
         pop hl
         pop af
@@ -214,12 +214,12 @@ tx_end:
 
 ;------------------------------------------------------------------------------
 RXA:
-waitForRxChar:
+rxa_wait_for_byte:
 
         ld a, (serRxBufUsed)        ; get the number of bytes in the Rx buffer
 
         or a                        ; see if there are zero bytes available
-        jr z, waitForRxChar         ; wait, if there are no bytes available
+        jr z, rxa_wait_for_byte     ; wait, if there are no bytes available
         
         push hl                     ; Store HL so we don't clobber it
 
@@ -230,10 +230,10 @@ waitForRxChar:
         inc hl                      ; move the Rx pointer along
         ld a, l                     ; get the low byte of the Rx pointer
         cp (serRxBuf + SER_RX_BUFSIZE) & $FF
-        jr nz, get_no_rx_wrap
+        jr nz, rxa_no_wrap
         ld hl, serRxBuf             ; we wrapped, so go back to start of buffer
 
-get_no_rx_wrap:
+rxa_no_wrap:
 
         ld (serRxOutPtr), hl        ; write where the next byte should be popped
 
@@ -242,7 +242,7 @@ get_no_rx_wrap:
         ld a,(hl)                   ; get the newly decremented Rx count
 
         cp SER_RX_EMPTYSIZE         ; compare the count with the preferred empty size
-        jr nc, get_clean_up_rx      ; if the buffer is too full, don't change the RTS
+        jr nc, rxa_clean_up         ; if the buffer is too full, don't change the RTS
 
         di                          ; critical section begin
         
@@ -254,7 +254,7 @@ get_no_rx_wrap:
         
         ei                          ; critical section end
 
-get_clean_up_rx:
+rxa_clean_up:
 
         pop af                      ; get the Rx byte from stack
         pop hl                      ; recover HL
@@ -264,11 +264,26 @@ get_clean_up_rx:
 ;------------------------------------------------------------------------------
 TXA:
         push hl                     ; Store HL so we don't clobber it        
-        ld l, a                     ; Store Tx character 
+        ld l, a                     ; Store Tx character
+
+        ld a, (serTxBufUsed)        ; Get the number of bytes in the Tx buffer
+        or a                        ; check whether the buffer is empty
+        jr nz, txa_buffer_out       ; buffer not empty, so abandon immediate Tx
+        
+        in a, (SER_STATUS_ADDR)     ; get the status of the ACIA
+        and SER_TDRE                ; check whether a byte can be transmitted
+        jr z, txa_buffer_out        ; if not, so abandon immediate Tx
+        
+        ld a, l                     ; Retrieve Tx character
+        out (SER_DATA_ADDR), a      ; immediately output the Tx byte to the ACIA
+        
+        jr txa_end                  ; and just complete
+        
+txa_buffer_out:
 
         ld a, (serTxBufUsed)        ; Get the number of bytes in the Tx buffer
         cp SER_TX_BUFSIZE           ; check whether there is space in the buffer
-        jr nc, clean_up_tx          ; buffer full, so abandon Tx
+        jr nc, txa_clean_up         ; buffer full, so abandon Tx
 
         ld a, l                     ; Retrieve Tx character
         ld hl, (serTxInPtr)         ; get the pointer to where we poke
@@ -277,17 +292,17 @@ TXA:
 
         ld a, l                     ; move low byte of the Tx pointer
         cp (serTxBuf + SER_TX_BUFSIZE) & $FF
-        jr nz, put_no_tx_wrap
+        jr nz, txa_no_wrap
         ld hl, serTxBuf             ; we wrapped, so go back to start of buffer
 
-put_no_tx_wrap:
+txa_no_wrap:
 
         ld (serTxInPtr), hl         ; write where the next byte should be poked
 
         ld hl, serTxBufUsed
         inc (hl)                    ; atomic increment of Tx count
 
-clean_up_tx:
+txa_clean_up:
         
         di                          ; critical section begin
         
@@ -299,12 +314,9 @@ clean_up_tx:
 
         ei                          ; critical section end
 
-        pop hl                      ; recover HL
+txa_end:
 
-                                    ; setting TEI doesn't generate an interrupt  
-        in a, (SER_STATUS_ADDR)     ; get the status of the ACIA
-        and SER_TDRE                ; check whether a byte can be transmitted
-        jp nz, serialInt            ; if so manually Tx the first character
+        pop hl                      ; recover HL
         ret
 
 ;------------------------------------------------------------------------------
@@ -317,7 +329,7 @@ PRINT:         LD        A,(HL)          ; Get character
                RET       Z               ; Then RETurn on terminator
                RST       08H             ; Print it
                INC       HL              ; Next Character
-               JP        PRINT           ; Continue until $00
+               JR        PRINT           ; Continue until $00
                RET
 
 ;------------------------------------------------------------------------------
@@ -371,7 +383,7 @@ CORW:
                RST       08H
 COLDSTART:     LD        A,'Y'           ; Set the BASIC STARTED flag
                LD        (basicStarted),A
-               JP        $01C0           ; <<<< Start BASIC COLD
+               JP        $01D0           ; <<<< Start BASIC COLD
 CHECKWARM:
                CP        'W'
                JR        NZ, CORW
@@ -380,10 +392,10 @@ CHECKWARM:
                RST       08H
                LD        A,$0A
                RST       08H
-               JP        $01C3           ; <<<< Start BASIC WARM
+               JP        $01D3           ; <<<< Start BASIC WARM
 
-SIGNON1:       .BYTE     "SBC Grant Searle",CR,LF
-               .BYTE     "ACIA feilipu",CR,LF,0
+SIGNON1:       .BYTE     "SBC - Grant Searle",CR,LF
+               .BYTE     "ACIA - feilipu",CR,LF,0
 SIGNON2:       .BYTE     CR,LF
                .BYTE     "Cold or warm start (C|W) ?",0
 

@@ -28,7 +28,7 @@ LF      .EQU    0AH             ; Line feed
 CS      .EQU    0CH             ; Clear screen
 CR      .EQU    0DH             ; Carriage return
 CTRLO   .EQU    0FH             ; Control "O"
-CTRLQ	.EQU	11H		; Control "Q"
+CTRLQ	.EQU	11H             ; Control "Q"
 CTRLR   .EQU    12H             ; Control "R"
 CTRLS   .EQU    13H             ; Control "S"
 CTRLU   .EQU    15H             ; Control "U"
@@ -126,10 +126,10 @@ MO      .EQU    24H             ; Missing operand
 HX      .EQU    26H             ; HEX error
 BN      .EQU    28H             ; BIN error
 
-        .ORG    001C0H          ; <<<< Modified to allow for Tx/Rx buffers
+        .ORG    001D0H          ; <<<< Modified to allow for Z180 Tx/Rx interrupt code
 
-COLD:   JP      STARTB          ; Jump in for cold start (001C0H)
-WARM:   JP      WARMST          ; Jump in for warm start (001C3H)
+COLD:   JP      STARTB          ; Jump in for cold start (001D0H)
+WARM:   JP      WARMST          ; Jump in for warm start (001D3H)
 STARTB: 
         LD      IX,0            ; Flag cold start
         JP      CSTART          ; Jump to initialise

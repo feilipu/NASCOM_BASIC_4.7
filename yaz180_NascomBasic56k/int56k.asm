@@ -432,6 +432,21 @@ TX0:
         ld l, a                     ; store Tx character 
 
         ld a, (serTxBufUsed)        ; get the number of bytes in the Tx buffer
+        or a                        ; check whether the buffer is empty
+        jr nz, TX0_BUFFER_OUT       ; buffer not empty, so abandon immediate Tx
+        
+        in0 a, (STAT0)              ; get the ASCI0 status register
+        tst SER_TDRE                ; test whether we can transmit on ASCI0
+        jr z, TX0_BUFFER_OUT        ; if not, so abandon immediate Tx
+        
+        ld a, l                     ; Retrieve Tx character for immediate Tx
+        out0 (TDR0), a              ; output the Tx byte to the ASCI0
+        
+        jr CLEAN_UP_TX0             ; and just complete
+        
+TX0_BUFFER_OUT:
+
+        ld a, (serTxBufUsed)        ; Get the number of bytes in the Tx buffer
         cp SER_TX_BUFSIZE           ; check whether there is space in the buffer
         jr nc, CLEAN_UP_TX0         ; buffer full, so abandon Tx
 
@@ -465,11 +480,6 @@ TX0_NO_WRAP:
 CLEAN_UP_TX0:
 
         pop hl                      ; recover HL
-
-                                    ; setting TIE doesn't generate an interrupt       
-        in0 a, (STAT0)              ; load the ASCI0 status register
-        tst SER_TDRE                ; test whether we can transmit on ASCI0  
-        jp nz, ASCI0_INTERRUPT      ; if so manually Tx the first character
         ret
 
 ;------------------------------------------------------------------------------

@@ -105,7 +105,7 @@ VECTOR_DMA0     .EQU   VECTOR_BASE+$08    ; DMA channel 0
 VECTOR_DMA1     .EQU   VECTOR_BASE+$0A    ; DMA Channel 1 
 VECTOR_CSIO     .EQU   VECTOR_BASE+$0C    ; Clocked serial I/O 
 VECTOR_ASCI0    .EQU   VECTOR_BASE+$0E    ; Async channel 0 
-VECTOR_ASCI1    .EQU   VECTOR_BASE+$10    ; Async channel 1 
+VECTOR_ASCI1    .EQU   VECTOR_BASE+$10    ; Async channel 1
 
 ;==================================================================================
 ;
@@ -315,7 +315,7 @@ ASCI1_INTERRUPT:
         in0 a, (STAT1)              ; load the ASCI1 status register
         tst SER_RDRF                ; test whether we have received on ASCI1
         jr z, TX1_CHECK             ; if not, go check for bytes to transmit
-        
+
 RX1_GET:
 
         in0 l, (RDR1)               ; move Rx byte to l from the ASCI1
@@ -333,7 +333,7 @@ RX1_GET:
         cp (serRxBuf + SER_RX_BUFSIZE) & $FF
         jr nz, NO_RX1_WRAP
         ld hl, serRxBuf             ; we wrapped, so go back to start of buffer
-    	
+
 NO_RX1_WRAP:
 
         ld (serRxInPtr), hl         ; write where the next byte should be poked
@@ -374,7 +374,7 @@ NO_TX1_WRAP:
         ld hl, serTxBufUsed
         dec (hl)                    ; atomically decrement current Tx count
         jr nz, TX1_END              ; if we've more Tx bytes to send, we're done for now
-        
+
 TIE1_CLEAR:
 
         in0 a, (STAT1)              ; get the ASCI1 status register
@@ -390,7 +390,6 @@ TX1_END:
         ret
 
 ;------------------------------------------------------------------------------
-
 RX1:
 WAIT_FOR_RX1_BYTE:
 
@@ -449,6 +448,21 @@ TX1:
         ld l, a                     ; store Tx character 
 
         ld a, (serTxBufUsed)        ; get the number of bytes in the Tx buffer
+        or a                        ; check whether the buffer is empty
+        jr nz, TX1_BUFFER_OUT       ; buffer not empty, so abandon immediate Tx
+        
+        in0 a, (STAT1)              ; get the ASCI1 status register
+        tst SER_TDRE                ; test whether we can transmit on ASCI1
+        jr z, TX1_BUFFER_OUT        ; if not, so abandon immediate Tx
+        
+        ld a, l                     ; Retrieve Tx character for immediate Tx
+        out0 (TDR1), a              ; output the Tx byte to the ASCI1
+        
+        jr CLEAN_UP_TX1             ; and just complete
+        
+TX1_BUFFER_OUT:
+
+        ld a, (serTxBufUsed)        ; Get the number of bytes in the Tx buffer
         cp SER_TX_BUFSIZE           ; check whether there is space in the buffer
         jr nc, CLEAN_UP_TX1         ; buffer full, so abandon Tx
 
@@ -482,11 +496,6 @@ TX1_NO_WRAP:
 CLEAN_UP_TX1:
 
         pop hl                      ; recover HL
-
-                                    ; setting TIE doesn't generate an interrupt       
-        in0 a, (STAT1)              ; load the ASCI1 status register
-        tst SER_TDRE                ; test whether we can transmit on ASCI1  
-        jp nz, ASCI1_INTERRUPT      ; if so manually Tx the first character
         ret
 
 ;------------------------------------------------------------------------------
