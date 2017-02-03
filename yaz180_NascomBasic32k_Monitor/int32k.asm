@@ -322,22 +322,23 @@ ASCI0_INTERRUPT:
 
 ASCI0_RX_GET:
 
-        in0 l, (RDR0)               ; move Rx byte to l from the ASCI0
+        in0 l, (RDR0)               ; move Rx byte from the ASCI0 to l
 
         ld a, (serRx0BufUsed)       ; get the number of bytes in the Rx buffer      
         cp SER_RX0_BUFSIZE          ; check whether there is space in the buffer
-        jr nc, ASCI0_TX_CHECK       ; buffer full, check if we can send something
+        jr nc, ASCI0_RX_CHECK       ; buffer full, check whether we need to drain H/W FIFO
 
         ld a, l                     ; get Rx byte from l
         ld hl, (serRx0InPtr)        ; get the pointer to where we poke
-        ld (hl), a                  ; write the Rx byte to the serRx0InPtr address
+        ld (hl), a                  ; write the Rx byte to the serRx0InPtr target
 
         inc l                       ; move the Rx pointer low byte along
         ld (serRx0InPtr), hl        ; write where the next byte should be poked
 
         ld hl, serRx0BufUsed
         inc (hl)                    ; atomically increment Rx buffer count
-        
+
+ASCI0_RX_CHECK:
                                     ; Z8S180 has 4 byte Rx H/W FIFO
         in0 a, (STAT0)              ; load the ASCI0 status register
         tst SER_RDRF                ; test whether we have received on ASCI0
