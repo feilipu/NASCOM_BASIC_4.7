@@ -39,10 +39,9 @@ Two versions of NASCOM Basic are provided.
 
 ## 56k Basic
 
-The 56k version utilises the full memory space of the YAZ180, starting at 0x2000.
+The 56k version utilises the full 56k RAM memory space of the YAZ180, starting at 0x2000.
 
-Full input and output ASCI0 buffering with incoming data hardware handshaking.
-Transmit and receive are interrupt driven.
+Full input and output ASCI0 buffering. Transmit and receive are interrupt driven.
 
 Receive buffer is 239 bytes, to allow efficient pasting of Basic into the editor.
 Transmit buffer is 15 bytes, for commonality with rc2014.
@@ -72,8 +71,7 @@ Copyright (C) 1978 by Microsoft
 Ok
 ```
 
-Full input and output ASCI0 buffering with incoming data hardware handshaking.
-Transmit and receive are interrupt driven.
+Full input and output ASCI0 buffering. Transmit and receive are interrupt driven.
 
 Receive buffer is 255 bytes, to allow efficient pasting of Basic into the editor.
 Receive buffer overflows are silently discarded.
