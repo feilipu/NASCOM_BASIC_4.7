@@ -606,6 +606,6 @@ CHECKWARM:
 
 SIGNON1:       .BYTE     "YAZ180 - feilipu",CR,LF,0
 SIGNON2:       .BYTE     CR,LF
-               .BYTE     "Cold or warm start (C|W) ?",0
+               .BYTE     "Cold or Warm start (C|W) ?",0
                 
                .END
