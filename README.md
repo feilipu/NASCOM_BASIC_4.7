@@ -29,4 +29,41 @@ Receive buffer is 239 bytes, to allow efficient pasting of Basic into the editor
 Transmit buffer is 15 bytes, because the rc2014 is too slow to fill the buffer.
 Receive and Transmit buffer overflows are silently discarded.
 
+==================================================================================
+
+# YAZ180
+
+ASCI0 interrupt driven serial I/O to run modified NASCOM Basic 4.7.
+
+Two versions of NASCOM Basic are provided.
+
+## 56k Basic
+
+The 56k version utilises the full memory space of the YAZ180, starting at 0x2000.
+
+Full input and output ASCI0 buffering with incoming data hardware handshaking.
+Transmit and receive are interrupt driven.
+
+Receive buffer is 239 bytes, to allow efficient pasting of Basic into the editor.
+Transmit buffer is 15 bytes, for commonality with rc2014.
+Receive and Transmit buffer overflows are silently discarded.
+
+
+## 32k Basic (Monitor)
+
+The 32k version uses only the CA0 space for buffers and the CA1 space for Basic.
+This leaves the Bank space in 0x4000 to 0x7FFF for assembly or other usage.
+
+The rationale is to allow in-circuit programming, and exit to other system.
+An exit jump to RAM at 0x3000 is provided for this purpose.
+
+Full input and output ASCI0 buffering with incoming data hardware handshaking.
+Transmit and receive are interrupt driven.
+
+Receive buffer is 255 bytes, to allow efficient pasting of Basic into the editor.
+Receive buffer overflows are silently discarded.
+
+Transmit buffer is 255 bytes, because the YAZ180 is 36MHz CPU.
+Transmit function busy waits when buffer is full. No Tx characters lost.
+
 https://feilipu.me/
