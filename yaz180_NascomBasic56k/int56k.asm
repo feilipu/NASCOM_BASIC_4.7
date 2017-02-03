@@ -205,7 +205,7 @@ RAMSTOP_CA1     .EQU     $FFFF ; Top of Common 1 RAM
 RAMSTART        .EQU     RAMSTART_CA0
 RAMSTOP         .EQU     RAMSTOP_CA1
 
-                               ; end of ASCI stuff is $210D
+                               ; end of ASCI stuff is $211B
                                ; set BASIC Work space WRKSPC $2120
 
 TEMPSTACK       .EQU     $21CB ; Top of BASIC line input buffer (CURPOS WRKSPC+0ABH)
@@ -219,18 +219,18 @@ CS              .EQU     0CH   ; Clear screen
 ;
 ; VARIABLES SECTION
 
-SER_RX_BUFSIZE  .EQU     $F0  ; Size of the Rx Buffer, 239 Bytes
-SER_TX_BUFSIZE  .EQU     $10  ; Size of the Tx Buffer, 15 Bytes
+SER_RX0_BUFSIZE .EQU     $FF  ; FIXED Rx buffer size, 256 Bytes, no range checking
+SER_TX0_BUFSIZE .EQU     $10  ; Size of the Tx Buffer, 15 Bytes
      
-serRxBuf        .EQU     RAMSTART_CA0
-serRxInPtr      .EQU     serRxBuf+SER_RX_BUFSIZE+1
-serRxOutPtr     .EQU     serRxInPtr+2
-serRxBufUsed    .EQU     serRxOutPtr+2
-serTxBuf        .EQU     serRxBufUsed+1
-serTxInPtr      .EQU     serTxBuf+SER_TX_BUFSIZE+1
-serTxOutPtr     .EQU     serTxInPtr+2
-serTxBufUsed    .EQU     serTxOutPtr+2
-basicStarted    .EQU     serTxBufUsed+1
+serRx0Buf       .EQU     RAMSTART_CA0        ; must start on 0xNN00 for low byte roll-over
+serTx0Buf       .EQU     serRx0Buf+SER_RX0_BUFSIZE+1
+serRx0InPtr     .EQU     serTx0Buf+SER_TX0_BUFSIZE+1
+serRx0OutPtr    .EQU     serRx0InPtr+2
+serTx0InPtr     .EQU     serRx0OutPtr+2
+serTx0OutPtr    .EQU     serTx0InPtr+2
+serRx0BufUsed   .EQU     serTx0OutPtr+2
+serTx0BufUsed   .EQU     serRx0BufUsed+1
+basicStarted    .EQU     serTx0BufUsed+1
 
 ;==================================================================================
 ;
@@ -318,75 +318,68 @@ ASCI0_INTERRUPT:
 
         in0 a, (STAT0)              ; load the ASCI0 status register
         tst SER_RDRF                ; test whether we have received on ASCI0
-        jr z, TX0_CHECK             ; if not, go check for bytes to transmit
+        jr z, ASCI0_TX_CHECK        ; if not, go check for bytes to transmit
 
-RX0_GET:
+ASCI0_RX_GET:
 
-        in0 l, (RDR0)               ; move Rx byte to l from the ASCI0
+        in0 l, (RDR0)               ; move Rx byte from the ASCI0 to l
 
-        ld a, (serRxBufUsed)        ; get the number of bytes in the Rx buffer      
-        cp SER_RX_BUFSIZE           ; check whether there is space in the buffer
-        jr nc, TX0_CHECK            ; buffer full, check if we can send something
+        ld a, (serRx0BufUsed)       ; get the number of bytes in the Rx buffer      
+        cp SER_RX0_BUFSIZE          ; check whether there is space in the buffer
+        jr nc, ASCI0_RX_CHECK       ; buffer full, check whether we need to drain H/W FIFO
 
         ld a, l                     ; get Rx byte from l
-        ld hl, (serRxInPtr)         ; get the pointer to where we poke
-        ld (hl), a                  ; write the Rx byte to the serRxInPtr address
+        ld hl, (serRx0InPtr)        ; get the pointer to where we poke
+        ld (hl), a                  ; write the Rx byte to the serRx0InPtr target
 
-        inc hl                      ; move the Rx pointer along
-        ld a, l	                    ; move low byte of the Rx pointer
-        cp (serRxBuf + SER_RX_BUFSIZE) & $FF
-        jr nz, NO_RX0_WRAP
-        ld hl, serRxBuf             ; we wrapped, so go back to start of buffer
+        inc l                       ; move the Rx pointer low byte along
+        ld (serRx0InPtr), hl        ; write where the next byte should be poked
 
-NO_RX0_WRAP:
-
-        ld (serRxInPtr), hl         ; write where the next byte should be poked
-
-        ld hl, serRxBufUsed
+        ld hl, serRx0BufUsed
         inc (hl)                    ; atomically increment Rx buffer count
-        
+
+ASCI0_RX_CHECK:
                                     ; Z8S180 has 4 byte Rx H/W FIFO
         in0 a, (STAT0)              ; load the ASCI0 status register
         tst SER_RDRF                ; test whether we have received on ASCI0
-        jr nz, RX0_GET              ; if still more bytes in H/W FIFO, get them
+        jr nz, ASCI0_RX_GET         ; if still more bytes in H/W FIFO, get them
 
-                                    ; now start doing the Tx stuff
-TX0_CHECK:
+ASCI0_TX_CHECK:                     ; now start doing the Tx stuff
 
-        ld a, (serTxBufUsed)        ; get the number of bytes in the Tx buffer
+        ld a, (serTx0BufUsed)       ; get the number of bytes in the Tx buffer
         or a                        ; check whether it is zero
-        jr z, TIE0_CLEAR            ; if the count is zero, then disable the Tx Interrupt
+        jr z, ASCI0_TX_TIE0_CLEAR   ; if the count is zero, then disable the Tx Interrupt
 
         in0 a, (STAT0)              ; load the ASCI0 status register
         tst SER_TDRE                ; test whether we can transmit on ASCI0
-        jr z, TX0_END               ; if not, then end
+        jr z, ASCI0_TX_END          ; if not, then end
 
-        ld hl, (serTxOutPtr)        ; get the pointer to place where we pop the Tx byte
+        ld hl, (serTx0OutPtr)       ; get the pointer to place where we pop the Tx byte
         ld a, (hl)                  ; get the Tx byte
         out0 (TDR0), a              ; output the Tx byte to the ASCI0
 
         inc hl                      ; move the Tx pointer along
         ld a, l                     ; get the low byte of the Tx pointer
-        cp (serTxBuf + SER_TX_BUFSIZE) & $FF
-        jr nz, NO_TX0_WRAP
-        ld hl, serTxBuf             ; we wrapped, so go back to start of buffer
+        cp (serTx0Buf + SER_TX0_BUFSIZE) & $FF
+        jr nz, ASCI0_TX_NO_WRAP
+        ld hl, serTx0Buf            ; we wrapped, so go back to start of buffer
 
-NO_TX0_WRAP:
+ASCI0_TX_NO_WRAP:
 
-        ld (serTxOutPtr), hl        ; write where the next byte should be popped
+        ld (serTx0OutPtr), hl       ; write where the next byte should be popped
 
-        ld hl, serTxBufUsed
+        ld hl, serTx0BufUsed
         dec (hl)                    ; atomically decrement current Tx count
 
-        jr nz, TX0_END              ; if we've more Tx bytes to send, we're done for now
+        jr nz, ASCI0_TX_END         ; if we've more Tx bytes to send, we're done for now
 
-TIE0_CLEAR:
+ASCI0_TX_TIE0_CLEAR:
 
         in0 a, (STAT0)              ; get the ASCI0 status register
         and ~SER_TIE                ; mask out (disable) the Tx Interrupt
         out0 (STAT0), a             ; set the ASCI0 status register
 
-TX0_END:
+ASCI0_TX_END:
 
         pop hl
         pop af
@@ -396,30 +389,23 @@ TX0_END:
 
 ;------------------------------------------------------------------------------
 RX0:
-WAIT_FOR_RX0_BYTE:
+RX0_WAIT_FOR_BYTE:
 
-        ld a, (serRxBufUsed)        ; get the number of bytes in the Rx buffer
+        ld a, (serRx0BufUsed)       ; get the number of bytes in the Rx buffer
 
         or a                        ; see if there are zero bytes available
-        jr z, WAIT_FOR_RX0_BYTE     ; wait, if there are no bytes available
+        jr z, RX0_WAIT_FOR_BYTE     ; wait, if there are no bytes available
         
         push hl                     ; Store HL so we don't clobber it
 
-        ld hl, (serRxOutPtr)        ; get the pointer to place where we pop the Rx byte
+        ld hl, (serRx0OutPtr)       ; get the pointer to place where we pop the Rx byte
         ld a, (hl)                  ; get the Rx byte
         push af                     ; save the Rx byte on stack
 
-        inc hl                      ; move the Rx pointer along
-        ld a, l                     ; get the low byte of the Rx pointer
-        cp (serRxBuf + SER_RX_BUFSIZE) & $FF
-        jr nz, RX0_NO_WRAP
-        ld hl, serRxBuf             ; we wrapped, so go back to start of buffer
+        inc l                       ; move the Rx pointer low byte along
+        ld (serRx0OutPtr), hl       ; write where the next byte should be popped
 
-RX0_NO_WRAP:
-
-        ld (serRxOutPtr), hl        ; write where the next byte should be popped
-
-        ld hl, serRxBufUsed
+        ld hl, serRx0BufUsed
         dec (hl)                    ; atomically decrement Rx count
 
         pop af                      ; get the Rx byte from stack
@@ -432,7 +418,7 @@ TX0:
         push hl                     ; store HL so we don't clobber it        
         ld l, a                     ; store Tx character 
 
-        ld a, (serTxBufUsed)        ; get the number of bytes in the Tx buffer
+        ld a, (serTx0BufUsed)       ; get the number of bytes in the Tx buffer
         or a                        ; check whether the buffer is empty
         jr nz, TX0_BUFFER_OUT       ; buffer not empty, so abandon immediate Tx
         
@@ -443,34 +429,34 @@ TX0:
         ld a, l                     ; Retrieve Tx character for immediate Tx
         out0 (TDR0), a              ; output the Tx byte to the ASCI0
         
-        jr CLEAN_UP_TX0             ; and just complete
+        jr TX0_CLEAN_UP             ; and just complete
         
 TX0_BUFFER_OUT:
 
-        ld a, (serTxBufUsed)        ; Get the number of bytes in the Tx buffer
-        cp SER_TX_BUFSIZE           ; check whether there is space in the buffer
-        jr nc, CLEAN_UP_TX0         ; buffer full, so abandon Tx
+        ld a, (serTx0BufUsed)       ; Get the number of bytes in the Tx buffer
+        cp SER_TX0_BUFSIZE          ; check whether there is space in the buffer
+        jr nc, TX0_BUFFER_OUT       ; buffer full, so wait for free buffer for Tx
 
         ld a, l                     ; retrieve Tx character
-        ld hl, (serTxInPtr)         ; get the pointer to where we poke
-        ld (hl), a                  ; write the Tx byte to the serTxInPtr   
+        ld hl, (serTx0InPtr)        ; get the pointer to where we poke
+        ld (hl), a                  ; write the Tx byte to the serTx0InPtr   
 
         inc hl                      ; move the Tx pointer along
         ld a, l                     ; move low byte of the Tx pointer
-        cp (serTxBuf + SER_TX_BUFSIZE) & $FF
+        cp (serTx0Buf + SER_TX0_BUFSIZE) & $FF
         jr nz, TX0_NO_WRAP
-        ld hl, serTxBuf             ; we wrapped, so go back to start of buffer
+        ld hl, serTx0Buf            ; we wrapped, so go back to start of buffer
 
 TX0_NO_WRAP:
 
-        ld (serTxInPtr), hl         ; write where the next byte should be poked
+        ld (serTx0InPtr), hl        ; write where the next byte should be poked
 
-        ld hl, serTxBufUsed
+        ld hl, serTx0BufUsed
         inc (hl)                    ; atomic increment of Tx count
 
         in0 a, (STAT0)              ; load the ASCI0 status register
         tst SER_TIE                 ; test whether ASCI0 interrupt is set        
-        jp nz, CLEAN_UP_TX0         ; if so then just clean up        
+        jp nz, TX0_CLEAN_UP         ; if so then just clean up        
 
         di                          ; critical section begin
         in0 a, (STAT0)              ; so get the ASCI status register   
@@ -478,16 +464,17 @@ TX0_NO_WRAP:
         out0 (STAT0), a             ; set the ASCI status register
         ei                          ; critical section end
 
-CLEAN_UP_TX0:
+TX0_CLEAN_UP:
 
         pop hl                      ; recover HL
         ret
 
 ;------------------------------------------------------------------------------
-RX0_CHK:       LD        A,(serRxBufUsed)
+RX0_CHK:       LD        A,(serRx0BufUsed)
                CP        $0
                RET
 
+;------------------------------------------------------------------------------
 PRINT:         LD        A,(HL)          ; Get character
                OR        A               ; Is it $00 ?
                RET       Z               ; Then RETurn on terminator
@@ -551,17 +538,17 @@ INIT:
                LD        HL,TEMPSTACK    ; Temp stack
                LD        SP,HL           ; Set up a temporary stack
 
-               LD        HL,serRxBuf     ; Initialise Rx Buffer
-               LD        (serRxInPtr),HL
-               LD        (serRxOutPtr),HL
+               LD        HL,serRx0Buf    ; Initialise Rx Buffer
+               LD        (serRx0InPtr),HL
+               LD        (serRx0OutPtr),HL
 
-               LD        HL,serTxBuf     ; Initialise Tx Buffer
-               LD        (serTxInPtr),HL
-               LD        (serTxOutPtr),HL              
+               LD        HL,serTx0Buf    ; Initialise Tx Buffer
+               LD        (serTx0InPtr),HL
+               LD        (serTx0OutPtr),HL              
 
                XOR       A               ; 0 the accumulator
-               LD        (serRxBufUsed),A
-               LD        (serTxBufUsed),A
+               LD        (serRx0BufUsed),A
+               LD        (serTx0BufUsed),A
 
                                          ; load the default ASCI configuration
                                          ; 
@@ -606,7 +593,7 @@ CORW:
                RST       08H
 COLDSTART:     LD        A,'Y'           ; Set the BASIC STARTED flag
                LD        (basicStarted),A
-               JP        $0300           ; <<<< Start BASIC COLD
+               JP        $0300           ; <<<< Start Basic COLD:
 CHECKWARM:
                CP        'W'
                JR        NZ, CORW
@@ -615,7 +602,7 @@ CHECKWARM:
                RST       08H
                LD        A,$0A
                RST       08H
-               JP        $0303           ; <<<< Start BASIC WARM
+               JP        $0303           ; <<<< Start Basic WARM:
 
 SIGNON1:       .BYTE     "YAZ180 - feilipu",CR,LF,0
 SIGNON2:       .BYTE     CR,LF

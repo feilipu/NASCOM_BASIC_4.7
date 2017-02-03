@@ -43,17 +43,19 @@ The 56k version utilises the full 56k RAM memory space of the YAZ180, starting a
 
 Full input and output ASCI0 buffering. Transmit and receive are interrupt driven.
 
-Receive buffer is 239 bytes, to allow efficient pasting of Basic into the editor.
+Receive buffer is 255 bytes, to allow efficient pasting of Basic into the editor.
+Receive buffer overflows are silently discarded.
+
 Transmit buffer is 15 bytes, for commonality with rc2014.
-Receive and Transmit buffer overflows are silently discarded.
+Transmit function busy waits when buffer is full. No Tx characters lost.
 
 
 ## 32k Basic (Monitor)
 
-The 32k version uses only the CA0 space for buffers and the CA1 space for Basic.
-This leaves the Bank space in 0x4000 to 0x7FFF for assembly or other usage.
+The 32k version uses the CA0 space for buffers and the CA1 space for Basic.
+This leaves the Bank RAM / Flash space in 0x4000 to 0x7FFF available for other usage.
 
-The rationale is to allow in-circuit programming, and exit to another system.
+The rationale is to allow in-circuit programming, and an exit to another system.
 An exit jump to RAM at 0x3000 is provided for this purpose.
 
 Setting the Memory Top to 0xDFFF (for example) leaves 8kB RAM to store a

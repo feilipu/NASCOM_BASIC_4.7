@@ -222,7 +222,7 @@ CS              .EQU     0CH   ; Clear screen
 SER_RX0_BUFSIZE .EQU     $FF   ; FIXED Rx buffer size, 256 Bytes, no range checking
 SER_TX0_BUFSIZE .EQU     $FF   ; FIXED Tx buffer size, 256 Bytes, no range checking
      
-serRx0Buf       .EQU     RAMSTART_CA0
+serRx0Buf       .EQU     RAMSTART_CA0        ; must start on 0xNN00 for low byte roll-over
 serTx0Buf       .EQU     serRx0Buf+SER_RX0_BUFSIZE+1
 serRx0InPtr     .EQU     serTx0Buf+SER_TX0_BUFSIZE+1
 serRx0OutPtr    .EQU     serRx0InPtr+2
