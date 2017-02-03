@@ -54,8 +54,23 @@ Receive and Transmit buffer overflows are silently discarded.
 The 32k version uses only the CA0 space for buffers and the CA1 space for Basic.
 This leaves the Bank space in 0x4000 to 0x7FFF for assembly or other usage.
 
-The rationale is to allow in-circuit programming, and exit to other system.
+The rationale is to allow in-circuit programming, and exit to another system.
 An exit jump to RAM at 0x3000 is provided for this purpose.
+
+Setting the Memory Top to 0xDFFF (for example) leaves 8kB RAM to store a
+hex loader, which can use the Bank space to write RAM or Flash as desired.
+
+```bash
+YAZ180 - feilipu
+
+Cold or warm start, or eXit (C|W|X) ?C
+
+Memory top?  57343 [$DFFF]
+Z80 BASIC Ver 4.7b
+Copyright (C) 1978 by Microsoft
+24257 Bytes free
+Ok
+```
 
 Full input and output ASCI0 buffering with incoming data hardware handshaking.
 Transmit and receive are interrupt driven.
