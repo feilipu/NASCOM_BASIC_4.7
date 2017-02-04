@@ -97,4 +97,4 @@ Receive buffer overflows are silently discarded.
 Transmit buffer is 255 bytes, because the YAZ180 is 36MHz CPU.
 Transmit function busy waits when buffer is full. No Tx characters lost.
 
-https://feilipu.me/
+https://feilipu.me/2016/05/23/another-z80-project/

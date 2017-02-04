@@ -67,7 +67,7 @@ SER_RX_FULLSIZE .EQU     SER_RX_BUFSIZE - $08
                               ; Fullness of the Rx Buffer, when not_RTS is signalled
 SER_RX_EMPTYSIZE .EQU    $08  ; Fullness of the Rx Buffer, when RTS is signalled
 
-SER_TX_BUFSIZE  .EQU     $10  ; Size of the Tx Buffer, 15 Bytes
+SER_TX_BUFSIZE  .EQU     $0F  ; Size of the Tx Buffer, 15 Bytes
 
 serRxBuf        .EQU     $RAM_START ; must start on 0xnn00 for low byte roll-over
 serTxBuf        .EQU     serRxBuf+SER_RX_BUFSIZE+1
@@ -95,10 +95,11 @@ CS              .EQU     0CH   ; Clear screen
 ;
 ; Z80 INTERRUPT VECTOR SECTION 
 ;
-                .ORG 0000H
+
 ;------------------------------------------------------------------------------
 ; RST 00 - Reset
 
+                .ORG     0000H
 RST00:           DI            ;Disable interrupts
                  JP      INIT  ;Initialize Hardware and go
 
@@ -184,14 +185,10 @@ im1_tx_check:                       ; now start doing the Tx stuff
         ld a, (hl)                  ; get the Tx byte
         out (SER_DATA_ADDR), a      ; output the Tx byte to the ACIA
 
-        inc hl                      ; move the Tx pointer along
-        ld a, l                     ; get the low byte of the Tx pointer
-        cp (serTxBuf + SER_TX_BUFSIZE) & $FF
-        jr nz, im1_tx_no_wrap
-        ld hl, serTxBuf             ; we wrapped, so go back to start of buffer
-
-im1_tx_no_wrap:
-
+        inc l                       ; move the Tx pointer low byte along
+        ld a, SER_TX_BUFSIZE        ; load the buffer size, power of 2
+        and l                       ; range check
+        ld l, a                     ; return the low byte
         ld (serTxOutPtr), hl        ; write where the next byte should be popped
 
         ld hl, serTxBufUsed
@@ -296,14 +293,10 @@ txa_buffer_out:
         ld hl, (serTxInPtr)         ; get the pointer to where we poke
         ld (hl), a                  ; write the Tx byte to the serTxInPtr
 
-        inc hl                      ; move the Tx pointer along
-        ld a, l                     ; move low byte of the Tx pointer
-        cp (serTxBuf + SER_TX_BUFSIZE) & $FF
-        jr nz, txa_no_wrap
-        ld hl, serTxBuf             ; we wrapped, so go back to start of buffer
-
-txa_no_wrap:
-
+        inc l                       ; move the Tx pointer low byte along
+        ld a, SER_TX_BUFSIZE        ; load the buffer size, power of 2
+        and l                       ; range check
+        ld l, a                     ; return the low byte
         ld (serTxInPtr), hl         ; write where the next byte should be poked
 
         ld hl, serTxBufUsed

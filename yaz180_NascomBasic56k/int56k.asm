@@ -219,7 +219,7 @@ CS              .EQU     0CH   ; Clear screen
 ; VARIABLES SECTION
 
 SER_RX0_BUFSIZE .EQU     $FF  ; FIXED Rx buffer size, 256 Bytes, no range checking
-SER_TX0_BUFSIZE .EQU     $10  ; Size of the Tx Buffer, 15 Bytes
+SER_TX0_BUFSIZE .EQU     $0F  ; Size of the Tx Buffer, 15 Bytes
      
 serRx0Buf       .EQU     RAMSTART_CA0 ; must start on 0xnn00 for low byte roll-over
 serTx0Buf       .EQU     serRx0Buf+SER_RX0_BUFSIZE+1
@@ -235,10 +235,11 @@ basicStarted    .EQU     serTx0BufUsed+1   ; end of ASCI stuff is $211B
 ;
 ; Z80 INTERRUPT VECTOR SECTION 
 ;
-                .ORG     $0000
+
 ;------------------------------------------------------------------------------
 ; RESET - Reset
 
+                .ORG     0000H
 RST00:          DI             ; Disable interrupts
                 JP       INIT  ; Initialize Hardware and go
 
@@ -356,11 +357,11 @@ ASCI0_TX_CHECK:                     ; now start doing the Tx stuff
         ld a, (hl)                  ; get the Tx byte
         out0 (TDR0), a              ; output the Tx byte to the ASCI0
 
-        inc hl                      ; move the Tx pointer along
-        ld a, l                     ; get the low byte of the Tx pointer
-        cp (serTx0Buf + SER_TX0_BUFSIZE) & $FF
-        jr nz, ASCI0_TX_NO_WRAP
-        ld hl, serTx0Buf            ; we wrapped, so go back to start of buffer
+        inc l                       ; move the Tx pointer low byte along
+        ld a, SER_TX0_BUFSIZE       ; load the buffer size, power of 2
+        and l                       ; range check
+        ld l, a                     ; return the low byte
+        ld (serTx0OutPtr), hl       ; write where the next byte should be popped
 
 ASCI0_TX_NO_WRAP:
 
