@@ -1,3 +1,3 @@
-tasm -80 -x3 -a7 -fff -c -l test.asm test.hex
+tasm -80 -x3 -a7 -fff -c -l d:test.asm d:test.hex
 
 pause

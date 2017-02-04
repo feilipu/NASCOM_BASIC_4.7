@@ -205,12 +205,11 @@ RAMSTOP_CA1     .EQU     $FFFF ; Top of Common 1 RAM
 RAMSTART        .EQU     RAMSTART_CA0
 RAMSTOP         .EQU     RAMSTOP_CA1
 
-                               ; end of ASCI stuff is $211B
                                ; set BASIC Work space WRKSPC $2120
 
 TEMPSTACK       .EQU     $21CB ; Top of BASIC line input buffer (CURPOS WRKSPC+0ABH)
                                ; so it is "free ram" when BASIC resets
-                           
+
 CR              .EQU     0DH
 LF              .EQU     0AH
 CS              .EQU     0CH   ; Clear screen
@@ -222,7 +221,7 @@ CS              .EQU     0CH   ; Clear screen
 SER_RX0_BUFSIZE .EQU     $FF  ; FIXED Rx buffer size, 256 Bytes, no range checking
 SER_TX0_BUFSIZE .EQU     $10  ; Size of the Tx Buffer, 15 Bytes
      
-serRx0Buf       .EQU     RAMSTART_CA0        ; must start on 0xNN00 for low byte roll-over
+serRx0Buf       .EQU     RAMSTART_CA0 ; must start on 0xnn00 for low byte roll-over
 serTx0Buf       .EQU     serRx0Buf+SER_RX0_BUFSIZE+1
 serRx0InPtr     .EQU     serTx0Buf+SER_TX0_BUFSIZE+1
 serRx0OutPtr    .EQU     serRx0InPtr+2
@@ -230,17 +229,16 @@ serTx0InPtr     .EQU     serRx0OutPtr+2
 serTx0OutPtr    .EQU     serTx0InPtr+2
 serRx0BufUsed   .EQU     serTx0OutPtr+2
 serTx0BufUsed   .EQU     serRx0BufUsed+1
-basicStarted    .EQU     serTx0BufUsed+1
+basicStarted    .EQU     serTx0BufUsed+1   ; end of ASCI stuff is $211B
 
 ;==================================================================================
 ;
 ; Z80 INTERRUPT VECTOR SECTION 
 ;
-
+                .ORG     $0000
 ;------------------------------------------------------------------------------
 ; RESET - Reset
 
-                .ORG     $0000
 RST00:          DI             ; Disable interrupts
                 JP       INIT  ; Initialize Hardware and go
 
@@ -267,7 +265,7 @@ RST18:          JP       RX0_CHK
 
                 .ORG     0020H
 RST20:          RET            ; just return
-           
+
 ;------------------------------------------------------------------------------
 ; RST 28
 
@@ -430,7 +428,7 @@ TX0:
         out0 (TDR0), a              ; output the Tx byte to the ASCI0
         
         jr TX0_CLEAN_UP             ; and just complete
-        
+
 TX0_BUFFER_OUT:
 
         ld a, (serTx0BufUsed)       ; Get the number of bytes in the Tx buffer
@@ -480,7 +478,7 @@ PRINT:         LD        A,(HL)          ; Get character
                RET       Z               ; Then RETurn on terminator
                RST       08H             ; Print it
                INC       HL              ; Next Character
-               JP        PRINT           ; Continue until $00
+               JR        PRINT           ; Continue until $00
                RET
 
 ;------------------------------------------------------------------------------
@@ -584,6 +582,8 @@ START:
 CORW:
                CALL      RX0
                AND       %11011111       ; lower to uppercase
+               CP        'X'             ; are we exiting Basic?
+               JP        Z, $F800        ; then jump to RAM at 0xF800
                CP        'C'
                JR        NZ, CHECKWARM
                RST       08H
@@ -606,6 +606,7 @@ CHECKWARM:
 
 SIGNON1:       .BYTE     "YAZ180 - feilipu",CR,LF,0
 SIGNON2:       .BYTE     CR,LF
-               .BYTE     "Cold or Warm start (C|W) ?",0
+               .BYTE     "Cold or Warm start, or eXit "
+               .BYTE     "$F800 (C|W|X) ?" ,0
                 
                .END

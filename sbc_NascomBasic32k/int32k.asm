@@ -62,25 +62,24 @@ SER_IRQ         .EQU   $80    ; IRQ (Either Transmitted or Received Byte)
    
    
   
-SER_RX_BUFSIZE  .EQU     $F0  ; Size of the Rx Buffer, 239 Bytes
+SER_RX_BUFSIZE  .EQU     $FF  ; FIXED Rx buffer size, 256 Bytes, no range checking
 SER_RX_FULLSIZE .EQU     SER_RX_BUFSIZE - $08
                               ; Fullness of the Rx Buffer, when not_RTS is signalled
 SER_RX_EMPTYSIZE .EQU    $08  ; Fullness of the Rx Buffer, when RTS is signalled
 
 SER_TX_BUFSIZE  .EQU     $10  ; Size of the Tx Buffer, 15 Bytes
 
-serControl      .EQU     $8000
-serRxBuf        .EQU     serControl+1
-serRxInPtr      .EQU     serRxBuf+SER_RX_BUFSIZE+1
+serRxBuf        .EQU     $2000 ; must start on 0xnn00 for low byte roll-over
+serTxBuf        .EQU     serRxBuf+SER_RX_BUFSIZE+1
+serRxInPtr      .EQU     serTxBuf+SER_TX_BUFSIZE+1
 serRxOutPtr     .EQU     serRxInPtr+2
-serRxBufUsed    .EQU     serRxOutPtr+2
-serTxBuf        .EQU     serRxBufUsed+1
-serTxInPtr      .EQU     serTxBuf+SER_TX_BUFSIZE+1
+serTxInPtr      .EQU     serRxOutPtr+2
 serTxOutPtr     .EQU     serTxInPtr+2
-serTxBufUsed    .EQU     serTxOutPtr+2
-basicStarted    .EQU     serTxBufUsed+1
+serRxBufUsed    .EQU     serTxOutPtr+2
+serTxBufUsed    .EQU     serRxBufUsed+1
+serControl      .EQU     serTxBufUsed+1
+basicStarted    .EQU     serControl+1   ; end of ACIA stuff is $811C
 
-                               ; end of ACIA stuff is $810D
                                ; set BASIC Work space WRKSPC $8120
 
 TEMPSTACK       .EQU     $81CB ; Top of BASIC line input buffer (CURPOS WRKSPC+0ABH)
@@ -90,41 +89,63 @@ CR              .EQU     0DH
 LF              .EQU     0AH
 CS              .EQU     0CH   ; Clear screen
 
-                .ORG $0000
+
+;==================================================================================
+;
+; Z80 INTERRUPT VECTOR SECTION 
+;
+                .ORG 0000H
 ;------------------------------------------------------------------------------
-; Reset
+; RST 00 - Reset
 
 RST00:           DI            ;Disable interrupts
                  JP      INIT  ;Initialize Hardware and go
 
 ;------------------------------------------------------------------------------
-; TX a character over RS232 
+; RST 08 - Tx a character over RS232 
 
                 .ORG     0008H
 RST08:           JP      TXA
 
 ;------------------------------------------------------------------------------
-; RX a character over RS232 Channel A [Console], hold here until char ready.
+; RST 10 - Rx a character over RS232 Channel A [Console], hold until char ready.
 
                 .ORG 0010H
 RST10:           JP      RXA
 
 ;------------------------------------------------------------------------------
-; Check serial status
+; RST 18 - Check serial Rx status
 
                 .ORG 0018H
 RST18:           JP      CKINCHAR
 
 ;------------------------------------------------------------------------------
-; RST 38 - INTERRUPT VECTOR [ for IM 1 ]
+; RST 20
+
+                .ORG     0020H
+RST20:          RET            ; just return
+
+;------------------------------------------------------------------------------
+; RST 28
+
+                .ORG     0028H
+RST28:          RET            ; just return
+
+;------------------------------------------------------------------------------
+; RST 30
+;
+                .ORG     0030H
+RST30:          RET            ; just return
+
+;------------------------------------------------------------------------------
+; RST 38 - INTERRUPT VECTOR [ ACIA for IM 1 ]
 
                 .ORG     0038H
 RST38:                 
 serialInt:
         push af
         push hl
-
-; start doing the Rx stuff
+                                    ; start doing the Rx stuff
 
         in a, (SER_STATUS_ADDR)     ; get the status of the ACIA
         and SER_RDRF                ; check whether a byte has been received
@@ -141,22 +162,14 @@ serialInt:
         ld hl, (serRxInPtr)         ; get the pointer to where we poke
         ld (hl), a                  ; write the Rx byte to the serRxInPtr address
 
-        inc hl                      ; move the Rx pointer along
-        ld a, l	                    ; move low byte of the Rx pointer
-        cp (serRxBuf + SER_RX_BUFSIZE) & $FF
-        jr nz, im1_rx_no_wrap
-        ld hl, serRxBuf             ; we wrapped, so go back to start of buffer
-
-im1_rx_no_wrap:
-
+        inc l                       ; move the Rx pointer low byte along
         ld (serRxInPtr), hl         ; write where the next byte should be poked
 
         ld hl, serRxBufUsed
         inc (hl)                    ; atomically increment Rx buffer count
 
-; now start doing the Tx stuff
 
-im1_tx_check:
+im1_tx_check:                       ; now start doing the Tx stuff
 
         ld a, (serTxBufUsed)        ; get the number of bytes in the Tx buffer
         or a                        ; check whether it is zero
@@ -227,14 +240,7 @@ rxa_wait_for_byte:
         ld a, (hl)                  ; get the Rx byte
         push af                     ; save the Rx byte on stack
 
-        inc hl                      ; move the Rx pointer along
-        ld a, l                     ; get the low byte of the Rx pointer
-        cp (serRxBuf + SER_RX_BUFSIZE) & $FF
-        jr nz, rxa_no_wrap
-        ld hl, serRxBuf             ; we wrapped, so go back to start of buffer
-
-rxa_no_wrap:
-
+        inc l                       ; move the Rx pointer low byte along
         ld (serRxOutPtr), hl        ; write where the next byte should be popped
 
         ld hl,serRxBufUsed
@@ -278,7 +284,7 @@ TXA:
         out (SER_DATA_ADDR), a      ; immediately output the Tx byte to the ACIA
         
         jr txa_end                  ; and just complete
-        
+
 txa_buffer_out:
 
         ld a, (serTxBufUsed)        ; Get the number of bytes in the Tx buffer
@@ -287,9 +293,9 @@ txa_buffer_out:
 
         ld a, l                     ; Retrieve Tx character
         ld hl, (serTxInPtr)         ; get the pointer to where we poke
-        ld (hl), a                  ; write the Tx byte to the serTxInPtr   
-        inc hl                      ; move the Tx pointer along
+        ld (hl), a                  ; write the Tx byte to the serTxInPtr
 
+        inc hl                      ; move the Tx pointer along
         ld a, l                     ; move low byte of the Tx pointer
         cp (serTxBuf + SER_TX_BUFSIZE) & $FF
         jr nz, txa_no_wrap
@@ -324,6 +330,7 @@ CKINCHAR:      LD        A,(serRxBufUsed)
                CP        $0
                RET
 
+;------------------------------------------------------------------------------
 PRINT:         LD        A,(HL)          ; Get character
                OR        A               ; Is it $00 ?
                RET       Z               ; Then RETurn on terminator
@@ -374,6 +381,8 @@ INIT:
 CORW:
                CALL      RXA
                AND       %11011111       ; lower to uppercase
+               CP        'X'             ; are we exiting Basic?
+               JP        Z, $F800        ; then jump to RAM at 0xF800
                CP        'C'
                JR        NZ, CHECKWARM
                RST       08H
@@ -383,7 +392,7 @@ CORW:
                RST       08H
 COLDSTART:     LD        A,'Y'           ; Set the BASIC STARTED flag
                LD        (basicStarted),A
-               JP        $01D0           ; <<<< Start BASIC COLD
+               JP        $01F0           ; <<<< Start Basic COLD:
 CHECKWARM:
                CP        'W'
                JR        NZ, CORW
@@ -392,11 +401,12 @@ CHECKWARM:
                RST       08H
                LD        A,$0A
                RST       08H
-               JP        $01D3           ; <<<< Start BASIC WARM
+               JP        $01F3           ; <<<< Start Basic WARM:
 
 SIGNON1:       .BYTE     "SBC - Grant Searle",CR,LF
                .BYTE     "ACIA - feilipu",CR,LF,0
 SIGNON2:       .BYTE     CR,LF
-               .BYTE     "Cold or Warm start (C|W) ?",0
-
+               .BYTE     "Cold or Warm start, or eXit "
+               .BYTE     "$F800 (C|W|X) ?" ,0
+                
                .END

@@ -222,7 +222,7 @@ CS              .EQU     0CH   ; Clear screen
 SER_RX0_BUFSIZE .EQU     $FF   ; FIXED Rx buffer size, 256 Bytes, no range checking
 SER_TX0_BUFSIZE .EQU     $FF   ; FIXED Tx buffer size, 256 Bytes, no range checking
      
-serRx0Buf       .EQU     RAMSTART_CA0        ; must start on 0xNN00 for low byte roll-over
+serRx0Buf       .EQU     RAMSTART_CA0 ; must start on 0xnn00 for low byte roll-over
 serTx0Buf       .EQU     serRx0Buf+SER_RX0_BUFSIZE+1
 serRx0InPtr     .EQU     serTx0Buf+SER_TX0_BUFSIZE+1
 serRx0OutPtr    .EQU     serRx0InPtr+2
@@ -236,11 +236,10 @@ basicStarted    .EQU     serTx0BufUsed+1   ; end of ASCI0 stuff is $220A
 ;
 ; Z80 INTERRUPT VECTOR SECTION 
 ;
-
+                .ORG     $0000
 ;------------------------------------------------------------------------------
 ; RESET - Reset
 
-                .ORG     $0000
 RST00:          DI             ; Disable interrupts
                 JP       INIT  ; Initialize Hardware and go
 
@@ -267,7 +266,7 @@ RST18:          JP       RX0_CHK
 
                 .ORG     0020H
 RST20:          RET            ; just return
-           
+
 ;------------------------------------------------------------------------------
 ; RST 28
 
@@ -423,7 +422,7 @@ TX0:
         out0 (TDR0), a              ; output the Tx byte to the ASCI0
         
         jr TX0_CLEAN_UP             ; and just complete
-        
+
 TX0_BUFFER_OUT:
 
         ld a, (serTx0BufUsed)       ; Get the number of bytes in the Tx buffer
@@ -466,7 +465,7 @@ PRINT:         LD        A,(HL)          ; Get character
                RET       Z               ; Then RETurn on terminator
                RST       08H             ; Print it
                INC       HL              ; Next Character
-               JP        PRINT           ; Continue until $00
+               JR        PRINT           ; Continue until $00
                RET
 
 ;------------------------------------------------------------------------------
@@ -595,6 +594,6 @@ CHECKWARM:
 SIGNON1:       .BYTE     "YAZ180 - feilipu",CR,LF,0
 SIGNON2:       .BYTE     CR,LF
                .BYTE     "Cold or Warm start, or eXit "
-               .BYTE     "(C|W|X) ?",0
+               .BYTE     "$3000 (C|W|X) ?" ,0
                 
                .END

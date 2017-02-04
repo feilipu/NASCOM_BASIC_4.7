@@ -1,5 +1,5 @@
-tasm -80 -a7 -fff -c -l bas56k.asm basic.hex
-tasm -80 -a7 -fff -c -l int56k.asm int56k.hex
+tasm -80 -a7 -fff -c -l d:bas56k.asm d:basic.hex
+tasm -80 -a7 -fff -c -l d:int56k.asm d:int56k.hex
 
 
 pause
