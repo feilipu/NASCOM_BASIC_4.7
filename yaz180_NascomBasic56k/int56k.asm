@@ -502,8 +502,8 @@ INIT:
                OUT0      (RCR),A         ; DRAM Refresh Enable (0 Disabled)
 
                                          ; Set Operation Mode Control Reg (OMCR)
-               LD        A,OMCR_M1E      ; Enable M1, but disable 64180 I/O _RD Mode
-               OUT0      (OMCR),A        ; X80 Mode (M1E Enabled, OIC Disabled)
+               LD        A, ~OMCR_IOC    ; Enable (default) M1, disable 64180 I/O _RD Mode
+               OUT0      (OMCR),A        ; X80 Mode (M1E Enabled, IOC Disabled)
 
                                          ; Set internal clock = crystal x 2 = 36.864MHz
                                          ; if using ZS8180 or Z80182 at High-Speed
@@ -583,7 +583,7 @@ CORW:
                CALL      RX0
                AND       %11011111       ; lower to uppercase
                CP        'X'             ; are we exiting Basic?
-               JP        Z, $F800        ; then jump to RAM at 0xF800
+               JP        Z, $F800        ; then jump to CA1 RAM at 0xF800
                CP        'C'
                JR        NZ, CHECKWARM
                RST       08H

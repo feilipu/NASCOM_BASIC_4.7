@@ -1,0 +1,39 @@
+0001   0000             
+0002   0000             IO_BASE         .EQU    $00     ; Internal I/O Base Address (ICR) <<< SET THIS AS DESIRED >>>
+0003   0000             
+0004   0000             ; Operation Mode Control Reg (OMCR)
+0005   0000             OMCR            .EQU    IO_BASE+$3E     ; Operation Mode Control Reg
+0006   0000             
+0007   0000             OMCR_M1E        .EQU   $80    ; M1 Enable (0 Disabled)
+0008   0000             OMCR_M1TE       .EQU   $40    ; M1 Temporary Enable
+0009   0000             OMCR_IOC        .EQU   $20    ; IO Control (1 64180 Mode)
+0010   0000             
+0011   3000                     .org 3000H      ; start in 'X' jump, Basic prompt
+0012   3000             
+0013   3000                                     ; Set Operation Mode Control Reg (OMCR)
+0014   3000 3E 80               LD A,OMCR_M1E   ; Enable M1, but disable 64180 I/O _RD Mode
+0015   3002 ED 39 3E            OUT0 (OMCR),A   ; X80 Mode (M1E Enabled, OIC Disabled)
+0016   3005                     
+0017   3005 01 00 20            ld bc, $2000    ; Break is anything from $2000 to $3FFF
+0018   3008 ED 79               out (c), A      ; output the 0 to Break to Single Step mode
+0019   300A C9                  ret             ; return to where we started
+0020   300B                     
+0021   300B                                     ; mb = &h3000
+0022   300B                                     ; print mb
+0023   300B                                     ; poke mb, &h01
+0024   300B                                     ; poke mb+1, &h00
+0025   300B                                     ; poke mb+2, &h20
+0026   300B                                     ; poke mb+3, &hed
+0027   300B                                     ; poke mb+4, &h79
+0028   300B                                     ; poke mb+5, &hc9
+0029   300B                     
+0030   300B                     .end
+
+
+
+Label        Value      Label        Value      Label        Value
+------------------      ------------------      ------------------
+IO_BASE       0000      OMCR          003E      OMCR_M1E      0080      
+OMCR_M1TE     0040      OMCR_IOC      0020      
+
+tasm: Number of errors = 0
