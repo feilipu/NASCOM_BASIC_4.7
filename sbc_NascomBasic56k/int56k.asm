@@ -59,9 +59,9 @@ SER_FE          .EQU   $10    ; Framing Error (Received Byte)
 SER_OVRN        .EQU   $20    ; Overrun (Received Byte
 SER_PE          .EQU   $40    ; Parity Error (Received Byte)
 SER_IRQ         .EQU   $80    ; IRQ (Either Transmitted or Received Byte)
-   
-   
-  
+
+RAM_START       .EQU   $2000  ; Start of RAM
+
 SER_RX_BUFSIZE  .EQU     $FF  ; FIXED Rx buffer size, 256 Bytes, no range checking
 SER_RX_FULLSIZE .EQU     SER_RX_BUFSIZE - $08
                               ; Fullness of the Rx Buffer, when not_RTS is signalled
@@ -69,7 +69,7 @@ SER_RX_EMPTYSIZE .EQU    $08  ; Fullness of the Rx Buffer, when RTS is signalled
 
 SER_TX_BUFSIZE  .EQU     $10  ; Size of the Tx Buffer, 15 Bytes
 
-serRxBuf        .EQU     $2000 ; must start on 0xnn00 for low byte roll-over
+serRxBuf        .EQU     $RAM_START ; must start on 0xnn00 for low byte roll-over
 serTxBuf        .EQU     serRxBuf+SER_RX_BUFSIZE+1
 serRxInPtr      .EQU     serTxBuf+SER_TX_BUFSIZE+1
 serRxOutPtr     .EQU     serRxInPtr+2
@@ -78,17 +78,18 @@ serTxOutPtr     .EQU     serTxInPtr+2
 serRxBufUsed    .EQU     serTxOutPtr+2
 serTxBufUsed    .EQU     serRxBufUsed+1
 serControl      .EQU     serTxBufUsed+1
-basicStarted    .EQU     serControl+1   ; end of ACIA stuff is $211C
+basicStarted    .EQU     serControl+1
 
-                               ; set BASIC Work space WRKSPC $2120
+WRKSPC          .EQU     RAM_START+$0120 ; set BASIC Work space WRKSPC
+                                         ; beyond the end of ACIA stuff
 
-TEMPSTACK       .EQU     $21CB ; Top of BASIC line input buffer (CURPOS WRKSPC+0ABH)
-                               ; so it is "free ram" when BASIC resets
+TEMPSTACK       .EQU     WRKSPC+$0AB ; Top of BASIC line input buffer
+                                     ; (CURPOS = WRKSPC+0ABH)
+                                     ; so it is "free ram" when BASIC resets
 
 CR              .EQU     0DH
 LF              .EQU     0AH
 CS              .EQU     0CH   ; Clear screen
-
 
 ;==================================================================================
 ;
