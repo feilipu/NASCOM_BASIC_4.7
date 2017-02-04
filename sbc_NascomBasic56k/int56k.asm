@@ -408,6 +408,6 @@ SIGNON1:       .BYTE     "SBC - Grant Searle",CR,LF
                .BYTE     "ACIA - feilipu",CR,LF,0
 SIGNON2:       .BYTE     CR,LF
                .BYTE     "Cold or Warm start, or eXit "
-               .BYTE     "$F800 (C|W|X) ?" ,0
+               .BYTE     "$F800 (C|W|X) ? ",0
                 
                .END
