@@ -363,10 +363,6 @@ ASCI0_TX_CHECK:                     ; now start doing the Tx stuff
         ld l, a                     ; return the low byte
         ld (serTx0OutPtr), hl       ; write where the next byte should be popped
 
-ASCI0_TX_NO_WRAP:
-
-        ld (serTx0OutPtr), hl       ; write where the next byte should be popped
-
         ld hl, serTx0BufUsed
         dec (hl)                    ; atomically decrement current Tx count
 
@@ -440,14 +436,10 @@ TX0_BUFFER_OUT:
         ld hl, (serTx0InPtr)        ; get the pointer to where we poke
         ld (hl), a                  ; write the Tx byte to the serTx0InPtr   
 
-        inc hl                      ; move the Tx pointer along
-        ld a, l                     ; move low byte of the Tx pointer
-        cp (serTx0Buf + SER_TX0_BUFSIZE) & $FF
-        jr nz, TX0_NO_WRAP
-        ld hl, serTx0Buf            ; we wrapped, so go back to start of buffer
-
-TX0_NO_WRAP:
-
+        inc l                       ; move the Tx pointer low byte along
+        ld a, SER_TX0_BUFSIZE       ; load the buffer size, power of 2
+        and l                       ; range check
+        ld l, a                     ; return the low byte
         ld (serTx0InPtr), hl        ; write where the next byte should be poked
 
         ld hl, serTx0BufUsed
