@@ -175,6 +175,17 @@ CCR_LNIO        .EQU   $04    ; Low Noise I/O Signals (30% Drive)
 CCR_LNCPUCTL    .EQU   $02    ; Low Noise CPU Control Signals (30% Drive)
 CCR_LNAD        .EQU   $01    ; Low Noise Address and Data Signals (30% Drive)
 
+; DMA/Wait Control Reg (DCNTL)
+
+DCNTL_MWI1      .EQU   $80    ; Memory Wait Insertion 1 (1 Default)
+DCNTL_MWI0      .EQU   $40    ; Memory Wait Insertion 0 (1 Default)
+DCNTL_IWI1      .EQU   $20    ; I/O Wait Insertion 1 (1 Default)
+DCNTL_IWI0      .EQU   $10    ; I/O Wait Insertion 0 (1 Default)
+DCNTL_DMS1      .EQU   $08    ; DMA Request Sense 1
+DCNTL_DMS0      .EQU   $04    ; DMA Request Sense 0
+DCNTL_DIM1      .EQU   $02    ; DMA Channel 1 I/O & Memory Mode
+DCNTL_DIM0      .EQU   $01    ; DMA Channel 1 I/O & Memory Mode
+
 ; Refresh Control Reg (RCR)
 
 RCR_REFE        .EQU   $80    ; DRAM Refresh Enable (0 Disabled)
@@ -236,10 +247,11 @@ basicStarted    .EQU     serTx0BufUsed+1   ; end of ASCI0 stuff is $220A
 ;
 ; Z80 INTERRUPT VECTOR SECTION 
 ;
-                .ORG     $0000
+
 ;------------------------------------------------------------------------------
 ; RESET - Reset
 
+                .ORG     0000H
 RST00:          DI             ; Disable interrupts
                 JP       INIT  ; Initialize Hardware and go
 
@@ -357,7 +369,7 @@ ASCI0_TX_CHECK:                     ; now start doing the Tx stuff
         ld a, (hl)                  ; get the Tx byte
         out0 (TDR0), a              ; output the Tx byte to the ASCI0
 
-        inc l                       ; move the Tx pointer low byte along
+        inc l                       ; move the Tx pointer low byte along, 0xFF rollover
         ld (serTx0OutPtr), hl       ; write where the next byte should be popped
 
         ld hl, serTx0BufUsed
@@ -433,7 +445,7 @@ TX0_BUFFER_OUT:
         ld hl, (serTx0InPtr)        ; get the pointer to where we poke
         ld (hl), a                  ; write the Tx byte to the serTx0InPtr   
 
-        inc l                       ; move the Tx pointer low byte along
+        inc l                       ; move the Tx pointer low byte along, 0xFF rollover
         ld (serTx0InPtr), hl        ; write where the next byte should be poked
 
         ld hl, serTx0BufUsed
@@ -501,9 +513,12 @@ INIT:
   ;                                      ; if using ZS8180 or Z80182 at High-Speed
   ;            LD        A,CCR_XTAL_X2   ; Set Hi-Speed flag: PHI = internal clock
   ;            OUT0      (CCR),A         ; CPU Control Reg (CCR)
-               
+
                EX        (SP),IY         ; (settle)
-               EX        (SP),IY         ; (settle)               
+               EX        (SP),IY         ; (settle)
+               
+               LD        A,DCNTL_IWI0    ; DMA/Wait Control Reg Set I/O Wait States
+               OUT0      (DCNTL),A       ; 0 Memory Wait & 2 I/O Wait
 
                                          ; Set Logical Addresses
                                          ; $8000-$FFFF RAM CA1 -> 80H
