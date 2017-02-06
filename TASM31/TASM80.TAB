@@ -179,7 +179,7 @@ IN   B,(C)   40ED 2 NOP 1
 IN   C,(C)   48ED 2 NOP 1
 IN   D,(C)   50ED 2 NOP 1
 IN   E,(C)   58ED 2 NOP 1
-IN	F,(C)	70ED	2	NOP	1
+IN	 F,(C)	 70ED 2	NOP	1
 IN   H,(C)   60ED 2 NOP 1
 IN   L,(C)   68ED 2 NOP 1
 

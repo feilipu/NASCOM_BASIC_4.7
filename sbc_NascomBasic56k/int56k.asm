@@ -287,7 +287,7 @@ txa_buffer_out:
 
         ld a, (serTxBufUsed)        ; Get the number of bytes in the Tx buffer
         cp SER_TX_BUFSIZE           ; check whether there is space in the buffer
-        jr nc, txa_clean_up         ; buffer full, so abandon Tx
+        jr nc, txa_buffer_out       ; buffer full, so wait till it has space
 
         ld a, l                     ; Retrieve Tx character
         ld hl, (serTxInPtr)         ; get the pointer to where we poke
