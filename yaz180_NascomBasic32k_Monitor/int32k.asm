@@ -186,10 +186,17 @@ DCNTL_DMS0      .EQU   $04    ; DMA Request Sense 0
 DCNTL_DIM1      .EQU   $02    ; DMA Channel 1 I/O & Memory Mode
 DCNTL_DIM0      .EQU   $01    ; DMA Channel 1 I/O & Memory Mode
 
+
+; INT/TRAP Control Register (ITC)
+
+ITC_ITE2        .EQU   $04    ; Interrupt Enable #2
+ITC_ITE1        .EQU   $02    ; Interrupt Enable #1
+ITC_ITE0        .EQU   $01    ; Interrupt Enable #0 (1 Default)
+
 ; Refresh Control Reg (RCR)
 
-RCR_REFE        .EQU   $80    ; DRAM Refresh Enable (0 Disabled)
-RCR_REFW        .EQU   $40    ; DRAM Refresh 2 or 3 Wait states (0 2 Wait States)
+RCR_REFE        .EQU   $80    ; DRAM Refresh Enable
+RCR_REFW        .EQU   $40    ; DRAM Refresh 2 or 3 Wait states
 
 ; Operation Mode Control Reg (OMCR)
 
@@ -199,7 +206,60 @@ OMCR_IOC        .EQU   $20    ; IO Control (1 64180 Mode)
 
 ;==================================================================================
 ;
+; Some definitions used with the YAZ-180 on-board peripherals:
+;
+
+; BREAK for Single Step Mode
+BREAK           .EQU    $2000      ; Any value written to $2000, halts CPU
+
+; 82C55 PIO Port Definitions
+
+PIO             .EQU    $4000      ; Base Address for 82C55
+PIOA            .EQU    PIO+$00    ; Address for Port A
+PIOB            .EQU    PIO+$01    ; Address for Port B
+PIOC            .EQU    PIO+$02    ; Address for Port C
+PIOCNTL         .EQU    PIO+$03    ; Address for Control Byte
+
+; PIO Mode Definitions
+
+; Mode 0 - Basic Input / Output
+
+PIOCNTL00       .EQU    $80        ; A->, B->, CH->, CL->
+PIOCNTL01       .EQU    $81        ; A->, B->, CH->, ->CL
+PIOCNTL0        .EQU    $82        ; A->, ->B, CH->, CL->
+PIOCNTL03       .EQU    $83        ; A->, ->B, CH->, ->CL
+
+PIOCNTL04       .EQU    $88        ; A->, B->, ->CH, CL->
+PIOCNTL05       .EQU    $89        ; A->, B->, ->CH, ->CL
+PIOCNTL06       .EQU    $8A        ; A->, ->B, ->CH, CL->
+PIOCNTL07       .EQU    $8B        ; A->, ->B, ->CH, ->CL
+
+PIOCNTL08       .EQU    $90        ; ->A, B->, CH->, CL->
+PIOCNTL09       .EQU    $91        ; ->A, B->, CH->, ->CL
+PIOCNTL10       .EQU    $92        ; ->A, ->B, CH->, CL->
+PIOCNTL11       .EQU    $83        ; ->A, ->B, CH->, ->CL
+
+PIOCNTL12       .EQU    $98        ; ->A, B->, ->CH, CL-> (Default Setting)
+PIOCNTL13       .EQU    $99        ; ->A, B->, ->CH, ->CL
+PIOCNTL14       .EQU    $9A        ; ->A, ->B, ->CH, CL->
+PIOCNTL15       .EQU    $9B        ; ->A, ->B, ->CH, ->CL
+
+; Mode 1 - Strobed Input / Output
+; TBA Later
+
+; Mode 2 - Strobed Bidirectional Bus Input / Output
+; TBA Later
+
+; Am9511A-1 FPU Port Address
+
+FPUDATA         .EQU    $C000      ; FPU Data Port
+FPUCNTL         .EQU    $C001      ; FPU Control Port
+
+
+;==================================================================================
+;
 ; DEFINES SECTION
+;
 
 ROMSTART        .EQU     $0000 ; Bottom of FLASH
 ROMSTOP         .EQU     $1FFF ; Top of FLASH
@@ -216,11 +276,16 @@ RAMSTOP_CA1     .EQU     $FFFF ; Top of Common 1 RAM
 RAMSTART        .EQU     RAMSTART_CA0
 RAMSTOP         .EQU     RAMSTOP_CA1
 
-                               ; set BASIC Work space WRKSPC $8000
+USRSTART        .EQU     $3000 ; start of USR(x) asm code
+
+INT0_FPU        .EQU     $3800 ; start of the FPU Interrupt 1 asm code (RAM)
+
                                ; Top of BASIC line input buffer (CURPOS WRKSPC+0ABH)
                                ; so it is "free ram" when BASIC resets
+                               ; set BASIC Work space WRKSPC $8000, In CA1 RAM
+WRKSPC          .EQU     $RAMSTART_CA1 
 
-TEMPSTACK       .EQU     RAMSTART_CA1+$AB
+TEMPSTACK       .EQU     WRKSPC+$AB
 
 CR              .EQU     0DH
 LF              .EQU     0AH
@@ -229,6 +294,7 @@ CS              .EQU     0CH   ; Clear screen
 ;==================================================================================
 ;
 ; VARIABLES SECTION
+;
 
 SER_RX0_BUFSIZE .EQU     $FF   ; FIXED Rx buffer size, 256 Bytes, no range checking
 SER_TX0_BUFSIZE .EQU     $FF   ; FIXED Tx buffer size, 256 Bytes, no range checking
@@ -252,8 +318,8 @@ basicStarted    .EQU     serTx0BufUsed+1   ; end of ASCI0 stuff is $220A
 ; RESET - Reset
 
                 .ORG     0000H
-RST00:          DI             ; Disable interrupts
-                JP       INIT  ; Initialize Hardware and go
+RST00:          DI                  ; Disable interrupts
+                JP       INIT       ; Initialize Hardware and go
 
 ;------------------------------------------------------------------------------
 ; RST08 - TX a character over ASCI
@@ -277,31 +343,31 @@ RST18:          JP       RX0_CHK
 ; RST 20
 
                 .ORG     0020H
-RST20:          RET            ; just return
+RST20:          RET                 ; just return
 
 ;------------------------------------------------------------------------------
 ; RST 28
 
                 .ORG     0028H
-RST28:          RET            ; just return
+RST28:          RET                 ; just return
 
 ;------------------------------------------------------------------------------
 ; RST 30
 ;
                 .ORG     0030H
-RST30:          RET            ; just return
+RST30:          RET                 ; just return
 
 ;------------------------------------------------------------------------------
 ; RST 38 - INTERRUPT VECTOR INT0 [ with IM 1 ]
 
                 .ORG     0038H
-RST38:          RET            ; just return
+RST38:          JP       INT0_FPU   ; Jump into FPU Interrupt
 
 ;------------------------------------------------------------------------------
 ; NMI - INTERRUPT VECTOR NMI
 
                 .ORG     0066H
-NMI:            RETN           ; just return
+NMI:            RETN                ; just return
   
 
 ;==================================================================================
@@ -490,15 +556,18 @@ INIT:
                LD        A,VECTOR_BASE   ; IL = $80 [001x xxxx] for Vectors at $80 - $90
                OUT0      (IL),A          ; Output to the Interrupt Vector Low reg
                                         
-               IM        1               ; Interrupt mode 1 for INT0 (unused)
+               IM        1               ; Interrupt mode 1 for INT0 (used for FPU)
                      
                XOR       A               ; Zero Accumulator
 
-               OUT0      (ITC),A         ; Disable external interrupts
-               OUT0      (TCR),A         ; Disable PRT downcounting
-
                                          ; Clear Refresh Control Reg (RCR)
                OUT0      (RCR),A         ; DRAM Refresh Enable (0 Disabled)
+
+               OUT0      (TCR),A         ; Disable PRT downcounting
+
+                                         ; Set INT/TRAP Control Register (ITC)
+               LD        A, ITC_ITE0     ; Enable (default) Interrupt INT0 for FPU               
+               OUT0      (ITC),A         ; Enable external interrupt INT0 
 
                                          ; Set Operation Mode Control Reg (OMCR)
                LD        A, ~OMCR_IOC    ; Enable (default) M1, disable 64180 I/O _RD Mode
@@ -571,6 +640,11 @@ INIT:
                LD        A,SER_RIE       ; receive interrupt enabled
                OUT0      (STAT0),A       ; output to the ASCI0 status reg
 
+                                         ; Set up 82C55 PIO in Mode 0 #12
+               LD        BC,PIOCNTL      ; 82C55 CNTL address in bc
+               LD        A,PIOCNTL12     ; Set Mode 12 ->A, B->, ->CH, CL->
+               OUT       (C),A           ; output to the PIO control reg
+
                EI                        ; enable interrupts
 
 START:                                     
@@ -585,7 +659,7 @@ CORW:
                CALL      RX0
                AND       %11011111       ; lower to uppercase
                CP        'X'             ; are we exiting Basic?
-               JP        Z, $3000        ; then jump to CA0 RAM at 0x3000
+               JP        Z, USRSTART     ; then jump to USR(x) at CA0 RAM at 0x3000
                CP        'C'
                JR        NZ, CHECKWARM
                RST       08H
