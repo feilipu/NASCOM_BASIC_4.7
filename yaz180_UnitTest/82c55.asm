@@ -282,7 +282,7 @@ INT0_FPU        .EQU     $3800 ; start of the FPU Interrupt 1 asm code (RAM)
 
                                ; Top of BASIC line input buffer (CURPOS WRKSPC+0ABH)
                                ; so it is "free ram" when BASIC resets
-                               ; set BASIC Work space WRKSPC $8000, In CA1 RAM
+                               ; set BASIC Work space WRKSPC $8000, in CA1 RAM
 WRKSPC          .EQU     $RAMSTART_CA1 
 
 TEMPSTACK       .EQU     WRKSPC+$AB
@@ -292,10 +292,7 @@ LF              .EQU     0AH
 CS              .EQU     0CH   ; Clear screen
 
 
-                               ; from Nascom Basic Symbol Tables
-
-WRKSPC          .EQU     $8000 ; Workspace for 32k Basic for yaz180
-
+                               ; from Nascom Basic Symbol Tables .ORIG $0300
 DEINT           .EQU     $0BB7 ; Function DEINT to get USR(x) into DE registers
 ABPASS          .EQU     $132D ; Function ABPASS to put output into AB register for return
 

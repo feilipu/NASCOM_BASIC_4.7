@@ -282,7 +282,7 @@ INT0_FPU        .EQU     $3800 ; start of the FPU Interrupt 1 asm code (RAM)
 
                                ; Top of BASIC line input buffer (CURPOS WRKSPC+0ABH)
                                ; so it is "free ram" when BASIC resets
-                               ; set BASIC Work space WRKSPC $8000, In CA1 RAM
+                               ; set BASIC Work space WRKSPC $8000, in CA1 RAM
 WRKSPC          .EQU     $RAMSTART_CA1 
 
 TEMPSTACK       .EQU     WRKSPC+$AB
