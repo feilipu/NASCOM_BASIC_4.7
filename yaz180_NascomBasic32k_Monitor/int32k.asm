@@ -644,6 +644,9 @@ INIT:
                LD        BC,PIOCNTL      ; 82C55 CNTL address in bc
                LD        A,PIOCNTL12     ; Set Mode 12 ->A, B->, ->CH, CL->
                OUT       (C),A           ; output to the PIO control reg
+               
+               LD        A,$C9           ; load the RET instruction, temporarily
+               LD        (INT0_FPU),A    ; at the location of FPU code
 
                EI                        ; enable interrupts
 
@@ -684,5 +687,5 @@ SIGNON1:       .BYTE     "YAZ180 - feilipu",CR,LF,0
 SIGNON2:       .BYTE     CR,LF
                .BYTE     "Cold or Warm start, or eXit "
                .BYTE     "$3000 (C|W|X) ? ",0
-                
+                              
                .END
