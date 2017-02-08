@@ -252,8 +252,9 @@ PIOCNTL15       .EQU    $9B        ; ->A, ->B, ->CH, ->CL
 
 ; Am9511A-1 FPU Port Address
 
-FPUDATA         .EQU    $C000      ; FPU Data Port
-FPUCNTL         .EQU    $C001      ; FPU Control Port
+FPU             .EQU    $C000      ; Base Address for Am9511A
+FPUDATA         .EQU    FPU+$00    ; FPU Data Port
+FPUCNTL         .EQU    FPU+$01    ; FPU Control Port
 
 
 ;==================================================================================
@@ -288,7 +289,6 @@ TEMPSTACK       .EQU     WRKSPC+$AB
 
 CR              .EQU     0DH
 LF              .EQU     0AH
-CS              .EQU     0CH   ; Clear screen
 
 ;==================================================================================
 ;
