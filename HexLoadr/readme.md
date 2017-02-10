@@ -45,13 +45,10 @@ For convenience, because we can't easily change ROM code already present in the 
 1. Select the preferred origin `.ORG` for your arbitrary program, and assemble a HEX file using your preferred assembler.
 2. Confirm your preferred origin of the hexloadr program, and adjust it to match in the `hexloadr.asm` and `bin2bas.py` programs.
 3. Assemble hexloadr.asm using TASM to produce a HEXLOADR.BIN file using this command line.
-```
-> tasm -80 -x3 -a7 -fff -c -l -g3 d:hexloadr.asm d:hexloadr.bin
-```
+`> tasm -80 -x3 -a7 -fff -c -l -g3 d:hexloadr.asm d:hexloadr.bin`
+
 4. Produce the "poke" file called `hexloadr.bas` by using the python command
-```
-> python bin2bas HEXLOADR.BIN > hexloadr.bas
-```
+`> python bin2bas HEXLOADR.BIN > hexloadr.bas`
 5. Start your RC2014 with the `Memory top?` set to 57343 (`0xDFFF`) or lower. This leaves space for your program and for the hexloadr program.
 6. Using a serial terminal either copy and paste all of the "poke" commands into the RC2014, or upload them using a slow (or timed) serial loading program.
 7. From the `ok` prompt in Basic, start the hexloadr program with `print usr(0)`
