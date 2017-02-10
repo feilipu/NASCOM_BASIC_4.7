@@ -277,7 +277,7 @@ RAMSTOP_CA1     .EQU     $FFFF ; Top of Common 1 RAM
 RAMSTART        .EQU     RAMSTART_CA0
 RAMSTOP         .EQU     RAMSTOP_CA1
 
-USRSTART        .EQU     $F800 ; start of USR(x) asm code
+USRSTART        .EQU     $E000 ; start of USR(x) asm code
 
 
                                ; Top of BASIC line input buffer (CURPOS WRKSPC+0ABH)
@@ -664,7 +664,7 @@ CORW:
                CALL      RX0
                AND       %11011111       ; lower to uppercase
                CP        'X'             ; are we exiting Basic?
-               JP        Z, USRSTART     ; then jump to USR(x) at CA1 RAM at 0xF800
+               JP        Z, USRSTART     ; then jump to USR(x) in CA1 RAM at 0xE000
                CP        'C'
                JR        NZ, CHECKWARM
                RST       08H
@@ -688,6 +688,6 @@ CHECKWARM:
 SIGNON1:       .BYTE     "YAZ180 - feilipu",CR,LF,0
 SIGNON2:       .BYTE     CR,LF
                .BYTE     "Cold or Warm start, or eXit "
-               .BYTE     "$F800 (C|W|X) ? ",0
+               .BYTE     "$E000 (C|W|X) ? ",0
                 
                .END

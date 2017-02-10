@@ -3,31 +3,17 @@
 ; DEFINES SECTION
 ;
 
-ROMSTART        .EQU     $0000 ; Bottom of FLASH
-ROMSTOP         .EQU     $1FFF ; Top of FLASH
+USRSTART        .EQU     $FF00 ; start of hexloadr asm code
 
-RAMSTART_CA0    .EQU     $2000 ; Bottom of Common 0 RAM
-RAMSTOP_CA0     .EQU     $3FFF ; Top of Common 0 RAM
+;WRKSPC          .EQU     $8045 ; set BASIC Work space WRKSPC $8045, RC2014, SBC Searle
+;WRKSPC          .EQU     $8120 ; set BASIC Work space WRKSPC $8120, RC2014, ACIA feilipu
+WRKSPC          .EQU     $8000 ; set BASIC Work space WRKSPC $8000, YAZ180
 
-RAMSTART_BANK   .EQU     $4000 ; Bottom of Banked RAM
-RAMSTOP_BANK    .EQU     $7FFF ; Top of Banked RAM
-
-RAMSTART_CA1    .EQU     $8000 ; Bottom of Common 1 RAM
-RAMSTOP_CA1     .EQU     $FFFF ; Top of Common 1 RAM
-
-RAMSTART        .EQU     RAMSTART_CA0
-RAMSTOP         .EQU     RAMSTOP_CA1
-
-USRSTART        .EQU     $F800 ; start of USR(x) asm code
+                               ; "USR (x)" jump
+USR             .EQU     WRKSPC+$03
 
 CR              .EQU     0DH
 LF              .EQU     0AH
-
-;==================================================================================
-;
-; VARIABLES SECTION
-;
-
 
 
 ;==================================================================================
@@ -37,7 +23,8 @@ LF              .EQU     0AH
 
             .ORG USRSTART   ; USR(*) jump location
 
-START:      ld hl, initString
+START:      
+            ld hl, initString
             call PRINT
 
 WAIT_COLON:
@@ -53,6 +40,7 @@ WAIT_COLON:
             ld d, l         ; store in d
             call READ_BYTE  ; read lower byte of address
             ld e, l         ; store in e
+            push de         ; save the HEX starting address until exit
             call READ_BYTE  ; read record type
             ld a, l         ; store in a
             cp 01           ; check if record type is 01 (end of file)
@@ -87,8 +75,14 @@ END_LOAD:
             call READ_BYTE  ; read last checksum (not used)
             ld hl, LoadOKStr
             call PRINT
-            RET             ; jump back into Basic
-
+            
+            pop de          ; recover the HEX starting address
+            ld hl, USR+1    ; get the USR(x) jump location
+            ld (hl), e      ; load the low byte of the jump location
+            inc hl
+            ld (hl), d      ; load the high byte of the jump location
+                            ; jump back into Basic,
+            ret             ; ready to run our loaded program
 
 INVAL_TYPE:
             ld hl, invalidTypeStr
@@ -104,7 +98,6 @@ HANG:
             nop
             jr HANG
 
-
 PRINT:
             LD        A,(HL)    ; Get character
             OR        A         ; Is it $00 ?
@@ -114,7 +107,6 @@ PRINT:
             JR        PRINT     ; Continue until $00
             RET
 
-
 READ_BYTE:
             push af
             push de
@@ -123,13 +115,15 @@ READ_BYTE:
             cp 10
             jr c, RD_NBL_2 ; if a<10 read the second nibble
             sub 7          ; else subtract 'A'-'0' (17) and add 10
-RD_NBL_2:   ld d, a        ; temporary store the first nibble in d
+RD_NBL_2:   
+            ld d, a        ; temporary store the first nibble in d
             RST 10H        ; Rx byte
             sub '0'
             cp 10
             jr c, READ_END ; if a<10 finalize
             sub 7          ; else subtract 'A' (17) and add 10
-READ_END:   ld e, a        ; temporary store the second nibble in e
+READ_END:   
+            ld e, a        ; temporary store the second nibble in e
             sla d          ; shift register d left by 4 bits
             sla d
             sla d
@@ -147,8 +141,9 @@ READ_END:   ld e, a        ; temporary store the second nibble in e
             ret
 
 
-initString:        .BYTE "HEX LOADER by Filippo"
-                   .BYTE " & feilipu",CR,LF,0
+initString:        .BYTE CR,LF,"HexLoadr by "
+                   .BYTE "Filippo & feilipu"
+                   .BYTE CR,LF,0
 invalidTypeStr:    .BYTE "INV TYP",CR,LF,0
 badCheckSumStr:    .BYTE "BAD CHK",CR,LF,0
 LoadOKStr:         .BYTE "OK",CR,LF,0

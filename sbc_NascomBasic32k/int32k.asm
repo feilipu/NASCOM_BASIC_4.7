@@ -376,7 +376,7 @@ CORW:
                CALL      RXA
                AND       %11011111       ; lower to uppercase
                CP        'X'             ; are we exiting Basic?
-               JP        Z, $F800        ; then jump to RAM at 0xF800
+               JP        Z, $E000        ; then jump to RAM at 0xE000
                CP        'C'
                JR        NZ, CHECKWARM
                RST       08H
@@ -401,6 +401,6 @@ SIGNON1:       .BYTE     "SBC - Grant Searle",CR,LF
                .BYTE     "ACIA - feilipu",CR,LF,0
 SIGNON2:       .BYTE     CR,LF
                .BYTE     "Cold or Warm start, or eXit "
-               .BYTE     "$F800 (C|W|X) ? ",0
+               .BYTE     "$E000 (C|W|X) ? ",0
                 
                .END
