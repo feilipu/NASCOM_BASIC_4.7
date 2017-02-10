@@ -52,14 +52,18 @@ For convenience, because we can't easily change ROM code already present in the 
 ```
 > python bin2bas HEXLOADR.BIN > hexloadr.bas
 ```
-5. Start your RC2014 with the `Memory top?` set to 57343 (`0xDFFF`) or lower. This 
+5. Start your RC2014 with the `Memory top?` set to 57343 (`0xDFFF`) or lower. This leaves space for your program and for the hexloadr program.
 6. Using a serial terminal either copy and paste all of the "poke" commands into the RC2014, or upload them using a slow (or timed) serial loading program.
 7. From the `ok` prompt in Basic, start the hexloadr program with `print usr(0)`
 8. Using a serial terminal, upload the HEX file for your arbitrary program that you prepared in step 1.
 9. When hexloadr is done, and you are back at the Basic `ok` prompt start your arbitrary program using '`print usr(0)`, or other variant if you have parameters to pass to your program.
 10. Profit.
 
+# Credits
 
+Derived from the work of @fbergama and @foxweb
+
+https://github.com/RC2014Z80/RC2014/blob/master/ROMs/hexload/hexload.asm
 
 
 
