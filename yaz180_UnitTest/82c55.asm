@@ -320,12 +320,5 @@ ABPASS          .EQU     $132D ; Function ABPASS to put output into AB register 
         xor a           ; zero a         
 
         jp ABPASS       ; return the Port A value to USR(x)
-        
-        
-        
-        
-        .org WRKSPC+3H  ; at the USR(0) jump in Basic
-        
-        JP 3000H        ; jump to the I/O code.
-        
+       
         .end

@@ -35,7 +35,7 @@ This can be changed if substantial code is added to the hexloadr program
 
 ### RST locations
 
-For convenience, because we can't easily change ROM code already present in the RC2014, the serial Tx and Rx routines are reachable by calling RST jumps (calls).
+For convenience, because we can't easily change ROM code already present in the RC2014 or YAZ180, the serial Tx and Rx routines are reachable by calling RST jumps (calls).
 
 * Tx: `RST 08H` expects a byte in the a register.
 * Rx: `RST 10H` returns a byte in the a register, and will loop until it has a byte to return.
@@ -47,21 +47,23 @@ For convenience, because we can't easily change ROM code already present in the 
 
 2. Confirm your preferred origin of the hexloadr program, and adjust it to match in the `hexloadr.asm` and `bin2bas.py` programs.
 
-3. Assemble hexloadr.asm using TASM to produce a HEXLOADR.BIN file using this command line. `tasm -80 -a7 -fff -c -l -g3 d:hexloadr.asm d:hexloadr.bin`
+3. Assemble hexloadr.asm using TASM to produce a HEXLOADR.BIN file using this command line. `tasm -80 -a7 -fff -c -l -g3 d:hexloadr.asm d:hexloadr.bin`.
 
-4. Produce the "poke" file called `hexloadr.bas` by using the python command. `python bin2bas HEXLOADR.BIN > hexloadr.bas`
+4. Produce the "poke" file called `hexloadr.bas` by using the python command. `python bin2bas HEXLOADR.BIN > hexloadr.bas`.
 
 5. Start your RC2014 with the `Memory top?` set to 57343 (`0xDFFF`) or lower. This leaves space for your program and for the hexloadr program.
 
-6. Using a serial terminal either copy and paste all of the "poke" commands into the RC2014, or upload them using a slow (or timed) serial loading program. If desired the python `slowprint.py` program can be used for this purpose. `python slowprint.py < hexloadr.bas > /dev/ttyUSB0`
+6. Using a serial terminal (assuming your machine is located at device `/dev/ttyUSB0`) either copy and paste all of the "poke" commands into the RC2014, or upload them using a slow (or timed) serial loading program. If desired the python `slowprint.py` program can be used for this purpose. `python slowprint.py < hexloadr.bas > /dev/ttyUSB0`.
 
-7. From the `ok` prompt in Basic, start the hexloadr program with `print usr(0)`
+7. From the `ok` prompt in Basic, start the hexloadr program with `PRINT USR(x)`
 
-8. Using a serial terminal, upload the HEX file for your arbitrary program that you prepared in step 1. If desired the python `slowprint.py` program can also be used for this purpose. `python slowprint.py < myarbitraryprogram.hex > /dev/ttyUSB0`
+8. Using a serial terminal, upload the HEX file for your arbitrary program that you prepared in Step 1. If desired the python `slowprint.py` program can also be used for this purpose. `python slowprint.py < myarbitraryprogram.hex > /dev/ttyUSB0`.
 
-9. When hexloadr has finished, and you are back at the Basic `ok` prompt start your arbitrary program using '`print usr(0)`, or other variant if you have parameters to pass to your program.
+9. Using `POKE` commands relocate the address for the `USR(x)` command to point to `.ORG` of your arbitrary program.
 
-10. Profit.
+10. When hexloadr has finished, and you are back at the Basic `ok` prompt start your arbitrary program using '`PRINT USR(x)`, or other variant if you have parameters to pass to your program.
+
+11. Profit.
 
 # Credits
 
