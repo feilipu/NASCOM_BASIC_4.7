@@ -45,20 +45,29 @@ For convenience, because we can't easily change ROM code already present in the 
 1. Select the preferred origin `.ORG` for your arbitrary program, and assemble a HEX file using your preferred assembler.
 2. Confirm your preferred origin of the hexloadr program, and adjust it to match in the `hexloadr.asm` and `bin2bas.py` programs.
 3. Assemble hexloadr.asm using TASM to produce a HEXLOADR.BIN file using this command line.
+
 `> tasm -80 -x3 -a7 -fff -c -l -g3 d:hexloadr.asm d:hexloadr.bin`
 
-4. Produce the "poke" file called `hexloadr.bas` by using the python command
+4. Produce the "poke" file called `hexloadr.bas` by using the python command.
+
 `> python bin2bas HEXLOADR.BIN > hexloadr.bas`
+
 5. Start your RC2014 with the `Memory top?` set to 57343 (`0xDFFF`) or lower. This leaves space for your program and for the hexloadr program.
-6. Using a serial terminal either copy and paste all of the "poke" commands into the RC2014, or upload them using a slow (or timed) serial loading program.
+6. Using a serial terminal either copy and paste all of the "poke" commands into the RC2014, or upload them using a slow (or timed) serial loading program. If desired the python `slowprint.py` program can be used for this purpose.
+
+`python slowprint.py < hexloadr.bas > /dev/ttyUSB0`
+
 7. From the `ok` prompt in Basic, start the hexloadr program with `print usr(0)`
-8. Using a serial terminal, upload the HEX file for your arbitrary program that you prepared in step 1.
-9. When hexloadr is done, and you are back at the Basic `ok` prompt start your arbitrary program using '`print usr(0)`, or other variant if you have parameters to pass to your program.
+8. Using a serial terminal, upload the HEX file for your arbitrary program that you prepared in step 1. If desired the python `slowprint.py` program can also be used for this purpose.
+
+`python slowprint.py < myarbitraryprogram.bin > /dev/ttyUSB0`
+
+9. When hexloadr has finished, and you are back at the Basic `ok` prompt start your arbitrary program using '`print usr(0)`, or other variant if you have parameters to pass to your program.
 10. Profit.
 
 # Credits
 
-Derived from the work of @fbergama and @foxweb
+Derived from the work of @fbergama and @foxweb at RC2014.
 
 https://github.com/RC2014Z80/RC2014/blob/master/ROMs/hexload/hexload.asm
 

@@ -21,6 +21,3 @@ with open("HEXLOADR.BIN", "rb") as f:
         print "poke "+str( mem-65536 )+","+str( ord(byte) ) + "\r"
         mem = mem+1
         byte = f.read(1)
-
-# now start off the hexloadr
-print "\r\n" + "print usr(0)" + "\r"
