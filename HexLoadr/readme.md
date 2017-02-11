@@ -9,8 +9,8 @@ There are are several stages to this process.
 4. The starting adddress of the hexloadr program must be inserted into the correct location for the `USR(x)` jump out of Nascom Basic.
 5. Then the hexloadr program will initiate and look for your program's Intel HEX formatted information on the serial interface.
 6. Once the final line of the HEX code is read, the hexloadr will return to Nascom Basic.
-7. The newly loaded program starting address is automatically loaded into the `USR(x)` jump location.
-8. Start the new program by entering `USR(x)`.
+7. The newly loaded program starting address must be loaded into the `USR(x)` jump location.
+8. Start the new arbitrary program by entering `USR(x)`.
     
 # Important Addresses
 
@@ -35,7 +35,7 @@ This can be changed if substantial code is added to the hexloadr program
 
 ### RST locations
 
-For convenience, because we can't easily change ROM code already present in the RC2014 or YAZ180, the serial Tx and Rx routines are reachable by calling RST jumps (calls).
+For convenience, because we can't easily change ROM code interrupt routines already present in the RC2014 or YAZ180, the serial Tx and Rx routines are reachable by calling `RST` instructions.
 
 * Tx: `RST 08H` expects a byte in the a register.
 * Rx: `RST 10H` returns a byte in the a register, and will loop until it has a byte to return.
