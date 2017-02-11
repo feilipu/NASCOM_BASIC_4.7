@@ -2,6 +2,7 @@
 The goal of this program is to load an arbitrary program in Intel HEX format into an arbitrary location in the Z80 address space, and allow you to start the program from Nascom Basic.
 
 There are are several stages to this process.
+
 1. The `hexloadr.asm` loader program must be compiled into a binary format, `HEXLOADR.BIN`
 2. `HEXLOADR.BIN` must then be converted to a series of poke statements using the `bin2bas.py` python program.
 3. These poke statements are then loaded through the serial interface to the Nascom Basic machine to get the hexloadr program placed correctly into the RAM of the machine.
