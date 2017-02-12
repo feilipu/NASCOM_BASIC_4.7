@@ -40,8 +40,8 @@ WAIT_COLON:
             jr nz, INVAL_TYPE ; if not, error
 
 READ_DATA:
-            ld a, '*'       ; "*" per byte loaded  # DEBUG
-            RST 08H         ; Print it             # DEBUG
+            ;ld a, '*'       ; "*" per byte loaded  # DEBUG
+            ;RST 08H         ; Print it             # DEBUG
 
             call READ_BYTE
             ld (de), a      ; write the byte at the RAM address
@@ -60,10 +60,10 @@ READ_DATA:
 
             ld a, '#'       ; "#" per line loaded
             RST 08H         ; Print it
-            ld a, CR        ; CR                   # DEBUG
-            RST 08H         ; Print it             # DEBUG
-            ld a, LF        ; LF                   # DEBUG
-            RST 08H         ; Print it             # DEBUG
+            ;ld a, CR        ; CR                   # DEBUG
+            ;RST 08H         ; Print it             # DEBUG
+            ;ld a, LF        ; LF                   # DEBUG
+            ;RST 08H         ; Print it             # DEBUG
             
             jr WAIT_COLON
 
