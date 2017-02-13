@@ -83,24 +83,28 @@ ESA_DATA:
             jr READ_CHKSUM  ; calculate checksum
 
 END_LOAD:
-            ld a, c         ; get our BBR back
-            jp z, END_PRINT ; if it is zero, chances are we don't need it
-            out0 (BBR), a   ; write it to the BBR
-END_PRINT:
+            call BBR_RESTORE   ; clean up the BBR
             ld hl, LoadOKStr
             call PRINT
             ret             ; ready to run our loaded program from Basic
-
+            
 INVAL_TYPE:
+            call BBR_RESTORE   ; clean up the BBR
             ld hl, invalidTypeStr
             call PRINT
             ret             ; return to Basic
 
 BAD_CHK:
+            call BBR_RESTORE   ; clean up the BBR
             ld hl, badCheckSumStr
             call PRINT
             ret             ; return to Basic
 
+BBR_RESTORE:
+            ld a, c         ; get our BBR back
+            ret z           ; if it is zero, chances are we don't need it
+            out0 (BBR), a   ; write it to the BBR
+            ret
 
 PRINT:                      ; String address hl, destroys a
             LD A,(HL)       ; Get character
