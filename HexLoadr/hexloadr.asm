@@ -1,5 +1,16 @@
 ;==================================================================================
 ;
+; Z180 Register Mnemonics
+;
+
+IO_BASE         .EQU    $00     ; Internal I/O Base Address (ICR) <<< SET THIS AS DESIRED >>>
+
+CBR             .EQU    IO_BASE+$38     ; MMU Common Base Reg
+BBR             .EQU    IO_BASE+$39     ; MMU Bank Base Reg
+CBAR            .EQU    IO_BASE+$3A     ; MMU Common/Bank Area Reg
+
+;==================================================================================
+;
 ; DEFINES SECTION
 ;
 
@@ -18,6 +29,8 @@ LF              .EQU     0AH
 START:      
             ld hl, initString
             call PRINT
+            
+            ld c,0          ; non zero c is our ESA flag
 
 WAIT_COLON:
             RST 10H         ; Rx byte
@@ -25,15 +38,14 @@ WAIT_COLON:
             jr nz, WAIT_COLON
             ld hl, 0        ; reset hl to compute checksum
             call READ_BYTE  ; read byte count
-            ld b, 0         ; zero b
-            ld c, a         ; store it in bc
+            ld b, a         ; store it in b
             call READ_BYTE  ; read upper byte of address
             ld d, a         ; store in d
             call READ_BYTE  ; read lower byte of address
             ld e, a         ; store in e
             call READ_BYTE  ; read record type
             cp 02           ; check if record type is 02 (ESA)
-            jr z, ESA_LOAD
+            jr z, ESA_DATA
             cp 01           ; check if record type is 01 (end of file)
             jr z, END_LOAD
             cp 00           ; check if record type is 00 (data)
@@ -46,13 +58,8 @@ READ_DATA:
             call READ_BYTE
             ld (de), a      ; write the byte at the RAM address
             inc de
-            dec bc
-            xor a           ; check if bc==0,  clear a
-            or b
-            or c
-            cp 0
-            jr nz, READ_DATA ; if non zero, loop to get more data
-
+            djnz READ_DATA  ; if b non zero, loop to get more data
+READ_CHKSUM:
             call READ_BYTE  ; read checksum, but we don't need to keep it
             ld a, l         ; lower byte of hl checksum should be 0
             cp 0
@@ -67,12 +74,19 @@ READ_DATA:
             
             jr WAIT_COLON
 
-ESA_LOAD:
-            ld hl, esaLoadStr
-            call PRINT
-            ret             ; return to Basic
+ESA_DATA:
+            in0 a, (BBR)    ; grab the current Bank Base Value
+            ld c, a         ; store BBR for later recovery
+            call READ_BYTE  ; get high byte of ESA
+            out0 (BBR), a   ; write it to the BBR  
+            call READ_BYTE  ; get low byte of ESA, abandon it, but calc checksum
+            jr READ_CHKSUM  ; calculate checksum
 
 END_LOAD:
+            ld a, c         ; get our BBR back
+            jp z, END_PRINT ; if it is zero, chances are we don't need it
+            out0 (BBR), a   ; write it to the BBR
+END_PRINT:
             ld hl, LoadOKStr
             call PRINT
             ret             ; ready to run our loaded program from Basic
@@ -126,7 +140,7 @@ READ_END:
 initString:        .BYTE CR,LF,"HexLoadr by "
                    .BYTE "Filippo & feilipu"
                    .BYTE CR,LF,0
-esaLoadStr         .BYTE "ESA Unsupported",CR,LF,0
+
 invalidTypeStr:    .BYTE "Invalid Type",CR,LF,0
 badCheckSumStr:    .BYTE "Checksum Error",CR,LF,0
 LoadOKStr:         .BYTE "OK",CR,LF,0
