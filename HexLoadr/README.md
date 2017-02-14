@@ -48,7 +48,7 @@ For convenience, because we can't easily change ROM code interrupt routines alre
 
 2. Confirm your preferred origin of the hexloadr program, and adjust it to match in the `hexloadr.asm` and `bin2bas.py` programs.
 
-3. Assemble hexloadr.asm using TASM to produce a HEXLOADR.BIN file using this command line. `tasm -80 -a7 -fff -c -l -g3 d:hexloadr.asm d:hexloadr.bin`.
+3. Assemble hexloadr.asm using TASM to produce a HEXLOADR.BIN file using this command line. `tasm -80 -x3 -a7 -fff -c -l -g3 d:hexloadr.asm d:hexloadr.bin`.
 
 4. Produce the "poke" file called `hexloadr.bas` by using the python command. `python bin2bas.py HEXLOADR.BIN > hexloadr.bas`.
 
