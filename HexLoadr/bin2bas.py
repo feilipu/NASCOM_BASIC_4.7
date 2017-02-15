@@ -3,11 +3,11 @@
 mem = 0xFF00
 
 # location of the USR(x) jump address from RC2014 Basic SBC Searle
-usr = 0x8045+0x0003 
+# usr = 0x8045+0x0003 
 # location of the USR(x) jump address from RC2014 Basic ACIA feilipu
 # usr = 0x80AB+0x0003
 # location of the USR(x) jump address from YAZ180 Basic
-# usr = 0x8000+0x0003
+usr = 0x8000+0x0003
 
 # fill the USR(x) jump with the address - adjust jump address too
 print "poke "+str(usr-65536  ) + "," + str(0xC3) + "\r"

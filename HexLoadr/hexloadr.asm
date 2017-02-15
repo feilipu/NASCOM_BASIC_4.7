@@ -62,7 +62,7 @@ READ_DATA:
 READ_CHKSUM:
             call READ_BYTE  ; read checksum, but we don't need to keep it
             ld a, l         ; lower byte of hl checksum should be 0
-            cp 0
+            or a
             jr nz, BAD_CHK  ; non zero, we have an issue
 
             ld a, '#'       ; "#" per line loaded

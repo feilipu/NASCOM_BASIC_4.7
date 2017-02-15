@@ -1,0 +1,1 @@
+05 REM at USR(x), insert a jump to the $3000 code.10 mb = &h800320 print mb40 poke mb+  1,&h0050 poke mb+  2,&h30500 REM multiply two numbers510 INPUT "input a "; a511 INPUT "input b "; b520 DOKE 14000, a530 DOKE 14004, b535 PRINT "result USR "; USR(&h6f)540 PRINT 550 PRINT "result DEEK "; DEEK(14000)1000 GOTO 510

@@ -70,7 +70,7 @@ SER_RX_EMPTYSIZE .EQU    $08  ; Fullness of the Rx Buffer, when RTS is signalled
 SER_TX_BUFSIZE  .EQU     $0F  ; Size of the Tx Buffer, 15 Bytes
 
 serRxBuf        .EQU     $RAM_START ; must start on 0xnn00 for low byte roll-over
-serTxBuf        .EQU     serRxBuf+SER_RX_BUFSIZE+1
+serTxBuf        .EQU     serRxBuf+SER_RX_BUFSIZE+1  ; must start on 0xnn00
 serRxInPtr      .EQU     serTxBuf+SER_TX_BUFSIZE+1
 serRxOutPtr     .EQU     serRxInPtr+2
 serTxInPtr      .EQU     serRxOutPtr+2
@@ -392,7 +392,8 @@ CORW:
                RST       08H
                LD        A,$0A
                RST       08H
-COLDSTART:     LD        A,'Y'           ; Set the BASIC STARTED flag
+COLDSTART:
+               LD        A,'Y'           ; Set the BASIC STARTED flag
                LD        (basicStarted),A
                JP        $01F0           ; <<<< Start Basic COLD:
 CHECKWARM:
