@@ -70,7 +70,7 @@ SER_RX_EMPTYSIZE .EQU    $08  ; Fullness of the Rx Buffer, when RTS is signalled
 SER_TX_BUFSIZE  .EQU     $0F  ; Size of the Tx Buffer, 15 Bytes
 
 serRxBuf        .EQU     $RAM_START ; must start on 0xnn00 for low byte roll-over
-serTxBuf        .EQU     serRxBuf+SER_RX_BUFSIZE+1  ; must start on 0xnn00
+serTxBuf        .EQU     serRxBuf+SER_RX_BUFSIZE+1
 serRxInPtr      .EQU     serTxBuf+SER_TX_BUFSIZE+1
 serRxOutPtr     .EQU     serRxInPtr+2
 serTxInPtr      .EQU     serRxOutPtr+2
@@ -372,7 +372,7 @@ INIT:
                
                IM        1               ; interrupt mode 1
                EI
-               
+START:
                LD        HL,SIGNON1      ; Sign-on message
                CALL      PRINT           ; Output string
                LD        A,(basicStarted); Check the BASIC STARTED flag
@@ -404,6 +404,7 @@ CHECKWARM:
                RST       08H
                LD        A,$0A
                RST       08H
+WARMSTART:
                JP        $01F3           ; <<<< Start Basic WARM:
 
 SIGNON1:       .BYTE     "SBC - Grant Searle",CR,LF

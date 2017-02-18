@@ -773,7 +773,8 @@ CORW:
                RST       08H
                LD        A,$0A
                RST       08H
-COLDSTART:     LD        A,'Y'           ; Set the BASIC STARTED flag
+COLDSTART:
+               LD        A,'Y'           ; Set the BASIC STARTED flag
                LD        (basicStarted),A
                JP        $0380           ; <<<< Start Basic COLD:
 CHECKWARM:

@@ -70,7 +70,7 @@ SER_RX_EMPTYSIZE .EQU    $08  ; Fullness of the Rx Buffer, when RTS is signalled
 SER_TX_BUFSIZE  .EQU     $0F  ; Size of the Tx Buffer, 15 Bytes
 
 serRxBuf        .EQU     $RAM_START ; must start on 0xnn00 for low byte roll-over
-serTxBuf        .EQU     serRxBuf+SER_RX_BUFSIZE+1  ; must start on 0xnn00
+serTxBuf        .EQU     serRxBuf+SER_RX_BUFSIZE+1
 serRxInPtr      .EQU     serTxBuf+SER_TX_BUFSIZE+1
 serRxOutPtr     .EQU     serRxInPtr+2
 serTxInPtr      .EQU     serRxOutPtr+2
@@ -97,50 +97,50 @@ CS              .EQU     0CH   ; Clear screen
 ;
 
 ;------------------------------------------------------------------------------
-; RST 00 - Reset
+; rst 00 - Reset
 
                 .ORG     0000H
 RST00:           DI            ;Disable interrupts
                  JP      INIT  ;Initialize Hardware and go
 
 ;------------------------------------------------------------------------------
-; RST 08 - Tx a character over RS232 
+; rst 08 - Tx a character over RS232 
 
                 .ORG     0008H
 RST08:           JP      TXA
 
 ;------------------------------------------------------------------------------
-; RST 10 - Rx a character over RS232 Channel A [Console], hold until char ready.
+; rst 10 - Rx a character over RS232 Channel A [Console], hold until char ready.
 
                 .ORG 0010H
 RST10:           JP      RXA
 
 ;------------------------------------------------------------------------------
-; RST 18 - Check serial Rx status
+; rst 18 - Check serial Rx status
 
                 .ORG 0018H
 RST18:           JP      CKINCHAR
 
 ;------------------------------------------------------------------------------
-; RST 20
+; rst 20
 
                 .ORG     0020H
 RST20:          RET            ; just return
 
 ;------------------------------------------------------------------------------
-; RST 28
+; rst 28
 
                 .ORG     0028H
 RST28:          RET            ; just return
 
 ;------------------------------------------------------------------------------
-; RST 30
+; rst 30
 ;
                 .ORG     0030H
 RST30:          RET            ; just return
 
 ;------------------------------------------------------------------------------
-; RST 38 - INTERRUPT VECTOR [ ACIA for IM 1 ]
+; rst 38 - INTERRUPT VECTOR [ ACIA for IM 1 ]
 
                 .ORG     0038H
 RST38:                 
@@ -336,10 +336,92 @@ CKINCHAR:      LD        A,(serRxBufUsed)
 PRINT:         LD        A,(HL)          ; Get character
                OR        A               ; Is it $00 ?
                RET       Z               ; Then RETurn on terminator
-               RST       08H             ; Print it
+               rst       08H             ; Print it
                INC       HL              ; Next Character
                JR        PRINT           ; Continue until $00
                RET
+
+;------------------------------------------------------------------------------
+HEX_START:      
+            ld hl, initString
+            call PRINT
+HEX_WAIT_COLON:
+            rst 10H         ; Rx byte
+            cp ':'          ; wait for ':'
+            jr nz, HEX_WAIT_COLON
+            ld hl, 0        ; reset hl to compute checksum
+            call HEX_READ_BYTE  ; read byte count
+            ld b, a         ; store it in b
+            call HEX_READ_BYTE  ; read upper byte of address
+            ld d, a         ; store in d
+            call HEX_READ_BYTE  ; read lower byte of address
+            ld e, a         ; store in e
+            call HEX_READ_BYTE  ; read record type
+            cp 01           ; check if record type is 01 (end of file)
+            jr z, HEX_END_LOAD
+            cp 00           ; check if record type is 00 (data)
+            jr nz, HEX_INVAL_TYPE ; if not, error
+HEX_READ_DATA:
+            ld a, '*'       ; "*" per byte loaded  # DEBUG
+            rst 08H         ; Print it             # DEBUG
+            call HEX_READ_BYTE
+            ld (de), a      ; write the byte at the RAM address
+            inc de
+            djnz HEX_READ_DATA  ; if b non zero, loop to get more data
+HEX_READ_CHKSUM:
+            call HEX_READ_BYTE  ; read checksum, but we don't need to keep it
+            ld a, l         ; lower byte of hl checksum should be 0
+            or a
+            jr nz, HEX_BAD_CHK  ; non zero, we have an issue
+            ld a, '#'       ; "#" per line loaded
+            rst 08H         ; Print it
+            ld a, CR        ; CR                   # DEBUG
+            rst 08H         ; Print it             # DEBUG
+            ld a, LF        ; LF                   # DEBUG
+            rst 08H         ; Print it             # DEBUG
+            jr HEX_WAIT_COLON
+
+HEX_END_LOAD:
+            ld hl, LoadOKStr
+            call PRINT
+            jp WARMSTART    ; ready to run our loaded program from Basic
+            
+HEX_INVAL_TYPE:
+            ld hl, invalidTypeStr
+            call PRINT
+            jp START        ; go back to start
+
+HEX_BAD_CHK:
+            ld hl, badCheckSumStr
+            call PRINT
+            jp START        ; go back to start
+
+HEX_READ_BYTE:              ; Returns byte in a, checksum in hl
+            push bc
+            rst 10H         ; Rx byte
+            sub '0'
+            cp 10
+            jr c, HEX_READ_NBL2 ; if a<10 read the second nibble
+            sub 7           ; else subtract 'A'-'0' (17) and add 10
+HEX_READ_NBL2:
+            rlca            ; shift accumulator left by 4 bits
+            rlca
+            rlca
+            rlca
+            ld c, a         ; temporarily store the first nibble in c
+            rst 10H         ; Rx byte
+            sub '0'
+            cp 10
+            jr c, HEX_READ_END  ; if a<10 finalize
+            sub 7           ; else subtract 'A' (17) and add 10
+HEX_READ_END:
+            or c            ; assemble two nibbles into one byte in a
+            ld b, 0         ; add the byte read to hl (for checksum)
+            ld c, a
+            add hl, bc
+            pop bc
+            ret             ; return the byte read in a
+
 
 ;------------------------------------------------------------------------------
 INIT:
@@ -372,44 +454,53 @@ INIT:
                
                IM        1               ; interrupt mode 1
                EI
-               
-               LD        HL,SIGNON1      ; Sign-on message
+START:
+               LD        HL, SIGNON1     ; Sign-on message
                CALL      PRINT           ; Output string
                LD        A,(basicStarted); Check the BASIC STARTED flag
                CP        'Y'             ; to see if this is power-up
-               JR        NZ,COLDSTART    ; If not BASIC started then always do cold start
-               LD        HL,SIGNON2      ; Cold/warm message
+               JR        NZ, COLDSTART   ; If not BASIC started then always do cold start
+               LD        HL, SIGNON2     ; Cold/warm message
                CALL      PRINT           ; Output string
 CORW:
-               CALL      RXA
+               RST       10H
                AND       %11011111       ; lower to uppercase
-               CP        'X'             ; are we exiting Basic?
-               JP        Z, $E000        ; then jump to RAM at 0xE000
+               CP        'H'             ; are we trying to load an Intel HEX program?
+               JP        Z, HEX_START    ; then jump to HexLoadr
                CP        'C'
                JR        NZ, CHECKWARM
-               RST       08H
+               rst       08H
                LD        A,$0D
-               RST       08H
+               rst       08H
                LD        A,$0A
-               RST       08H
+               rst       08H
 COLDSTART:
                LD        A,'Y'           ; Set the BASIC STARTED flag
                LD        (basicStarted),A
-               JP        $01F0           ; <<<< Start Basic COLD:
+               JP        $02A0           ; <<<< Start Basic COLD:
 CHECKWARM:
                CP        'W'
                JR        NZ, CORW
-               RST       08H
+               rst       08H
                LD        A,$0D
-               RST       08H
+               rst       08H
                LD        A,$0A
-               RST       08H
-               JP        $01F3           ; <<<< Start Basic WARM:
+               rst       08H
+WARMSTART:
+               JP        $02A3           ; <<<< Start Basic WARM:
 
 SIGNON1:       .BYTE     "SBC - Grant Searle",CR,LF
                .BYTE     "ACIA - feilipu",CR,LF,0
 SIGNON2:       .BYTE     CR,LF
-               .BYTE     "Cold or Warm start, or eXit "
-               .BYTE     "$E000 (C|W|X) ? ",0
+               .BYTE     "Cold or Warm start, "
+               .BYTE     "or HexLoadr (C|W|H) ? ",0
+
+initString:        .BYTE CR,LF
+                   .BYTE "HexLoadr> "
+                   .BYTE CR,LF,0
+
+invalidTypeStr:    .BYTE "Invalid Type",CR,LF,0
+badCheckSumStr:    .BYTE "Checksum Error",CR,LF,0
+LoadOKStr:         .BYTE "Done",CR,LF,0
                 
                .END

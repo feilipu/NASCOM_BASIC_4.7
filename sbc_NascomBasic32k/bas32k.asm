@@ -126,10 +126,10 @@ MO      .EQU    24H             ; Missing operand
 HX      .EQU    26H             ; HEX error
 BN      .EQU    28H             ; BIN error
 
-        .ORG    01F0H           ; <<<< Modified to allow for Z80 Tx/Rx interrupt code
+        .ORG    02A0H           ; <<<< Modified to allow for Z80 Tx/Rx interrupt & HexLoadr
 
-COLD:   JP      STARTB          ; Jump in for cold start ($01F0)
-WARM:   JP      WARMST          ; Jump in for warm start ($01F3)
+COLD:   JP      STARTB          ; Jump in for cold start ($02A0)
+WARM:   JP      WARMST          ; Jump in for warm start ($02A3)
 STARTB: 
         LD      IX,0            ; Flag cold start
         JP      CSTART          ; Jump to initialise
