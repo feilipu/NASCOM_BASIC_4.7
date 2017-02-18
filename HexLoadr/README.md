@@ -66,6 +66,10 @@ For convenience, because we can't easily change ROM code interrupt routines alre
 
 11. Profit.
 
+# Integrated Version
+
+Where you are using the version integrated into the NASCOM Basic, you can start at Item 6 above, by loading your program where you choose. But, don't forget you still need to follow the rest of the steps to set the jump location for the `USR(x)` command.
+
 # Credits
 
 Derived from the work of @fbergama and @foxweb at RC2014.
