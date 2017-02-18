@@ -97,50 +97,50 @@ CS              .EQU     0CH   ; Clear screen
 ;
 
 ;------------------------------------------------------------------------------
-; rst 00 - Reset
+; RST 00 - Reset
 
                 .ORG     0000H
 RST00:           DI            ;Disable interrupts
                  JP      INIT  ;Initialize Hardware and go
 
 ;------------------------------------------------------------------------------
-; rst 08 - Tx a character over RS232 
+; RST 08 - Tx a character over RS232 
 
                 .ORG     0008H
 RST08:           JP      TXA
 
 ;------------------------------------------------------------------------------
-; rst 10 - Rx a character over RS232 Channel A [Console], hold until char ready.
+; RST 10 - Rx a character over RS232 Channel A [Console], hold until char ready.
 
                 .ORG 0010H
 RST10:           JP      RXA
 
 ;------------------------------------------------------------------------------
-; rst 18 - Check serial Rx status
+; RST 18 - Check serial Rx status
 
                 .ORG 0018H
 RST18:           JP      CKINCHAR
 
 ;------------------------------------------------------------------------------
-; rst 20
+; RST 20
 
                 .ORG     0020H
 RST20:          RET            ; just return
 
 ;------------------------------------------------------------------------------
-; rst 28
+; RST 28
 
                 .ORG     0028H
 RST28:          RET            ; just return
 
 ;------------------------------------------------------------------------------
-; rst 30
+; RST 30
 ;
                 .ORG     0030H
 RST30:          RET            ; just return
 
 ;------------------------------------------------------------------------------
-; rst 38 - INTERRUPT VECTOR [ ACIA for IM 1 ]
+; RST 38 - INTERRUPT VECTOR [ ACIA for IM 1 ]
 
                 .ORG     0038H
 RST38:                 
@@ -336,7 +336,7 @@ CKINCHAR:      LD        A,(serRxBufUsed)
 PRINT:         LD        A,(HL)          ; Get character
                OR        A               ; Is it $00 ?
                RET       Z               ; Then RETurn on terminator
-               rst       08H             ; Print it
+               RST       08H             ; Print it
                INC       HL              ; Next Character
                JR        PRINT           ; Continue until $00
                RET
@@ -469,11 +469,11 @@ CORW:
                JP        Z, HEX_START    ; then jump to HexLoadr
                CP        'C'
                JR        NZ, CHECKWARM
-               rst       08H
+               RST       08H
                LD        A,$0D
-               rst       08H
+               RST       08H
                LD        A,$0A
-               rst       08H
+               RST       08H
 COLDSTART:
                LD        A,'Y'           ; Set the BASIC STARTED flag
                LD        (basicStarted),A
@@ -481,11 +481,11 @@ COLDSTART:
 CHECKWARM:
                CP        'W'
                JR        NZ, CORW
-               rst       08H
+               RST       08H
                LD        A,$0D
-               rst       08H
+               RST       08H
                LD        A,$0A
-               rst       08H
+               RST       08H
 WARMSTART:
                JP        $02A3           ; <<<< Start Basic WARM:
 

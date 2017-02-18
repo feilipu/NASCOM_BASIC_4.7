@@ -381,7 +381,7 @@ START:
                LD        HL,SIGNON2      ; Cold/warm message
                CALL      PRINT           ; Output string
 CORW:
-               CALL      RXA
+               RST       10H
                AND       %11011111       ; lower to uppercase
                CP        'X'             ; are we exiting Basic?
                JP        Z, $E000        ; then jump to RAM at 0xE000
