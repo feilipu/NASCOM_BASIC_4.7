@@ -219,8 +219,11 @@ poke -43,114
 poke -42,13
 poke -41,10
 poke -40,0
-poke -39,79
-poke -38,75
-poke -37,13
-poke -36,10
-poke -35,0
+poke -39,68
+poke -38,111
+poke -37,110
+poke -36,101
+poke -35,13
+poke -34,10
+poke -33,0
+print usr(0)

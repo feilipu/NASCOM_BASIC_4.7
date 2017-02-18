@@ -524,7 +524,7 @@ TX0_BUFFER_OUT:
 
         in0 a, (STAT0)              ; load the ASCI0 status register
         tst SER_TIE                 ; test whether ASCI0 interrupt is set        
-        jp nz, TX0_CLEAN_UP         ; if so then just clean up        
+        jr nz, TX0_CLEAN_UP         ; if so then just clean up        
 
         di                          ; critical section begin
         in0 a, (STAT0)              ; so get the ASCI status register   

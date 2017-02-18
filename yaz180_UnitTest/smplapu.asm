@@ -322,44 +322,26 @@ APU_NOS         .EQU     APU_TOS+$04 ; CPU NOS Operand - 14004
 
         call APU_CHK_RDY ; check ready first
 
-        ld a, e         ; check the operand, what are we doing?
+;        ld hl, APU_NOS  ; prep first operand
+;        call APU_PUSH_4
 
-        cp $00
-        ret z           ; nope, nothing
+;        call APU_CHK_RDY ; check ready again
 
-        cp $0f          ; floating point 32 bit derived 
-        jr c, APU_DO_D
+        ld hl, APU_TOS  ; prep second operand
+        call APU_PUSH_2
 
-        cp $14          ; floating point 32 bit
-        jr c, APU_DO_4
+        call APU_CHK_RDY ; check ready again
 
-        cp $2c          ; fixed point 32 bit
-        jr z, APU_DO_4
-        cp $2d
-        jr z, APU_DO_4
-        cp $2e
-        jr z, APU_DO_4
-        cp $2f
-        jr z, APU_DO_4
-        cp $3c
-        jr z, APU_DO_4
+        ld hl, APU_TOS  ; recover second operand
+        call APU_POP_2
 
-        cp $6c          ; fixed point 16 bit
-        jr z, APU_DO_2
-        cp $6d
-        jr z, APU_DO_2
-        cp $6e
-        jr z, APU_DO_2
-        cp $6f
-        jr z, APU_DO_2
-        cp $7c
-        jr z, APU_DO_2
-
-        call APU_DO_OP  ; otherwise its data manipulation
-        call APU_CHK_RDY ; check ready
+;        call APU_CHK_RDY ; check ready again
+        
+;        ld hl, APU_NOS  ; recover first operand
+;        call APU_POP_4
         
 APU_AB_RES:                        
-        ld hl, APU_TOS  ; prep single result
+        ld hl, APU_TOS  ; prep single 16bit result
         ld a, (hl)      ; read the LSB
         ld b, a         ; put it in b
         inc hl
