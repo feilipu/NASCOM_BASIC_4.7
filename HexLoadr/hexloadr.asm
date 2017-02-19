@@ -45,15 +45,14 @@ HEX_WAIT_COLON:
             ld e, a         ; store in e
             call HEX_READ_BYTE  ; read record type
             cp 02           ; check if record type is 02 (ESA)
-            jr z, ESA_DATA
+            jr z, HEX_ESA_DATA
             cp 01           ; check if record type is 01 (end of file)
             jr z, HEX_END_LOAD
             cp 00           ; check if record type is 00 (data)
             jr nz, HEX_INVAL_TYPE ; if not, error
-
 HEX_READ_DATA:
-            ;ld a, '*'       ; "*" per byte loaded  # DEBUG
-            ;RST 08H         ; Print it             # DEBUG
+            ld a, '*'       ; "*" per byte loaded  # DEBUG
+            RST 08H         ; Print it             # DEBUG
 
             call HEX_READ_BYTE
             ld (de), a      ; write the byte at the RAM address
@@ -64,17 +63,15 @@ HEX_READ_CHKSUM:
             ld a, l         ; lower byte of hl checksum should be 0
             or a
             jr nz, HEX_BAD_CHK  ; non zero, we have an issue
-
             ld a, '#'       ; "#" per line loaded
             RST 08H         ; Print it
-            ;ld a, CR        ; CR                   # DEBUG
-            ;RST 08H         ; Print it             # DEBUG
-            ;ld a, LF        ; LF                   # DEBUG
-            ;RST 08H         ; Print it             # DEBUG
-            
+            ld a, CR        ; CR                   # DEBUG
+            RST 08H         ; Print it             # DEBUG
+            ld a, LF        ; LF                   # DEBUG
+            RST 08H         ; Print it             # DEBUG
             jr HEX_WAIT_COLON
 
-ESA_DATA:
+HEX_ESA_DATA:
             in0 a, (BBR)    ; grab the current Bank Base Value
             ld c, a         ; store BBR for later recovery
             call HEX_READ_BYTE  ; get high byte of ESA
@@ -83,10 +80,14 @@ ESA_DATA:
             jr HEX_READ_CHKSUM  ; calculate checksum
 
 HEX_END_LOAD:
+            call HEX_READ_BYTE  ; read checksum, but we don't need to keep it
+            ld a, l         ; lower byte of hl checksum should be 0
+            or a
+            jr nz, HEX_BAD_CHK  ; non zero, we have an issue
             call HEX_BBR_RESTORE   ; clean up the BBR
             ld hl, LoadOKStr
             call HEX_PRINT
-            ret             ; ready to run our loaded program from Basic
+            ret             ; return to Basic
             
 HEX_INVAL_TYPE:
             call HEX_BBR_RESTORE   ; clean up the BBR
@@ -141,12 +142,11 @@ HEX_READ_END:
             ret             ; return the byte read in a
 
 
-initString:        .BYTE CR,LF,"HexLoadr> "
+initString:        .BYTE CR,LF,"HexLoadr: "
                    .BYTE CR,LF,0
 
 invalidTypeStr:    .BYTE "Invalid Type",CR,LF,0
 badCheckSumStr:    .BYTE "Checksum Error",CR,LF,0
 LoadOKStr:         .BYTE "Done",CR,LF,0
-
 
             .END

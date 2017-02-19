@@ -58,9 +58,9 @@ For convenience, because we can't easily change ROM code interrupt routines alre
 
 7. From the `ok` prompt in Basic, start the HexLoadr program with `PRINT USR(x)`
 
-8. Using a serial terminal, upload the HEX file for your arbitrary program that you prepared in Step 1. If desired the python `slowprint.py` program can also be used for this purpose. `python slowprint.py < myarbitraryprogram.hex > /dev/ttyUSB0`.
+8. Using a serial terminal, upload the HEX file for your arbitrary program that you prepared in Step 1. If desired the python `slowprint.py` program can also be used for this purpose. `python slowprint.py < myarbitraryprogram.hex > /dev/ttyUSB0`. The Linux `cat` program also works well in this role.
 
-9. Using `POKE` commands relocate the address for the `USR(x)` command to point to `.ORG` of your arbitrary program.
+9. Using the `DOKE` command relocate the address for the `USR(x)` command to point to `.ORG` of your arbitrary program.
 
 10. When HexLoadr has finished, and you are back at the Basic `ok` prompt start your arbitrary program using `PRINT USR(x)`, or other variant if you have parameters to pass to your program.
 
@@ -72,7 +72,7 @@ If you are using the version integrated into the NASCOM Basic, you can start at 
 
 For the RC2014 the `USR(x)` jump address is located at `&h8124`. If your program is located at `&hA000` then the command is `doke &h8124, &hA000`
 
-For the YAZ180 the `USR(x)` jump address is at `&h8004`.
+For the YAZ180 the `USR(x)` jump address is located at `&h8004`.
 
 # Credits
 

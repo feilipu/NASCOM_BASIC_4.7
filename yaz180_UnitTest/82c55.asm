@@ -291,11 +291,9 @@ CR              .EQU     0DH
 LF              .EQU     0AH
 CS              .EQU     0CH   ; Clear screen
 
-
-                               ; from Nascom Basic Symbol Tables .ORIG $0300
-DEINT           .EQU     $0BB7 ; Function DEINT to get USR(x) into DE registers
-ABPASS          .EQU     $132D ; Function ABPASS to put output into AB register for return
-
+                               ; from Nascom Basic Symbol Tables .ORIG $0388
+DEINT           .EQU     $0C3F ; Function DEINT to get USR(x) into DE registers
+ABPASS          .EQU     $13B5 ; Function ABPASS to put output into AB register for return
 
 ;==================================================================================
 ;

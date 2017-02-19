@@ -293,9 +293,9 @@ LF              .EQU     0AH
 CS              .EQU     0CH   ; Clear screen
 
 
-                               ; from Nascom Basic Symbol Tables .ORIG $0300
-DEINT           .EQU     $0BB7 ; Function DEINT to get USR(x) into DE registers
-ABPASS          .EQU     $132D ; Function ABPASS to put output into AB register for return
+                               ; from Nascom Basic Symbol Tables .ORIG $0388
+DEINT           .EQU     $0C3F ; Function DEINT to get USR(x) into DE registers
+ABPASS          .EQU     $13B5 ; Function ABPASS to put output into AB register for return
 
 
 APU_TOS         .EQU     $36B0       ; CPU TOS Operand - 14000
@@ -307,12 +307,9 @@ APU_NOS         .EQU     APU_TOS+$04 ; CPU NOS Operand - 14004
 ;
 
         .org USRSTART   ; start from 'X' jump, Basic prompt
-        
-        ld a, DCNTL_IWI1 | DCNTL_IWI0   ; DMA/Wait Control Reg Set I/O Wait States
-        out0 (DCNTL), a                 ; 0 Memory Wait & 4 I/O Wait
 
                         ; Am9511A I/O is from $C000 to $C001
-                        
+
                         ; assume the operand byte code in function call
                         ; return 16 bit result (if relevant)
                         ; NOS, TOS, poked to relevant addresses
@@ -320,26 +317,28 @@ APU_NOS         .EQU     APU_TOS+$04 ; CPU NOS Operand - 14004
 
         call DEINT      ; get the USR(x) argument in de
 
-        call APU_CHK_RDY ; check ready first
+;        call APU_CHK_RDY ; check ready
 
-;        ld hl, APU_NOS  ; prep first operand
-;        call APU_PUSH_4
+        ld bc, APUDATA  ; the address of the APU data port in bc
+        ld hl, APU_NOS  ; prep first operand
+        call APU_PUSH_2
 
 ;        call APU_CHK_RDY ; check ready again
 
+        ld bc, APUDATA  ; the address of the APU data port in bc
         ld hl, APU_TOS  ; prep second operand
         call APU_PUSH_2
 
-        call APU_CHK_RDY ; check ready again
-
+        ld bc, APUDATA  ; the address of the APU data port in bc
         ld hl, APU_TOS  ; recover second operand
         call APU_POP_2
 
 ;        call APU_CHK_RDY ; check ready again
-        
-;        ld hl, APU_NOS  ; recover first operand
-;        call APU_POP_4
-        
+
+        ld bc, APUDATA  ; the address of the APU data port in bc
+        ld hl, APU_NOS  ; recover first operand
+        call APU_POP_2
+
 APU_AB_RES:                        
         ld hl, APU_TOS  ; prep single 16bit result
         ld a, (hl)      ; read the LSB
@@ -348,11 +347,8 @@ APU_AB_RES:
         ld a, (hl)      ; read the MSB      
         jp ABPASS       ; return the 16 bit value to USR(x)
 
-APU_DO_OP:
-        ld bc, APUCNTL  ; the address of the APU control port in bc
-        ld a, e         ; get the operand
-        out (c),a       ; do the operation
-        ret
+;------------------------------------------------------------------------------
+;
 
 APU_CHK_RDY:
         ld bc, APUSTAT  ; the address of the APU status port in bc
@@ -360,6 +356,13 @@ APU_CHK_RDY:
         and $80         ; Busy?
         jr nz, APU_CHK_RDY
         ld bc, APUDATA  ; the address of the APU data port in bc
+        ret
+
+APU_DO_OP:
+        ld a, e         ; get the operand
+        call APU_CHK_RDY
+        ld bc, APUCNTL  ; the address of the APU control port in bc
+        out (c),a       ; do the operation
         ret
 
 APU_DO_D:
