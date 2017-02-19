@@ -598,6 +598,10 @@ HEX_ESA_DATA:
             jr HEX_READ_CHKSUM  ; calculate checksum
 
 HEX_END_LOAD:
+            call HEX_READ_BYTE  ; read checksum, but we don't need to keep it
+            ld a, l         ; lower byte of hl checksum should be 0
+            or a
+            jr nz, HEX_BAD_CHK  ; non zero, we have an issue
             call HEX_BBR_RESTORE   ; clean up the BBR
             ld hl, LoadOKStr
             call PRINT
@@ -776,7 +780,7 @@ CORW:
 COLDSTART:
                LD        A,'Y'           ; Set the BASIC STARTED flag
                LD        (basicStarted),A
-               JP        $0380           ; <<<< Start Basic COLD:
+               JP        $0388           ; <<<< Start Basic COLD:
 CHECKWARM:
                CP        'W'
                JR        NZ, CORW
@@ -786,14 +790,14 @@ CHECKWARM:
                LD        A,$0A
                RST       08H
 WARMSTART:
-               JP        $0383           ; <<<< Start Basic WARM:
+               JP        $038B           ; <<<< Start Basic WARM:
 
 SIGNON1:       .BYTE     "YAZ180 - feilipu",CR,LF,0
 SIGNON2:       .BYTE     CR,LF
                .BYTE     "Cold or Warm start, "
                .BYTE     "or Hexloadr (C|W|H) ? ",0
 
-initString:        .BYTE CR,LF,"HexLoadr> "
+initString:        .BYTE CR,LF,"HexLoadr: "
                    .BYTE CR,LF,0
 
 invalidTypeStr:    .BYTE "Inval Type",CR,LF,0

@@ -10,9 +10,7 @@ usr = 0x8120+0x0003
 #usr = 0x8000+0x0003
 
 # fill the USR(x) jump with the address - adjust jump address too
-print "poke "+str(usr-65536  ) + "," + str(0xC3) + "\r"
-print "poke "+str(usr-65536+1) + "," + str(0x00) + "\r"
-print "poke "+str(usr-65536+2) + "," + str(0xFF) + "\r\n\r"
+print "doke "+str(usr-65536+1) + "," + str(mem) + "\r\n\r"
 
 # now fill the RAM with the program bytes
 with open("HEXLOADR.BIN", "rb") as f:
@@ -23,4 +21,4 @@ with open("HEXLOADR.BIN", "rb") as f:
         byte = f.read(1)
 
 # now start the hexloadr program automatically
-print "print usr(0)" + "\r"
+print "\r\nprint usr(0)\r"

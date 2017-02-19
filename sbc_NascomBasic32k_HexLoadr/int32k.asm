@@ -23,6 +23,12 @@
 ; https://feilipu.me/
 ;
 ;==================================================================================
+;
+; HexLoadr option by @feilipu,
+; derived from the work of @fbergama and @foxweb at RC2014
+; https://github.com/RC2014Z80
+;
+;==================================================================================
 
 SER_CTRL_ADDR   .EQU   $80    ; Address of Control Register (write only)
 SER_STATUS_ADDR .EQU   $80    ; Address of Status Register (read only)
@@ -382,6 +388,10 @@ HEX_READ_CHKSUM:
             jr HEX_WAIT_COLON
 
 HEX_END_LOAD:
+            call HEX_READ_BYTE  ; read checksum, but we don't need to keep it
+            ld a, l         ; lower byte of hl checksum should be 0
+            or a
+            jr nz, HEX_BAD_CHK  ; non zero, we have an issue
             ld hl, LoadOKStr
             call PRINT
             jp WARMSTART    ; ready to run our loaded program from Basic
@@ -496,7 +506,7 @@ SIGNON2:       .BYTE     CR,LF
                .BYTE     "or HexLoadr (C|W|H) ? ",0
 
 initString:        .BYTE CR,LF
-                   .BYTE "HexLoadr> "
+                   .BYTE "HexLoadr: "
                    .BYTE CR,LF,0
 
 invalidTypeStr:    .BYTE "Invalid Type",CR,LF,0
