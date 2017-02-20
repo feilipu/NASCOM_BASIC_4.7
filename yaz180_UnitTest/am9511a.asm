@@ -366,18 +366,18 @@ APU_AB_RES:
 ;------------------------------------------------------------------------------
 ;
 
-APU_DO_OP:
-        ld bc, APUCNTL  ; the address of the APU control port in bc
-        ld a, e         ; get the operand
-        out (c),a       ; do the operation
-        ret
-
 APU_CHK_RDY:
         ld bc, APUSTAT  ; the address of the APU status port in bc
         in a, (c)       ; read the APU
         and $80         ; Busy?
         jr nz, APU_CHK_RDY
         ld bc, APUDATA  ; the address of the APU data port in bc
+        ret
+
+APU_DO_OP:
+        ld bc, APUCNTL  ; the address of the APU control port in bc
+        ld a, e         ; get the operand
+        out (c),a       ; do the operation
         ret
 
 APU_DO_D:
