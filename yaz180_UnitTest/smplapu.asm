@@ -316,11 +316,15 @@ APU_NOS         .EQU     APU_TOS+$04 ; CPU NOS Operand - 14004
                         ; Result peeked from relevant address
 
         call DEINT      ; get the USR(x) argument in de
-        
-                        ; DMA/Wait Control Reg Set I/O Wait States
 
-;        LD A, DCNTL_IWI0
-        LD A, DCNTL_IWI1 | DCNTL_IWI0
+        OR A            ; Set internal clock = crystal x 1 = 18.432MHz
+        OUT0 (CMR),A    ; CPU Clock Multiplier Reg (CMR)
+
+                        ; DMA/Wait Control Reg Set I/O Wait States
+        OR A            ; 1 I/O Wait
+;        LD A, DCNTL_IWI0 ; 2 I/O Wait
+;        LD A, DCNTL_IWI1 ; 3 I/O Wait
+;       LD A, DCNTL_IWI1 | DCNTL_IWI0 ; 4 I/O Wait
         OUT0 (DCNTL),A  ; 0 Memory Wait & 4 I/O Wait
 
 ;        call APU_CHK_RDY ; check ready
@@ -336,23 +340,27 @@ APU_NOS         .EQU     APU_TOS+$04 ; CPU NOS Operand - 14004
 
 ;        call APU_CHK_RDY ; check ready again
 
-        ld hl, INStr
-        call PRINT
-        ld hl, TOSStr
-        call PRINT
+;        ld hl, INStr
+;        call PRINT
+;        ld hl, TOSStr
+;        call PRINT
 
         ld bc, APUDATA  ; the address of the APU data port in bc
         ld hl, APU_TOS  ; prep second operand
         call APU_PUSH_2
         
-        ld hl, OUTStr
-        call PRINT
-        ld hl, TOSStr
-        call PRINT
+;        ld hl, OUTStr
+;        call PRINT
+;        ld hl, TOSStr
+;        call PRINT
 
         ld bc, APUDATA  ; the address of the APU data port in bc
         ld hl, APU_TOS  ; recover second operand
         call APU_POP_2
+        
+                        ; Set internal clock = crystal x 2 = 36.864MHz
+        LD A,CMR_X2     ; Set Hi-Speed flag
+        OUT0 (CMR),A    ; CPU Clock Multiplier Reg (CMR)
 
 ;        call APU_CHK_RDY ; check ready again
 
@@ -426,20 +434,16 @@ APU_DO_2:
 APU_PUSH_4:             ; Base Address in HL, Data port in BC
         ld a, (hl)      ; get the byte
         out (c), a      ; push to APU
-        rst 08h         ; transmit the byte
         inc hl
         ld a, (hl)      ; get the byte
         out (c), a      ; push to APU
-        rst 08h         ; transmit the byte
         inc hl
 APU_PUSH_2:
         ld a, (hl)      ; get the byte
         out (c), a      ; push to APU
-        rst 08h         ; transmit the byte
         inc hl
         ld a, (hl)      ; get the byte
         out (c), a      ; push to APU
-        rst 08h         ; transmit the byte
         ret
 
 APU_POP_4:              ; Base Address in HL, Data port in BC
@@ -448,22 +452,18 @@ APU_POP_4:              ; Base Address in HL, Data port in BC
         inc hl
         in a, (c)       ; pop the APU
         ld (hl), a      ; store the byte
-        rst 08h         ; transmit the byte
         dec hl
         in a, (c)       ; pop the APU
         ld (hl), a      ; store the byte
-        rst 08h         ; transmit the byte
         dec hl
         dec hl
 APU_POP_2:
         inc hl
         in a, (c)       ; pop the APU
         ld (hl), a      ; store the byte
-        rst 08h         ; transmit the byte
         dec hl
         in a, (c)       ; pop the APU
         ld (hl), a      ; store the byte
-        rst 08h         ; transmit the byte
         ret
 
 

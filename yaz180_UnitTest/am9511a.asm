@@ -317,6 +317,16 @@ APU_NOS         .EQU     APU_TOS+$04 ; CPU NOS Operand - 14004
 
         call DEINT      ; get the USR(x) argument in de
 
+        OR A            ; Set internal clock = crystal x 1 = 18.432MHz
+        OUT0 (CMR),A    ; CPU Clock Multiplier Reg (CMR)
+        
+                                ; DMA/Wait Control Reg Set I/O Wait States
+;        OR A            ; 1 I/O Wait
+        LD A, DCNTL_IWI0 ; 2 I/O Wait
+;        LD A, DCNTL_IWI1 ; 3 I/O Wait
+;       LD A, DCNTL_IWI1 | DCNTL_IWI0 ; 4 I/O Wait
+        OUT0 (DCNTL),A  ; 0 Memory Wait & 4 I/O Wait
+
         call APU_CHK_RDY ; check ready first
 
         ld a, e         ; check the operand, what are we doing?
@@ -352,10 +362,17 @@ APU_NOS         .EQU     APU_TOS+$04 ; CPU NOS Operand - 14004
         cp $7c
         jr z, APU_DO_2
 
+        ld hl, OPMStr   ; Notice Stack
+        call PRINT
+
         call APU_DO_OP  ; otherwise its data manipulation
         call APU_CHK_RDY ; check ready
 
-APU_AB_RES:                        
+APU_AB_RES:
+                        ; Set internal clock = crystal x 2 = 36.864MHz
+        LD A,CMR_X2     ; Set Hi-Speed flag
+        OUT0 (CMR),A    ; CPU Clock Multiplier Reg (CMR)
+
         ld hl, APU_TOS  ; prep single result
         ld a, (hl)      ; read the LSB
         ld b, a         ; put it in b
@@ -381,15 +398,19 @@ APU_DO_OP:
         ret
 
 APU_DO_D:
+        ld hl, OPDStr   ; Notice 4 Byte x 1 Operand
+        call PRINT
         ld hl, APU_TOS  ; prep single operand
         call APU_PUSH_4
         call APU_DO_OP
         call APU_CHK_RDY
         ld hl, APU_TOS  ; prep single result
-        call APU_POP_4
+        call APU_POP_4+3
         jr APU_AB_RES
 
 APU_DO_4:
+        ld hl, OP4Str   ; Notice 4 Byte x 2 Operand
+        call PRINT
         ld hl, APU_NOS  ; prep first operand
         call APU_PUSH_4
         ld hl, APU_TOS  ; prep second operand
@@ -397,17 +418,19 @@ APU_DO_4:
         call APU_DO_OP
         call APU_CHK_RDY
         ld hl, APU_TOS  ; prep single result
-        call APU_POP_4
+        call APU_POP_4+3
         jr APU_AB_RES
 
 APU_DO_2:
+        ld hl, OP2Str   ; Notice 2 Byte x 2 Operand
+        call PRINT
         ld hl, APU_NOS  ; prep first operand
         call APU_PUSH_2
         ld hl, APU_TOS  ; prep second operand
         call APU_PUSH_2
         call APU_DO_OP
         call APU_CHK_RDY
-        ld hl, APU_TOS  ; prep single result
+        ld hl, APU_TOS+1  ; prep single result
         call APU_POP_2
         jr APU_AB_RES
 
@@ -418,7 +441,7 @@ APU_PUSH_4:             ; Base Address in HL, Data port in BC
         ld a, (hl)      ; get the byte
         out (c), a      ; push to APU
         inc hl
-APU_PUSH_2:
+APU_PUSH_2:             ; Base Address in HL, Data port in BC
         ld a, (hl)      ; get the byte
         out (c), a      ; push to APU
         inc hl
@@ -426,24 +449,39 @@ APU_PUSH_2:
         out (c), a      ; push to APU
         ret
 
-APU_POP_4:              ; Base Address in HL, Data port in BC
-        inc hl
-        inc hl
-        inc hl
+APU_POP_4:              ; Base Address +3 in HL, Data port in BC
         in a, (c)       ; pop the APU
         ld (hl), a      ; store the byte
         dec hl
         in a, (c)       ; pop the APU
         ld (hl), a      ; store the byte
         dec hl
-        dec hl
-APU_POP_2:
-        inc hl
+APU_POP_2:              ; Base Address +1 in HL, Data port in BC
         in a, (c)       ; pop the APU
         ld (hl), a      ; store the byte
         dec hl
         in a, (c)       ; pop the APU
         ld (hl), a      ; store the byte
         ret
+
+;------------------------------------------------------------------------------
+;
+
+PRINT:                  ; String address hl, destroys a
+        LD A,(HL)       ; Get character
+        OR A            ; Is it $00 ?
+        RET Z           ; Then Return on terminator
+        RST 08H         ; Print it
+        INC HL          ; Next Character
+        JR PRINT        ; Continue until $00
+
+TOSStr: .BYTE "TOS_",0
+NOSStr: .BYTE "NOS_",0
+INStr:  .BYTE CR,LF,"IN  ",0
+OUTStr: .BYTE CR,LF,"OUT ",0
+OP2Str: .BYTE CR,LF,"2 Byte",0
+OP4Str: .BYTE CR,LF,"4 Byte",0
+OPDStr: .BYTE CR,LF,"Derived",0
+OPMStr: .BYTE CR,LF,"Stack",0
 
         .end
