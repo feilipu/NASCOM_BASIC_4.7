@@ -347,16 +347,16 @@ APU_NOS         .EQU     APU_TOS+$04 ; CPU NOS Operand - 14004
 
         ld bc, APUDATA  ; the address of the APU data port in bc
         ld hl, APU_TOS  ; prep second operand
-        call APU_PUSH_2
+        call APU_PUSH_4
         
 ;        ld hl, OUTStr
 ;        call PRINT
 ;        ld hl, TOSStr
 ;        call PRINT
 
-        ld bc, APUDATA  ; the address of the APU data port in bc
-        ld hl, APU_TOS  ; recover second operand
-        call APU_POP_2
+        ld bc, APUDATA   ; the address of the APU data port in bc
+        ld hl, APU_TOS+3 ; recover second operand
+        call APU_POP_4
         
                         ; Set internal clock = crystal x 2 = 36.864MHz
         LD A,CMR_X2     ; Set Hi-Speed flag
@@ -438,7 +438,7 @@ APU_PUSH_4:             ; Base Address in HL, Data port in BC
         ld a, (hl)      ; get the byte
         out (c), a      ; push to APU
         inc hl
-APU_PUSH_2:
+APU_PUSH_2:             ; Base Address in HL, Data port in BC
         ld a, (hl)      ; get the byte
         out (c), a      ; push to APU
         inc hl
@@ -446,19 +446,14 @@ APU_PUSH_2:
         out (c), a      ; push to APU
         ret
 
-APU_POP_4:              ; Base Address in HL, Data port in BC
-        inc hl
-        inc hl
-        inc hl
+APU_POP_4:              ; Base Address +3 in HL, Data port in BC
         in a, (c)       ; pop the APU
         ld (hl), a      ; store the byte
         dec hl
         in a, (c)       ; pop the APU
         ld (hl), a      ; store the byte
         dec hl
-        dec hl
-APU_POP_2:
-        inc hl
+APU_POP_2:              ; Base Address +1 in HL, Data port in BC
         in a, (c)       ; pop the APU
         ld (hl), a      ; store the byte
         dec hl

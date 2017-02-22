@@ -688,10 +688,7 @@ INIT:
   ;                                      ; if using ZS8180 or Z80182 at High-Speed
   ;            LD        A,CCR_XTAL_X2   ; Set Hi-Speed flag: PHI = internal clock
   ;            OUT0      (CCR),A         ; CPU Control Reg (CCR)
-
-               EX        (SP),IY         ; (settle)
-               EX        (SP),IY         ; (settle)
-               
+              
                                          ; DMA/Wait Control Reg Set I/O Wait States
                LD A, DCNTL_IWI1 | DCNTL_IWI0
                OUT0      (DCNTL),A       ; 0 Memory Wait & 4 I/O Wait

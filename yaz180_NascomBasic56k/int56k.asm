@@ -588,9 +588,6 @@ INIT:
   ;            LD        A,CCR_XTAL_X2   ; Set Hi-Speed flag: PHI = internal clock
   ;            OUT0      (CCR),A         ; CPU Control Reg (CCR)
 
-               EX        (SP),IY         ; (settle)
-               EX        (SP),IY         ; (settle)
-               
                LD        A,DCNTL_IWI0    ; DMA/Wait Control Reg Set I/O Wait States
                OUT0      (DCNTL),A       ; 0 Memory Wait & 2 I/O Wait
 
