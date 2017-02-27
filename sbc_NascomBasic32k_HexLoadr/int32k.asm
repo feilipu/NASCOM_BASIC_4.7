@@ -1,5 +1,5 @@
 ;==================================================================================
-; Contents of this file are copyright Grant Searle
+; Contents of parts of this file are copyright Grant Searle
 ;
 ; You have permission to use this for NON COMMERCIAL USE ONLY
 ; If you wish to use it elsewhere, please include an acknowledgement to myself.
@@ -16,8 +16,7 @@
 ; ACIA 6850 interrupt driven serial I/O to run modified NASCOM Basic 4.7.
 ; Full input and output buffering with incoming data hardware handshaking.
 ; Handshake shows full before the buffer is totally filled to
-; allow run-on from the sender.
-; Transmit and receive are interrupt driven.
+; allow run-on from the sender. Transmit and receive are interrupt driven.
 ;
 ; https://github.com/feilipu/
 ; https://feilipu.me/
