@@ -38,9 +38,9 @@ This can be changed if substantial code is added to the HexLoadr program
 
 For convenience, because we can't easily change ROM code interrupt routines already present in the RC2014 or YAZ180, the serial Tx and Rx routines are reachable by calling `RST` instructions.
 
-* Tx: `RST 08H` expects a byte in the `a` register.
-* Rx: `RST 10H` returns a byte in the `a` register, and will loop until it has a byte to return.
-* Rx Check: `RST 18H` will return the number of bytes in the Rx buffer (0 if buffer empty) in the `a` register.
+* Tx: `RST 08H` expects a byte to transmit in the `a` register.
+* Rx: `RST 10H` returns a received byte in the `a` register, and will block (loop) until it has a byte to return.
+* Rx Check: `RST 18H` will immediately return the number of bytes in the Rx buffer (0 if buffer empty) in the `a` register.
 
 # Program Usage
 
@@ -62,7 +62,7 @@ For convenience, because we can't easily change ROM code interrupt routines alre
 
 9. Using the `DOKE` command relocate the address for the `USR(x)` command to point to `.ORG` of your arbitrary program.
 
-10. When HexLoadr has finished, and you are back at the Basic `ok` prompt start your arbitrary program using `PRINT USR(x)`, or other variant if you have parameters to pass to your program.
+10. When HexLoadr has finished, and you are back at the Basic `ok` prompt start your arbitrary program using `PRINT USR(0)`, or other variant if you have parameters to pass to your program.
 
 11. Profit.
 

@@ -26,8 +26,8 @@ Handshake shows full before the buffer is totally filled to allow run-on from th
 Transmit and receive are interrupt driven.
 
 Receive buffer is 255 bytes, to allow efficient pasting of Basic into the editor.
-Transmit buffer is 15 bytes, because the YAZ180 is too slow to fill the buffer.
-Receive and Transmit buffer overflows are silently discarded.
+Transmit buffer is 15 bytes, because the RC2014 is too slow to fill the buffer.
+Receive buffer overflows are silently discarded.
 
 A jump to RAM at 0xE000 is provided to ease the exit to ASM programs.
 
@@ -117,21 +117,48 @@ There are a number of important Z180 addresses or origins that need to be manage
 
 Your program (the one that you're doing all this for) needs to start in RAM located somewhere.
 
-If you're using the YAZ180 with 32kB Nascom Basic, then all of the RAM between `0x3000` and `0x7FFF` is available for your assembly programs, without limitation. This area is the Banked memory area, and this can be managed by the HexLoadr program to write to all of the physical RAM space.
+If you're using the YAZ180 with 32kB Nascom Basic, then all of the RAM between `0x3000` and `0x7FFF` is available for your assembly programs, without limitation. The area between `0x2000` and `0x2FFF` is reserved for system calls, buffers, and stack space.
+
+The area from `0x4000` to `0x7FFF` is the Banked memory area, and this RAM can be managed by the HexLoadr program to write to all of the physical RAM space using ESA Records.
+
+HexLoadr supports the Extended Segment Address Record Type, and will store the MSB of the ESA in the Z180 BBR Register. The LSB of the ESA is silently abandoned. When HexLoadr terminates the BBR is returned to the original value.
 
 ## RST locations
 
-For convenience, because we can't easily change ROM code interrupt routines already present in the YAZ180, the serial Tx and Rx routines are reachable by calling `RST` instructions from your assembly program.
+For convenience, because we can't easily change ROM code interrupt routines already present in the YAZ180, the ASCI serial Tx and Rx routines are reachable by calling `RST` instructions from your assembly program.
 
 * Tx: `RST 08H` expects a byte to transmit in the `a` register.
 * Rx: `RST 10H` returns a received byte in the `a` register, and will block (loop) until it has a byte to return.
 * Rx Check: `RST 18H` will immediately return the number of bytes in the Rx buffer (0 if buffer empty) in the `a` register.
 
+## USR Jump Address & Parameter Access
+
+For the YAZ180 the `USR(x)` jump address is located at `&h8004`.
+For example, if your arbitrary program is located at `&h3000` then the Basic command to set the `USR(x)` jump address is `DOKE &h8004, &h3000`.
+
+Your assembly program can receive a 16 bit parameter passed in from the function by calling `DEINT` at `&h0C3F`. The parameter is stored in register pair `DE`.
+
+When your assembly program is finished it can return a 16 bit parameter stored in `A` (MSB) and `B` (LSB) by jumping to `ABPASS` which is located at `&h13B4`.
+
+``` asm
+                                ; from Nascom Basic Symbol Tables
+DEINT           .EQU    $0C3F   ; Function DEINT to get USR(x) into DE registers
+ABPASS          .EQU    $13B4   ; Function ABPASS to put output into AB register for return
+
+                .ORG    3000H   ; your code origin, for example
+                call DEINT      ; get the USR(x) argument in DE
+                 
+                                ; your code here
+                                
+                jp ABPASS       ; return the 16 bit value to USR(x). Note jp not ret
+```
+
+
 # Program Usage
 
 1. Select the preferred origin `.ORG` for your arbitrary program, and assemble a HEX file using your preferred assembler.
 
-2. Reset the YAZ180 and type `H` when offered the `(C|W|H)` option when booting. `HexLoadr:` will wait for Intel HEX formatted data on the ACIA serial interface.
+2. Reset the YAZ180 and type `H` when offered the `(C|W|H)` option when booting. `HexLoadr:` will wait for Intel HEX formatted data on the ASCI serial interface.
 
 3. Using a serial terminal, upload the HEX file for your arbitrary program that you prepared in Step 1. If desired the python `slowprint.py` program, or the Linux `cat` utility, can also be used for this purpose. `python slowprint.py < myprogram.hex > /dev/ttyUSB0` or `cat myprogram.hex > /dev/ttyUSB0`.
 
@@ -143,8 +170,8 @@ For convenience, because we can't easily change ROM code interrupt routines alre
 
 ## Workflow Notes
 
-Note that your arbitrary program and the `USR(x)` jump will remain in place through a YAZ180 reset, provided you prevent Basic from initialising the RAM you have loaded. Also, you can reload your program to the same location through multiple Warm and HexLoadr restarts, without reprogramming the `USR(x)` jump.
+Note that your arbitrary program and the `USR(x)` jump will remain in place through a YAZ180 Cold or Warm RESET, provided you avoid using RAM that Basic initialises. Also, you can reload your assembly program to the same location through multiple Warm and HexLoadr RESETs, without reprogramming the `USR(x)` jump.
 
-Any Basic programs loaded will also remain in place during a Warm RESET or HexLoadr RESET.
+Any Basic programs loaded will also remain in place during a Warm or HexLoadr RESET.
 
-This makes loading a new version of your program as easy as 1. `RESET`, 2. `H`, then 3. `cat`.
+This makes loading a new version of your assembly program as easy as 1. `RESET`, 2. `H`, then 3. `cat`.
