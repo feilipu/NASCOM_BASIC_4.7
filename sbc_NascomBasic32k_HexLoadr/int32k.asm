@@ -117,13 +117,13 @@ RST08:           JP      TXA
 ;------------------------------------------------------------------------------
 ; RST 10 - Rx a character over RS232 Channel A [Console], hold until char ready.
 
-                .ORG 0010H
+                .ORG     0010H
 RST10:           JP      RXA
 
 ;------------------------------------------------------------------------------
 ; RST 18 - Check serial Rx status
 
-                .ORG 0018H
+                .ORG     0018H
 RST18:           JP      CKINCHAR
 
 ;------------------------------------------------------------------------------
@@ -189,7 +189,7 @@ im1_tx_check:                       ; now start doing the Tx stuff
         ld hl, (serTxOutPtr)        ; get the pointer to place where we pop the Tx byte
         ld a, (hl)                  ; get the Tx byte
         out (SER_DATA_ADDR), a      ; output the Tx byte to the ACIA
-        
+
         inc hl                      ; move the Tx pointer along
         ld a, l                     ; get the low byte of the Tx pointer
         cp (serTxBuf + SER_TX_BUFSIZE) & $FF
@@ -301,7 +301,7 @@ txa_buffer_out:
         ld a, l                     ; Retrieve Tx character
         ld hl, (serTxInPtr)         ; get the pointer to where we poke
         ld (hl), a                  ; write the Tx byte to the serTxInPtr
-        
+
         inc hl                      ; move the Tx pointer along
         ld a, l                     ; move low byte of the Tx pointer
         cp (serTxBuf + SER_TX_BUFSIZE) & $FF
@@ -333,18 +333,20 @@ txa_end:
         ret
 
 ;------------------------------------------------------------------------------
-CKINCHAR:      LD        A,(serRxBufUsed)
-               CP        $0
-               RET
+CKINCHAR:
+            LD        A,(serRxBufUsed)
+            CP        $0
+            RET
 
 ;------------------------------------------------------------------------------
-PRINT:         LD        A,(HL)          ; Get character
-               OR        A               ; Is it $00 ?
-               RET       Z               ; Then RETurn on terminator
-               RST       08H             ; Print it
-               INC       HL              ; Next Character
-               JR        PRINT           ; Continue until $00
-               RET
+PRINT:
+            LD        A,(HL)          ; Get character
+            OR        A               ; Is it $00 ?
+            RET       Z               ; Then RETurn on terminator
+            RST       08H             ; Print it
+            INC       HL              ; Next Character
+            JR        PRINT           ; Continue until $00
+            RET
 
 ;------------------------------------------------------------------------------
 HEX_START:      

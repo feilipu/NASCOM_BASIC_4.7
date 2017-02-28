@@ -1,5 +1,5 @@
 ;==================================================================================
-; Contents of this file are copyright Grant Searle
+; Contents of parts of this file are copyright Grant Searle
 ;
 ; You have permission to use this for NON COMMERCIAL USE ONLY
 ; If you wish to use it elsewhere, please include an acknowledgement to myself.
@@ -16,8 +16,7 @@
 ; ACIA 6850 interrupt driven serial I/O to run modified NASCOM Basic 4.7.
 ; Full input and output buffering with incoming data hardware handshaking.
 ; Handshake shows full before the buffer is totally filled to
-; allow run-on from the sender.
-; Transmit and receive are interrupt driven.
+; allow run-on from the sender. Transmit and receive are interrupt driven.
 ;
 ; https://github.com/feilipu/
 ; https://feilipu.me/
@@ -112,13 +111,13 @@ RST08:           JP      TXA
 ;------------------------------------------------------------------------------
 ; RST 10 - Rx a character over RS232 Channel A [Console], hold until char ready.
 
-                .ORG 0010H
+                .ORG     0010H
 RST10:           JP      RXA
 
 ;------------------------------------------------------------------------------
 ; RST 18 - Check serial Rx status
 
-                .ORG 0018H
+                .ORG     0018H
 RST18:           JP      CKINCHAR
 
 ;------------------------------------------------------------------------------
@@ -328,18 +327,20 @@ txa_end:
         ret
 
 ;------------------------------------------------------------------------------
-CKINCHAR:      LD        A,(serRxBufUsed)
-               CP        $0
-               RET
+CKINCHAR:
+            LD        A,(serRxBufUsed)
+            CP        $0
+            RET
 
 ;------------------------------------------------------------------------------
-PRINT:         LD        A,(HL)          ; Get character
-               OR        A               ; Is it $00 ?
-               RET       Z               ; Then RETurn on terminator
-               RST       08H             ; Print it
-               INC       HL              ; Next Character
-               JR        PRINT           ; Continue until $00
-               RET
+PRINT:
+            LD        A,(HL)          ; Get character
+            OR        A               ; Is it $00 ?
+            RET       Z               ; Then RETurn on terminator
+            RST       08H             ; Print it
+            INC       HL              ; Next Character
+            JR        PRINT           ; Continue until $00
+            RET
 
 ;------------------------------------------------------------------------------
 INIT:
@@ -373,12 +374,12 @@ INIT:
                IM        1               ; interrupt mode 1
                EI
 START:
-               LD        HL,SIGNON1      ; Sign-on message
+               LD        HL, SIGNON1     ; Sign-on message
                CALL      PRINT           ; Output string
                LD        A,(basicStarted); Check the BASIC STARTED flag
                CP        'Y'             ; to see if this is power-up
-               JR        NZ,COLDSTART    ; If not BASIC started then always do cold start
-               LD        HL,SIGNON2      ; Cold/warm message
+               JR        NZ, COLDSTART   ; If not BASIC started then always do cold start
+               LD        HL, SIGNON2     ; Cold/warm message
                CALL      PRINT           ; Output string
 CORW:
                RST       10H
