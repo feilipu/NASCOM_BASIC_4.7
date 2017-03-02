@@ -549,7 +549,6 @@ PRINT:         LD        A,(HL)          ; Get character
                RST       08H             ; Print it
                INC       HL              ; Next Character
                JR        PRINT           ; Continue until $00
-               RET
 
 ;------------------------------------------------------------------------------
 INIT:
