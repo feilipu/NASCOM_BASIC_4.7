@@ -109,7 +109,7 @@ RST00:           DI            ;Disable interrupts
 RST08:           JP      TXA
 
 ;------------------------------------------------------------------------------
-; RST 10 - Rx a character over RS232 Channel A [Console], hold until char ready.
+; RST 10 - Rx a character over RS232 Channel A [Console], hold until char ready
 
                 .ORG     0010H
 RST10:           JP      RXA
@@ -118,7 +118,7 @@ RST10:           JP      RXA
 ; RST 18 - Check serial Rx status
 
                 .ORG     0018H
-RST18:           JP      CKINCHAR
+RST18:           JP      RXA_CHK
 
 ;------------------------------------------------------------------------------
 ; RST 20
@@ -327,7 +327,7 @@ txa_end:
         ret
 
 ;------------------------------------------------------------------------------
-CKINCHAR:
+RXA_CHK:
             LD        A,(serRxBufUsed)
             CP        $0
             RET
