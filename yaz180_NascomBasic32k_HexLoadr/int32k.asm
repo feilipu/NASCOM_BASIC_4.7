@@ -326,7 +326,7 @@ RST00:          DI                  ; Disable interrupts
 RST08:          JP       TX0
 
 ;------------------------------------------------------------------------------
-; RST10 - RX a character over ASCI Channel [Console], hold here until char ready.
+; RST10 - RX a character over ASCI Channel [Console], hold here until char ready
 
                 .ORG     0010H
 RST10:          JP       RX0
@@ -336,12 +336,12 @@ RST10:          JP       RX0
 
                 .ORG     0018H
 RST18:          JP       RX0_CHK
-             
+
 ;------------------------------------------------------------------------------
-; RST 20
+; RST 20 - Start the HexLoadr function
 
                 .ORG     0020H
-RST20:          RET                 ; just return
+RST20:          JP       HEX_START
 
 ;------------------------------------------------------------------------------
 ; RST 28
@@ -451,7 +451,7 @@ ASCI0_TX_END:
 
         pop hl
         pop af
-        
+
         ei
         ret
 
@@ -463,7 +463,7 @@ RX0_WAIT_FOR_BYTE:
 
         or a                        ; see if there are zero bytes available
         jr z, RX0_WAIT_FOR_BYTE     ; wait, if there are no bytes available
-        
+
         push hl                     ; Store HL so we don't clobber it
 
         ld hl, (serRx0OutPtr)       ; get the pointer to place where we pop the Rx byte
@@ -531,27 +531,29 @@ TX0_CLEAN_UP:
         ret
 
 ;------------------------------------------------------------------------------
-RX0_CHK:       LD        A,(serRx0BufUsed)
-               CP        $0
-               RET
+RX0_CHK:
+        LD      A,(serRx0BufUsed)
+        CP      $0
+        RET
 
 ;------------------------------------------------------------------------------
-PRINT:         LD        A,(HL)          ; Get character
-               OR        A               ; Is it $00 ?
-               RET       Z               ; Then RETurn on terminator
-               RST       08H             ; Print it
-               INC       HL              ; Next Character
-               JR        PRINT           ; Continue until $00
+PRINT:
+        LD      A,(HL)              ; Get character
+        OR      A                   ; Is it $00 ?
+        RET     Z                   ; Then RETurn on terminator
+        RST     08H                 ; Print it
+        INC     HL                  ; Next Character
+        JR      PRINT               ; Continue until $00
 
 ;------------------------------------------------------------------------------
-HEX_START:      
+HEX_START:
             ld hl, initString
             call PRINT
-            
+
             ld c,0          ; non zero c is our ESA flag
 
 HEX_WAIT_COLON:
-            RST 10H         ; Rx byte
+            call RX0        ; Rx byte
             cp ':'          ; wait for ':'
             jr nz, HEX_WAIT_COLON
             ld hl, 0        ; reset hl to compute checksum
@@ -626,7 +628,7 @@ HEX_BBR_RESTORE:
 
 HEX_READ_BYTE:              ; Returns byte in a, checksum in hl
             push bc
-            RST 10H         ; Rx byte
+            call RX0        ; Rx byte
             sub '0'
             cp 10
             jr c, HEX_READ_NBL2 ; if a<10 read the second nibble
@@ -637,7 +639,7 @@ HEX_READ_NBL2:
             rlca
             rlca
             ld c, a         ; temporarily store the first nibble in c
-            RST 10H         ; Rx byte
+            call RX0        ; Rx byte
             sub '0'
             cp 10
             jr c, HEX_READ_END  ; if a<10 finalize
@@ -660,9 +662,9 @@ INIT:
                                          ; Set interrupt vector base (IL)
                LD        A,VECTOR_BASE   ; IL = $80 [001x xxxx] for Vectors at $80 - $90
                OUT0      (IL),A          ; Output to the Interrupt Vector Low reg
-                                        
+
                IM        1               ; Interrupt mode 1 for INT0 (used for FPU)
-                     
+
                XOR       A               ; Zero Accumulator
 
                                          ; Clear Refresh Control Reg (RCR)
@@ -687,10 +689,10 @@ INIT:
   ;                                      ; if using ZS8180 or Z80182 at High-Speed
   ;            LD        A,CCR_XTAL_X2   ; Set Hi-Speed flag: PHI = internal clock
   ;            OUT0      (CCR),A         ; CPU Control Reg (CCR)
-              
+
                                          ; DMA/Wait Control Reg Set I/O Wait States
-               LD A, DCNTL_IWI1 | DCNTL_IWI0
-               OUT0      (DCNTL),A       ; 0 Memory Wait & 4 I/O Wait
+               LD        A,DCNTL_IWI0
+               OUT0      (DCNTL),A       ; 0 Memory Wait & 2 I/O Wait
 
                                          ; Set Logical Addresses
                                          ; $8000-$FFFF RAM CA1 -> 80H
@@ -703,7 +705,7 @@ INIT:
                                          ; Physical Addresses
                LD        A,78H           ; Set Common 1 Area Physical $80000 -> 78H
                OUT0      (CBR),A
-               
+
                LD        A,3CH           ; Set Bank Area Physical $40000 -> 3CH
                OUT0      (BBR),A
 
@@ -729,7 +731,7 @@ INIT:
                                          ; transmit enabled                                         
                                          ; receive interrupt enabled
                                          ; transmit interrupt disabled
-                                         
+
                LD        A,SER_RE|SER_TE|SER_8N1
                OUT0      (CNTLA0),A      ; output to the ASCI0 control A reg
 
@@ -762,7 +764,7 @@ START:
                LD        HL,SIGNON2      ; Cold/warm message
                CALL      PRINT           ; Output string
 CORW:
-               CALL      RX0
+               RST       10H
                AND       %11011111       ; lower to uppercase
                CP        'H'             ; are we trying to load an Intel HEX program?
                JP        Z, HEX_START    ; then jump to HexLoadr
@@ -791,13 +793,14 @@ WARMSTART:
 SIGNON1:       .BYTE     "YAZ180 - feilipu",CR,LF,0
 SIGNON2:       .BYTE     CR,LF
                .BYTE     "Cold or Warm start, "
-               .BYTE     "or Hexloadr (C|W|H) ? ",0
+               .BYTE     "or HexLoadr (C|W|H) ? ",0
 
-initString:        .BYTE CR,LF,"HexLoadr: "
+initString:        .BYTE CR,LF
+                   .BYTE "HexLoadr: "
                    .BYTE CR,LF,0
 
 invalidTypeStr:    .BYTE "Inval Type",CR,LF,0
 badCheckSumStr:    .BYTE "Chksum Error",CR,LF,0
 LoadOKStr:         .BYTE "Done",CR,LF,0
-                              
+
                .END

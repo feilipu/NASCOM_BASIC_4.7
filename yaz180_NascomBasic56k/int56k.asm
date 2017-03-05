@@ -327,7 +327,7 @@ RST00:          DI                  ; Disable interrupts
 RST08:          JP       TX0
 
 ;------------------------------------------------------------------------------
-; RST10 - RX a character over ASCI Channel [Console], hold here until char ready.
+; RST10 - RX a character over ASCI Channel [Console], hold here until char ready
 
                 .ORG     0010H
 RST10:          JP       RX0
@@ -337,7 +337,7 @@ RST10:          JP       RX0
 
                 .ORG     0018H
 RST18:          JP       RX0_CHK
-             
+
 ;------------------------------------------------------------------------------
 ; RST 20
 
@@ -455,7 +455,7 @@ ASCI0_TX_END:
 
         pop hl
         pop af
-        
+
         ei
         ret
 
@@ -467,7 +467,7 @@ RX0_WAIT_FOR_BYTE:
 
         or a                        ; see if there are zero bytes available
         jr z, RX0_WAIT_FOR_BYTE     ; wait, if there are no bytes available
-        
+
         push hl                     ; Store HL so we don't clobber it
 
         ld hl, (serRx0OutPtr)       ; get the pointer to place where we pop the Rx byte
@@ -538,17 +538,19 @@ TX0_CLEAN_UP:
         ret
 
 ;------------------------------------------------------------------------------
-RX0_CHK:       LD        A,(serRx0BufUsed)
-               CP        $0
-               RET
+RX0_CHK:
+        LD      A,(serRx0BufUsed)
+        CP      $0
+        RET
 
 ;------------------------------------------------------------------------------
-PRINT:         LD        A,(HL)          ; Get character
-               OR        A               ; Is it $00 ?
-               RET       Z               ; Then RETurn on terminator
-               RST       08H             ; Print it
-               INC       HL              ; Next Character
-               JR        PRINT           ; Continue until $00
+PRINT:
+        LD      A,(HL)              ; Get character
+        OR      A                   ; Is it $00 ?
+        RET     Z                   ; Then RETurn on terminator
+        RST     08H                 ; Print it
+        INC     HL                  ; Next Character
+        JR      PRINT               ; Continue until $00
 
 ;------------------------------------------------------------------------------
 INIT:
@@ -559,9 +561,9 @@ INIT:
                                          ; Set interrupt vector base (IL)
                LD        A,VECTOR_BASE   ; IL = $80 [001x xxxx] for Vectors at $80 - $90
                OUT0      (IL),A          ; Output to the Interrupt Vector Low reg
-                                        
+
                IM        1               ; Interrupt mode 1 for INT0 (used for FPU)
-                     
+
                XOR       A               ; Zero Accumulator
 
                                          ; Clear Refresh Control Reg (RCR)
@@ -569,13 +571,13 @@ INIT:
 
                OUT0      (TCR),A         ; Disable PRT downcounting
 
-                                         ; Set INT/TRAP Control Register (ITC)              
-               OUT0      (ITC),A         ; Disable external interrupt INT0
-
-
                                          ; Set Operation Mode Control Reg (OMCR)
-               LD        A, ~OMCR_IOC    ; Enable (default) M1, disable 64180 I/O _RD Mode
-               OUT0      (OMCR),A        ; X80 Mode (M1E Enabled, IOC Disabled)
+                                         ; Disable M1, disable 64180 I/O _RD Mode
+               OUT0      (OMCR),A        ; X80 Mode (M1 Disabled, IOC Disabled)
+
+                                         ; Set INT/TRAP Control Register (ITC)
+               LD        A, ITC_ITE0     ; Enable (default) Interrupt INT0 for FPU               
+               OUT0      (ITC),A         ; Enable external interrupt INT0 
 
                                          ; Set internal clock = crystal x 2 = 36.864MHz
                                          ; if using ZS8180 or Z80182 at High-Speed
@@ -587,7 +589,8 @@ INIT:
   ;            LD        A,CCR_XTAL_X2   ; Set Hi-Speed flag: PHI = internal clock
   ;            OUT0      (CCR),A         ; CPU Control Reg (CCR)
 
-               LD        A,DCNTL_IWI0    ; DMA/Wait Control Reg Set I/O Wait States
+                                         ; DMA/Wait Control Reg Set I/O Wait States
+               LD        A,DCNTL_IWI0
                OUT0      (DCNTL),A       ; 0 Memory Wait & 2 I/O Wait
 
                                          ; Set Logical Addresses
@@ -601,7 +604,7 @@ INIT:
                                          ; Physical Addresses
                LD        A,78H           ; Set Common 1 Area Physical $80000 -> 78H
                OUT0      (CBR),A
-               
+
                LD        A,3CH           ; Set Bank Area Physical $40000 -> 3CH
                OUT0      (BBR),A
 
@@ -627,7 +630,7 @@ INIT:
                                          ; transmit enabled                                         
                                          ; receive interrupt enabled
                                          ; transmit interrupt disabled
-                                         
+
                LD        A,SER_RE|SER_TE|SER_8N1
                OUT0      (CNTLA0),A      ; output to the ASCI0 control A reg
 
@@ -657,7 +660,7 @@ START:
                LD        HL,SIGNON2      ; Cold/warm message
                CALL      PRINT           ; Output string
 CORW:
-               CALL      RX0
+               RST       10H
                AND       %11011111       ; lower to uppercase
                CP        'X'             ; are we exiting Basic?
                JP        Z, USRSTART     ; then jump to USR(x) in CA1 RAM at 0xE000
@@ -668,7 +671,8 @@ CORW:
                RST       08H
                LD        A,$0A
                RST       08H
-COLDSTART:     LD        A,'Y'           ; Set the BASIC STARTED flag
+COLDSTART:
+               LD        A,'Y'           ; Set the BASIC STARTED flag
                LD        (basicStarted),A
                JP        $0300           ; <<<< Start Basic COLD:
 CHECKWARM:
@@ -685,5 +689,5 @@ SIGNON1:       .BYTE     "YAZ180 - feilipu",CR,LF,0
 SIGNON2:       .BYTE     CR,LF
                .BYTE     "Cold or Warm start, or eXit "
                .BYTE     "$E000 (C|W|X) ? ",0
-                
+
                .END

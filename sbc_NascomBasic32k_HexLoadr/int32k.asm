@@ -228,7 +228,7 @@ im1_txa_end:
 
         pop hl
         pop af
-        
+
         ei
         reti
 
@@ -348,7 +348,7 @@ PRINT:
             JR        PRINT           ; Continue until $00
 
 ;------------------------------------------------------------------------------
-HEX_START:      
+HEX_START:
             ld hl, initString
             call PRINT
 HEX_WAIT_COLON:
@@ -512,5 +512,5 @@ initString:        .BYTE CR,LF
 invalidTypeStr:    .BYTE "Invalid Type",CR,LF,0
 badCheckSumStr:    .BYTE "Checksum Error",CR,LF,0
 LoadOKStr:         .BYTE "Done",CR,LF,0
-                
+
                .END

@@ -103,7 +103,7 @@ RST00:           DI            ;Disable interrupts
                  JP      INIT  ;Initialize Hardware and go
 
 ;------------------------------------------------------------------------------
-; RST 08 - Tx a character over RS232 
+; RST 08 - Tx a character over RS232
 
                 .ORG     0008H
 RST08:           JP      TXA
@@ -222,7 +222,7 @@ im1_txa_end:
 
         pop hl
         pop af
-        
+
         ei
         reti
 
@@ -412,5 +412,5 @@ SIGNON1:       .BYTE     "SBC - Grant Searle",CR,LF
 SIGNON2:       .BYTE     CR,LF
                .BYTE     "Cold or Warm start, or eXit "
                .BYTE     "$E000 (C|W|X) ? ",0
-                
+
                .END
