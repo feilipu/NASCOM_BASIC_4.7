@@ -317,15 +317,9 @@ APU_NOS         .EQU     APU_TOS+$04 ; CPU NOS Operand - 14004
 
         call DEINT      ; get the USR(x) argument in de
 
-        OR A            ; Set internal clock = crystal x 1 = 18.432MHz
+        XOR A           ; Set internal clock = crystal x 1 = 18.432MHz
+                        ; That makes the PHI 9.216MHz
         OUT0 (CMR),A    ; CPU Clock Multiplier Reg (CMR)
-        
-                                ; DMA/Wait Control Reg Set I/O Wait States
-;        OR A            ; 1 I/O Wait
-        LD A, DCNTL_IWI0 ; 2 I/O Wait
-;        LD A, DCNTL_IWI1 ; 3 I/O Wait
-;       LD A, DCNTL_IWI1 | DCNTL_IWI0 ; 4 I/O Wait
-        OUT0 (DCNTL),A  ; 0 Memory Wait & 4 I/O Wait
 
         call APU_CHK_RDY ; check ready first
 
@@ -362,9 +356,6 @@ APU_NOS         .EQU     APU_TOS+$04 ; CPU NOS Operand - 14004
         cp $7c
         jr z, APU_DO_2
 
-        ld hl, OPMStr   ; Notice Stack
-        call PRINT
-
         call APU_DO_OP  ; otherwise its data manipulation
         call APU_CHK_RDY ; check ready
 
@@ -373,12 +364,14 @@ APU_AB_RES:
         LD A,CMR_X2     ; Set Hi-Speed flag
         OUT0 (CMR),A    ; CPU Clock Multiplier Reg (CMR)
 
-        ld hl, APU_TOS  ; prep single result
+        ld bc, APUDATA  ; the address of the APU data port in bc
+        ld hl, APU_TOS  ; prep single 16bit result
         ld a, (hl)      ; read the LSB
         ld b, a         ; put it in b
         inc hl
         ld a, (hl)      ; read the MSB      
         jp ABPASS       ; return the 16 bit value to USR(x)
+
 
 ;------------------------------------------------------------------------------
 ;
@@ -398,8 +391,6 @@ APU_DO_OP:
         ret
 
 APU_DO_D:
-        ld hl, OPDStr   ; Notice 4 Byte x 1 Operand
-        call PRINT
         ld hl, APU_TOS  ; prep single operand
         call APU_PUSH_4
         call APU_DO_OP
@@ -409,8 +400,6 @@ APU_DO_D:
         jr APU_AB_RES
 
 APU_DO_4:
-        ld hl, OP4Str   ; Notice 4 Byte x 2 Operand
-        call PRINT
         ld hl, APU_NOS  ; prep first operand
         call APU_PUSH_4
         ld hl, APU_TOS  ; prep second operand
@@ -422,8 +411,6 @@ APU_DO_4:
         jr APU_AB_RES
 
 APU_DO_2:
-        ld hl, OP2Str   ; Notice 2 Byte x 2 Operand
-        call PRINT
         ld hl, APU_NOS  ; prep first operand
         call APU_PUSH_2
         ld hl, APU_TOS  ; prep second operand
@@ -464,24 +451,5 @@ APU_POP_2:              ; Base Address +1 in HL, Data port in BC
         ld (hl), a      ; store the byte
         ret
 
-;------------------------------------------------------------------------------
-;
-
-PRINT:                  ; String address hl, destroys a
-        LD A,(HL)       ; Get character
-        OR A            ; Is it $00 ?
-        RET Z           ; Then Return on terminator
-        RST 08H         ; Print it
-        INC HL          ; Next Character
-        JR PRINT        ; Continue until $00
-
-TOSStr: .BYTE "TOS_",0
-NOSStr: .BYTE "NOS_",0
-INStr:  .BYTE CR,LF,"IN  ",0
-OUTStr: .BYTE CR,LF,"OUT ",0
-OP2Str: .BYTE CR,LF,"2 Byte",0
-OP4Str: .BYTE CR,LF,"4 Byte",0
-OPDStr: .BYTE CR,LF,"Derived",0
-OPMStr: .BYTE CR,LF,"Stack",0
 
         .end

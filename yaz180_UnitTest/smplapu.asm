@@ -317,17 +317,12 @@ APU_NOS         .EQU     APU_TOS+$04 ; CPU NOS Operand - 14004
 
         call DEINT      ; get the USR(x) argument in de
 
-        OR A            ; Set internal clock = crystal x 1 = 18.432MHz
+        XOR A           ; Set internal clock = crystal x 1 = 18.432MHz
+                        ; That makes the PHI 9.216MHz
         OUT0 (CMR),A    ; CPU Clock Multiplier Reg (CMR)
 
-                        ; DMA/Wait Control Reg Set I/O Wait States
-        OR A            ; 1 I/O Wait
-;        LD A, DCNTL_IWI0 ; 2 I/O Wait
-;        LD A, DCNTL_IWI1 ; 3 I/O Wait
-;       LD A, DCNTL_IWI1 | DCNTL_IWI0 ; 4 I/O Wait
-        OUT0 (DCNTL),A  ; 0 Memory Wait & 4 I/O Wait
+        call APU_CHK_RDY ; check ready first
 
-;        call APU_CHK_RDY ; check ready
 
 ;        ld hl, INStr
 ;        call PRINT
@@ -395,8 +390,8 @@ APU_CHK_RDY:
         ret
 
 APU_DO_OP:
-        ld a, e         ; get the operand
         ld bc, APUCNTL  ; the address of the APU control port in bc
+        ld a, e         ; get the operand
         out (c),a       ; do the operation
         ret
 
@@ -406,7 +401,7 @@ APU_DO_D:
         call APU_DO_OP
         call APU_CHK_RDY
         ld hl, APU_TOS  ; prep single result
-        call APU_POP_4
+        call APU_POP_4+3
         jr APU_AB_RES
 
 APU_DO_4:
@@ -417,7 +412,7 @@ APU_DO_4:
         call APU_DO_OP
         call APU_CHK_RDY
         ld hl, APU_TOS  ; prep single result
-        call APU_POP_4
+        call APU_POP_4+3
         jr APU_AB_RES
 
 APU_DO_2:
@@ -427,7 +422,7 @@ APU_DO_2:
         call APU_PUSH_2
         call APU_DO_OP
         call APU_CHK_RDY
-        ld hl, APU_TOS  ; prep single result
+        ld hl, APU_TOS+1  ; prep single result
         call APU_POP_2
         jr APU_AB_RES
 
