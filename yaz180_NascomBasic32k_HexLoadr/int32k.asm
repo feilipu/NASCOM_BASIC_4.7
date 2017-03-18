@@ -676,19 +676,18 @@ INIT:
                                          ; Disable M1, disable 64180 I/O _RD Mode
                OUT0      (OMCR),A        ; X80 Mode (M1 Disabled, IOC Disabled)
 
-                                         ; Set INT/TRAP Control Register (ITC)
-               LD        A, ITC_ITE0     ; Enable (default) Interrupt INT0 for FPU               
-               OUT0      (ITC),A         ; Enable external interrupt INT0 
+                                         ; Set INT/TRAP Control Register (ITC)             
+               OUT0      (ITC),A         ; Disable all interrupts. 
 
                                          ; Set internal clock = crystal x 2 = 36.864MHz
                                          ; if using ZS8180 or Z80182 at High-Speed
                LD        A,CMR_X2        ; Set Hi-Speed flag
                OUT0      (CMR),A         ; CPU Clock Multiplier Reg (CMR)
 
-  ;                                      ; Bypass PHI = internal clock / 2
-  ;                                      ; if using ZS8180 or Z80182 at High-Speed
-  ;            LD        A,CCR_XTAL_X2   ; Set Hi-Speed flag: PHI = internal clock
-  ;            OUT0      (CCR),A         ; CPU Control Reg (CCR)
+;                                        ; Bypass PHI = internal clock / 2
+;                                        ; if using ZS8180 or Z80182 at High-Speed
+;              LD        A,CCR_XTAL_X2   ; Set Hi-Speed flag: PHI = internal clock
+;              OUT0      (CCR),A         ; CPU Control Reg (CCR)
 
                                          ; DMA/Wait Control Reg Set I/O Wait States
                LD        A,DCNTL_IWI0
@@ -749,7 +748,7 @@ INIT:
                LD        BC,PIOCNTL      ; 82C55 CNTL address in bc
                LD        A,PIOCNTL12     ; Set Mode 12 ->A, B->, ->CH, CL->
                OUT       (C),A           ; output to the PIO control reg
-               
+
                LD        A,$C9           ; load the RET instruction, temporarily
                LD        (INT0_FPU),A    ; at the location of FPU code
 

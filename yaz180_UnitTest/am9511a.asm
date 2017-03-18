@@ -364,8 +364,7 @@ APU_AB_RES:
         LD A,CMR_X2     ; Set Hi-Speed flag
         OUT0 (CMR),A    ; CPU Clock Multiplier Reg (CMR)
 
-        ld bc, APUDATA  ; the address of the APU data port in bc
-        ld hl, APU_TOS  ; prep single 16bit result
+        ld hl, APU_TOS  ; prep single result
         ld a, (hl)      ; read the LSB
         ld b, a         ; put it in b
         inc hl
@@ -381,7 +380,6 @@ APU_CHK_RDY:
         in a, (c)       ; read the APU
         and $80         ; Busy?
         jr nz, APU_CHK_RDY
-        ld bc, APUDATA  ; the address of the APU data port in bc
         ret
 
 APU_DO_OP:
@@ -391,64 +389,78 @@ APU_DO_OP:
         ret
 
 APU_DO_D:
-        ld hl, APU_TOS  ; prep single operand
+        ld bc, APUDATA+$300 ; the address of the APU data port in bc
+        ld hl, APU_TOS      ; prep single operand
         call APU_PUSH_4
         call APU_DO_OP
         call APU_CHK_RDY
-        ld hl, APU_TOS  ; prep single result
-        call APU_POP_4+3
+        ld bc, APUDATA+$300 ; the address of the APU data port in bc
+        ld hl, APU_TOS+3    ; prep single result
+        call APU_POP_4
         jr APU_AB_RES
 
 APU_DO_4:
-        ld hl, APU_NOS  ; prep first operand
+        ld bc, APUDATA+$700 ; the address of the APU data port in bc
+        ld hl, APU_NOS      ; prep first operand
         call APU_PUSH_4
-        ld hl, APU_TOS  ; prep second operand
+        ld hl, APU_TOS      ; prep second operand
         call APU_PUSH_4
         call APU_DO_OP
         call APU_CHK_RDY
-        ld hl, APU_TOS  ; prep single result
-        call APU_POP_4+3
+        ld bc, APUDATA+$300 ; the address of the APU data port in bc
+        ld hl, APU_TOS+3    ; prep single result
+        call APU_POP_4
         jr APU_AB_RES
 
 APU_DO_2:
-        ld hl, APU_NOS  ; prep first operand
+        ld bc, APUDATA+$300 ; the address of the APU data port in bc
+        ld hl, APU_NOS      ; prep first operand
         call APU_PUSH_2
-        ld hl, APU_TOS  ; prep second operand
+        ld hl, APU_TOS      ; prep second operand
         call APU_PUSH_2
         call APU_DO_OP
         call APU_CHK_RDY
-        ld hl, APU_TOS+1  ; prep single result
+        ld bc, APUDATA+$100 ; the address of the APU data port in bc
+        ld hl, APU_TOS+1    ; prep single result
         call APU_POP_2
         jr APU_AB_RES
 
-APU_PUSH_4:             ; Base Address in HL, Data port in BC
-        ld a, (hl)      ; get the byte
-        out (c), a      ; push to APU
-        inc hl
-        ld a, (hl)      ; get the byte
-        out (c), a      ; push to APU
-        inc hl
-APU_PUSH_2:             ; Base Address in HL, Data port in BC
-        ld a, (hl)      ; get the byte
-        out (c), a      ; push to APU
-        inc hl
-        ld a, (hl)      ; get the byte
-        out (c), a      ; push to APU
+APU_PUSH_4:                 ; Base Address in HL, Data port in BC
+        outi
+        outi
+;        ld a, (hl)         ; get the byte
+;        out (c), a         ; push to APU
+;        inc hl
+;        ld a, (hl)         ; get the byte
+;        out (c), a         ; push to APU
+;        inc hl
+APU_PUSH_2:                 ; Base Address in HL, Data port in BC
+        outi
+        outi
+;        ld a, (hl)         ; get the byte
+;        out (c), a         ; push to APU
+;        inc hl
+;        ld a, (hl)         ; get the byte
+;        out (c), a         ; push to APU
         ret
 
-APU_POP_4:              ; Base Address +3 in HL, Data port in BC
-        in a, (c)       ; pop the APU
-        ld (hl), a      ; store the byte
-        dec hl
-        in a, (c)       ; pop the APU
-        ld (hl), a      ; store the byte
-        dec hl
-APU_POP_2:              ; Base Address +1 in HL, Data port in BC
-        in a, (c)       ; pop the APU
-        ld (hl), a      ; store the byte
-        dec hl
-        in a, (c)       ; pop the APU
-        ld (hl), a      ; store the byte
+APU_POP_4:                  ; Base Address +3 in HL, Data port in BC
+        ind
+        ind
+;        in a, (c)          ; pop the APU
+;        ld (hl), a         ; store the byte
+;        dec hl
+;        in a, (c)          ; pop the APU
+;        ld (hl), a         ; store the byte
+;        dec hl
+APU_POP_2:                  ; Base Address +1 in HL, Data port in BC
+        ind
+        ind
+;        in a, (c)          ; pop the APU
+;        ld (hl), a         ; store the byte
+;        dec hl
+;        in a, (c)          ; pop the APU
+;        ld (hl), a         ; store the byte
         ret
 
 
