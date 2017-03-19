@@ -277,7 +277,7 @@ RAMSTOP_CA1     .EQU     $FFFF ; Top of Common 1 RAM
 RAMSTART        .EQU     RAMSTART_CA0
 RAMSTOP         .EQU     RAMSTOP_CA1
 
-INT0_FPU        .EQU     $3800 ; start of the FPU Interrupt 1 asm code (RAM)
+INT0_APU        .EQU     $3800 ; temporary start of the APU IM1 asm code (RAM)
 
                                ; Top of BASIC line input buffer (CURPOS WRKSPC+0ABH)
                                ; so it is "free ram" when BASIC resets
@@ -338,10 +338,10 @@ RST10:          JP       RX0
 RST18:          JP       RX0_CHK
 
 ;------------------------------------------------------------------------------
-; RST 20 - Start the HexLoadr function
+; RST 20
 
                 .ORG     0020H
-RST20:          JP       HEX_START
+RST20:          RET                 ; just return
 
 ;------------------------------------------------------------------------------
 ; RST 28
@@ -359,7 +359,7 @@ RST30:          RET                 ; just return
 ; RST 38 - INTERRUPT VECTOR INT0 [ with IM 1 ]
 
                 .ORG     0038H
-RST38:          JP       INT0_FPU   ; Jump into FPU Interrupt
+RST38:          JP       INT0_APU   ; Jump into APU Interrupt
 
 ;------------------------------------------------------------------------------
 ; NMI - INTERRUPT VECTOR NMI
@@ -663,7 +663,7 @@ INIT:
                LD        A,VECTOR_BASE   ; IL = $80 [001x xxxx] for Vectors at $80 - $90
                OUT0      (IL),A          ; Output to the Interrupt Vector Low reg
 
-               IM        1               ; Interrupt mode 1 for INT0 (used for FPU)
+               IM        1               ; Interrupt mode 1 for INT0 (used for APU)
 
                XOR       A               ; Zero Accumulator
 
@@ -677,7 +677,7 @@ INIT:
                OUT0      (OMCR),A        ; X80 Mode (M1 Disabled, IOC Disabled)
 
                                          ; Set INT/TRAP Control Register (ITC)             
-               OUT0      (ITC),A         ; Disable all interrupts. 
+               OUT0      (ITC),A         ; Disable all external interrupts. 
 
                                          ; Set internal clock = crystal x 2 = 36.864MHz
                                          ; if using ZS8180 or Z80182 at High-Speed
@@ -719,7 +719,7 @@ INIT:
                LD        (serTx0InPtr),HL
                LD        (serTx0OutPtr),HL              
 
-               XOR       A               ; 0 the accumulator
+               XOR       A               ; 0 the Tx & Rx Buffer Counts
                LD        (serRx0BufUsed),A
                LD        (serTx0BufUsed),A
 
@@ -750,7 +750,7 @@ INIT:
                OUT       (C),A           ; output to the PIO control reg
 
                LD        A,$C9           ; load the RET instruction, temporarily
-               LD        (INT0_FPU),A    ; at the location of FPU code
+               LD        (INT0_APU),A    ; at the location of APU code
 
                EI                        ; enable interrupts
 

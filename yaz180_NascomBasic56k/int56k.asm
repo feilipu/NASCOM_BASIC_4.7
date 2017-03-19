@@ -562,7 +562,7 @@ INIT:
                LD        A,VECTOR_BASE   ; IL = $80 [001x xxxx] for Vectors at $80 - $90
                OUT0      (IL),A          ; Output to the Interrupt Vector Low reg
 
-               IM        1               ; Interrupt mode 1 for INT0 (used for FPU)
+               IM        1               ; Interrupt mode 1 for INT0 (used for APU)
 
                XOR       A               ; Zero Accumulator
 
@@ -575,9 +575,8 @@ INIT:
                                          ; Disable M1, disable 64180 I/O _RD Mode
                OUT0      (OMCR),A        ; X80 Mode (M1 Disabled, IOC Disabled)
 
-                                         ; Set INT/TRAP Control Register (ITC)
-               LD        A, ITC_ITE0     ; Enable (default) Interrupt INT0 for FPU               
-               OUT0      (ITC),A         ; Enable external interrupt INT0 
+                                         ; Set INT/TRAP Control Register (ITC)             
+               OUT0      (ITC),A         ; Disable all external interrupts. 
 
                                          ; Set internal clock = crystal x 2 = 36.864MHz
                                          ; if using ZS8180 or Z80182 at High-Speed
@@ -619,7 +618,7 @@ INIT:
                LD        (serTx0InPtr),HL
                LD        (serTx0OutPtr),HL              
 
-               XOR       A               ; 0 the accumulator
+               XOR       A               ; 0 the Tx & Rx Buffer Counts
                LD        (serRx0BufUsed),A
                LD        (serTx0BufUsed),A
 
