@@ -211,39 +211,39 @@ OMCR_IOC        .EQU   $20    ; IO Control (1 64180 Mode)
 ;
 
 ; BREAK for Single Step Mode
-BREAK           .EQU    $2000      ; Any value written $2000->$21FF, halts CPU
+BREAK           .EQU    $2000       ; Any value written $2000->$21FF, halts CPU
 
 ; 82C55 PIO Port Definitions
 
-PIO             .EQU    $4000      ; Base Address for 82C55
-PIOA            .EQU    PIO+$00    ; Address for Port A
-PIOB            .EQU    PIO+$01    ; Address for Port B
-PIOC            .EQU    PIO+$02    ; Address for Port C
-PIOCNTL         .EQU    PIO+$03    ; Address for Control Byte
+PIO             .EQU    $4000       ; Base Address for 82C55
+PIOA            .EQU    PIO+$00     ; Address for Port A
+PIOB            .EQU    PIO+$01     ; Address for Port B
+PIOC            .EQU    PIO+$02     ; Address for Port C
+PIOCNTL         .EQU    PIO+$03     ; Address for Control Byte
 
 ; PIO Mode Definitions
 
 ; Mode 0 - Basic Input / Output
 
-PIOCNTL00       .EQU    $80        ; A->, B->, CH->, CL->
-PIOCNTL01       .EQU    $81        ; A->, B->, CH->, ->CL
-PIOCNTL0        .EQU    $82        ; A->, ->B, CH->, CL->
-PIOCNTL03       .EQU    $83        ; A->, ->B, CH->, ->CL
+PIOCNTL00       .EQU    $80     ; A->, B->, CH->, CL->
+PIOCNTL01       .EQU    $81     ; A->, B->, CH->, ->CL
+PIOCNTL0        .EQU    $82     ; A->, ->B, CH->, CL->
+PIOCNTL03       .EQU    $83     ; A->, ->B, CH->, ->CL
 
-PIOCNTL04       .EQU    $88        ; A->, B->, ->CH, CL->
-PIOCNTL05       .EQU    $89        ; A->, B->, ->CH, ->CL
-PIOCNTL06       .EQU    $8A        ; A->, ->B, ->CH, CL->
-PIOCNTL07       .EQU    $8B        ; A->, ->B, ->CH, ->CL
+PIOCNTL04       .EQU    $88     ; A->, B->, ->CH, CL->
+PIOCNTL05       .EQU    $89     ; A->, B->, ->CH, ->CL
+PIOCNTL06       .EQU    $8A     ; A->, ->B, ->CH, CL->
+PIOCNTL07       .EQU    $8B     ; A->, ->B, ->CH, ->CL
 
-PIOCNTL08       .EQU    $90        ; ->A, B->, CH->, CL->
-PIOCNTL09       .EQU    $91        ; ->A, B->, CH->, ->CL
-PIOCNTL10       .EQU    $92        ; ->A, ->B, CH->, CL->
-PIOCNTL11       .EQU    $83        ; ->A, ->B, CH->, ->CL
+PIOCNTL08       .EQU    $90     ; ->A, B->, CH->, CL->
+PIOCNTL09       .EQU    $91     ; ->A, B->, CH->, ->CL
+PIOCNTL10       .EQU    $92     ; ->A, ->B, CH->, CL->
+PIOCNTL11       .EQU    $83     ; ->A, ->B, CH->, ->CL
 
-PIOCNTL12       .EQU    $98        ; ->A, B->, ->CH, CL-> (Default Setting)
-PIOCNTL13       .EQU    $99        ; ->A, B->, ->CH, ->CL
-PIOCNTL14       .EQU    $9A        ; ->A, ->B, ->CH, CL->
-PIOCNTL15       .EQU    $9B        ; ->A, ->B, ->CH, ->CL
+PIOCNTL12       .EQU    $98     ; ->A, B->, ->CH, CL-> (Default Setting)
+PIOCNTL13       .EQU    $99     ; ->A, B->, ->CH, ->CL
+PIOCNTL14       .EQU    $9A     ; ->A, ->B, ->CH, CL->
+PIOCNTL15       .EQU    $9B     ; ->A, ->B, ->CH, ->CL
 
 ; Mode 1 - Strobed Input / Output
 ; TBA Later
@@ -306,13 +306,6 @@ DRVSTART        .EQU    $3000   ; start of driver code (assorted)
 
 USRSTART        .EQU    $4000   ; start of USR(x) asm code
 
-                               ; Top of BASIC line input buffer (CURPOS WRKSPC+0ABH)
-                               ; so it is "free ram" when BASIC resets
-                               ; set BASIC Work space WRKSPC $8000, in CA1 RAM
-WRKSPC          .EQU     $RAMSTART_CA1 
-
-TEMPSTACK       .EQU     WRKSPC+$AB
-
 ;==============================================================================
 ;
 ; GLOBAL VARIABLES SECTION - CAO
@@ -334,18 +327,49 @@ VECTOR_PROTO_SIZE .EQU  $1F
 ;   INT_NMI     .EQU    NULL_NMI    $201E
 
 
-SER_RX0_BUFSIZE .EQU     $FF   ; FIXED Rx buffer size, 256 Bytes, no range checking
-SER_TX0_BUFSIZE .EQU     $FF   ; FIXED Tx buffer size, 256 Bytes, no range checking
-     
-serRx0Buf       .EQU     RAMSTART_CA0+$100 ; must start on 0xnn00 for low byte roll-over
-serTx0Buf       .EQU     serRx0Buf+SER_RX0_BUFSIZE+1
-serRx0InPtr     .EQU     serTx0Buf+SER_TX0_BUFSIZE+1
-serRx0OutPtr    .EQU     serRx0InPtr+2
-serTx0InPtr     .EQU     serRx0OutPtr+2
-serTx0OutPtr    .EQU     serTx0InPtr+2
-serRx0BufUsed   .EQU     serTx0OutPtr+2
-serTx0BufUsed   .EQU     serRx0BufUsed+1
-basicStarted    .EQU     serTx0BufUsed+1   ; end of ASCI0 stuff is $320A
+APU_CMD_BUFSIZE .EQU    $FF    ; FIXED CMD buffer size, 256 CMDs
+APU_PTR_BUFSIZE .EQU    $FF    ; FIXED DATA POINTER buffer size, 128 POINTERs
+
+SER_RX0_BUFSIZE .EQU    $FF    ; FIXED Rx buffer size, 256 Bytes, no range checking
+SER_TX0_BUFSIZE .EQU    $FF    ; FIXED Tx buffer size, 256 Bytes, no range checking
+
+SER_RX1_BUFSIZE .EQU    $FF    ; FIXED Rx buffer size, 256 Bytes, no range checking
+SER_TX1_BUFSIZE .EQU    $FF    ; FIXED Tx buffer size, 256 Bytes, no range checking
+
+APUCMDInPtr     .EQU    Z80_VECTOR_TABLE+VECTOR_PROTO_SIZE+1
+APUCMDOutPtr    .EQU    APUCMDInPtr+2
+APUPTRInPtr     .EQU    APUCMDOutPtr+2
+APUPTROutPtr    .EQU    APUPTRInPtr+2
+APUCMDBufUsed   .EQU    APUPTROutPtr+2
+APUPTRBufUsed   .EQU    APUCMDBufUsed+1
+APUSTATUS       .EQU    APUPTRBufUsed+1
+
+serRx0InPtr     .EQU    APUSTATUS+2
+serRx0OutPtr    .EQU    serRx0InPtr+2
+serTx0InPtr     .EQU    serRx0OutPtr+2
+serTx0OutPtr    .EQU    serTx0InPtr+2
+serRx0BufUsed   .EQU    serTx0OutPtr+2
+serTx0BufUsed   .EQU    serRx0BufUsed+1
+
+serRx1InPtr     .EQU    serTx0BufUsed+1
+serRx1OutPtr    .EQU    serRx1InPtr+2
+serTx1InPtr     .EQU    serRx1OutPtr+2
+serTx1OutPtr    .EQU    serTx1InPtr+2
+serRx1BufUsed   .EQU    serTx1OutPtr+2
+serTx1BufUsed   .EQU    serRx1BufUsed+1
+
+basicStarted    .EQU    serTx1BufUsed+1
+
+; $2040 -> $20FF is slack memory.
+
+APUCMDBuf       .EQU    RAMSTART_CA0+$100 ; must start on 0xnn00 for low byte roll-over
+APUPTRBuf       .EQU    APUCMDBuf+APU_CMD_BUFSIZE+1
+
+serRx0Buf       .EQU    APUPTRBuf+APU_PTR_BUFSIZE+1 ; must start on 0xnn00
+serTx0Buf       .EQU    serRx0Buf+SER_RX0_BUFSIZE+1
+
+serRx1Buf       .EQU    serTx0Buf+SER_TX0_BUFSIZE+1 ; must start on 0xnn00
+serTx1Buf       .EQU    serRx1Buf+SER_RX1_BUFSIZE+1
 
 ;==============================================================================
 ;
@@ -456,7 +480,7 @@ NULL_NMI:
 
 ;==============================================================================
 ;
-            .END
+                .END
 ;
 ;==============================================================================
 
