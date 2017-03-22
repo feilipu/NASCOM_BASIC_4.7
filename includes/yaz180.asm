@@ -317,15 +317,29 @@ VECTOR_PROTO      .EQU  0040H
 VECTOR_PROTO_SIZE .EQU  $1F
 
 ;   Prototype Vector Defaults
-;   RST_08      .EQU    TX0         $2002   TX a character over ASCI0
-;   RST_10      .EQU    RX0         $2006   RX a character over ASCI0, block no bytes available
-;   RST_18      .EQU    RX0_CHK     $200A   Check ASCI0 status, return # bytes available
-;   RST_20      .EQU    NULL_INT    $200E
-;   RST_28      .EQU    NULL_INT    $2012
-;   RST_30      .EQU    NULL_INT    $2016
-;   INT_00      .EQU    NULL_INT    $201A
-;   INT_NMI     .EQU    NULL_NMI    $201E
+;   RST_08      .EQU    TX0         TX a character over ASCI0
+;   RST_10      .EQU    RX0         RX a character over ASCI0, block no bytes available
+;   RST_18      .EQU    RX0_CHK     Check ASCI0 status, return # bytes available
+;   RST_20      .EQU    NULL_INT
+;   RST_28      .EQU    NULL_INT
+;   RST_30      .EQU    NULL_INT
+;   INT_00      .EQU    NULL_INT
+;   INT_NMI     .EQU    NULL_NMI
 
+;   Z80 RAM VECTOR ADDRESS TABLE
+
+NULL_RET_ADDR   .EQU    $2000   ; Write the NULL return location when removing an ISR
+NULL_INT_ADDR   .EQU    $2060
+NULL_NMI_ADDR   .EQU    $2062
+
+RST_08_ADDR     .EQU    $2002   ; Write your ISR address to this location
+RST_10_ADDR     .EQU    $2006
+RST_18_ADDR     .EQU    $200A
+RST_20_ADDR     .EQU    $200E
+RST_28_ADDR     .EQU    $2012
+RST_30_ADDR     .EQU    $2016
+INT_00_ADDR     .EQU    $201A
+INT_NMI_ADDR    .EQU    $201E
 
 APU_CMD_BUFSIZE .EQU    $FF    ; FIXED CMD buffer size, 256 CMDs
 APU_PTR_BUFSIZE .EQU    $FF    ; FIXED DATA POINTER buffer size, 128 POINTERs
