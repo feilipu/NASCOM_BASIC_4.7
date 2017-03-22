@@ -1,0 +1,33 @@
+Label        Value      Label        Value      Label        Value
+------------------      ------------------      ------------------
+
+    FUNCTIONS
+
+RX0           0154      RX0_CHK       01A9      TX0           016B
+HEXLOADR      01B6      DEINT         0C47      ABPASS        13BD
+
+    Z80 VECTOR ADDRESS TABLE
+
+RST_08_ADDR   2042      RST_10_ADDR   2046
+RST_18_ADDR   204A      RST_20_ADDR   204E      RST_28_ADDR   2052
+RST_30_ADDR   2056      INT_00_ADDR   205A      INT_NMI_ADDR  205E
+
+    VARIABLES
+
+APUCMDInPtr   2020      APUCMDOutPtr  2022      APUPTRInPtr   2024
+APUPTROutPtr  2026      APUCMDBufUsed 2028      APUPTRBufUsed 2029
+APUSTATUS     202A
+
+serRx0InPtr   202C      serRx0OutPtr  202E      serTx0InPtr   2030
+serTx0OutPtr  2032      serRx0BufUsed 2034      serTx0BufUsed 2035
+
+serRx1InPtr   2036      serRx1OutPtr  2038      serTx1InPtr   203A
+serTx1OutPtr  203C      serRx1BufUsed 203E      serTx1BufUsed 203F
+
+basicStarted  2040
+
+    BUFFERS
+
+APUCMDBuf     2100      APUPTRBuf     2200
+serRx0Buf     2300      serTx0Buf     2400
+serRx1Buf     2500      serTx1Buf     2600

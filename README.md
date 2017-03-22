@@ -131,6 +131,10 @@ For convenience, because we can't easily change ROM code interrupt routines alre
 * Rx: `RST 10H` returns a received byte in the `a` register, and will block (loop) until it has a byte to return.
 * Rx Check: `RST 18H` will immediately return the number of bytes in the Rx buffer (0 if buffer empty) in the `a` register.
 
+By writing the address of your function into the `RST` jump table provided in the `YAZ180_LABELS.TXT` file you can modify the behaviour of any of the `RST` jumps, and set the address of the location for the `INT0` and `NMI` interrupts.
+
+Note the vector locations provided require only an address to be inserted. The `JP` instruction is already provided. For example, you can attach an `INT0` interrupt service routine by writing its origin address to location `$205A`.
+
 ## USR Jump Address & Parameter Access
 
 For the YAZ180 the `USR(x)` jump address is located at `&h8004`.
@@ -142,8 +146,8 @@ When your assembly program is finished it can return a 16 bit parameter stored i
 
 ``` asm
                                 ; from Nascom Basic Symbol Tables
-DEINT           .EQU    $0C3F   ; Function DEINT to get USR(x) into DE registers
-ABPASS          .EQU    $13B4   ; Function ABPASS to put output into AB register for return
+DEINT           .EQU    $0C47   ; Function DEINT to get USR(x) into DE registers
+ABPASS          .EQU    $13BD   ; Function ABPASS to put output into AB register for return
 
                 .ORG    3000H   ; your code origin, for example
                 call DEINT      ; get the USR(x) argument in DE
@@ -152,7 +156,7 @@ ABPASS          .EQU    $13B4   ; Function ABPASS to put output into AB register
                                 
                 jp ABPASS       ; return the 16 bit value to USR(x). Note jp not ret
 ```
-
+The `YAZ180_LABELS.TXT` file is provided to advise of all the relevant RAM and ROM locations.
 
 # Program Usage
 
