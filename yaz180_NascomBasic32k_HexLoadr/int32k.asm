@@ -1,4 +1,4 @@
-;==================================================================================
+;==============================================================================
 ; Contents of this file are copyright Phillip Stevens
 ;
 ; You have permission to use this for NON COMMERCIAL USE ONLY
@@ -6,14 +6,14 @@
 ;
 ; Initialisation routines to suit Z8S180 CPU, with internal USART.
 ;
-; Internal USART interrupt driven serial I/O to run modified NASCOM Basic 4.7.
+; Internal USART interrupt driven serial I/O
 ; Full input and output buffering.
 ;
 ; https://github.com/feilipu/
 ;
 ; https://feilipu.me/
 ;
-;==================================================================================
+;==============================================================================
 ;
 ; Z180 Register Mnemonics
 ;
@@ -90,7 +90,7 @@ OMCR            .EQU    IO_BASE+$3E     ; Operation Mode Control Reg
 ICR             .EQU    IO_BASE+$3F     ; I/O Control Reg
 
 
-;==================================================================================
+;==============================================================================
 ;
 ; Interrupt vectors (offsets) for Z180/HD64180 internal interrupts
 ;
@@ -107,7 +107,7 @@ VECTOR_CSIO     .EQU   VECTOR_BASE+$0C    ; Clocked serial I/O
 VECTOR_ASCI0    .EQU   VECTOR_BASE+$0E    ; Async channel 0 
 VECTOR_ASCI1    .EQU   VECTOR_BASE+$10    ; Async channel 1
 
-;==================================================================================
+;==============================================================================
 ;
 ; Some bit definitions used with the Z-180 on-chip peripherals:
 ;
@@ -204,13 +204,13 @@ OMCR_M1E        .EQU   $80    ; M1 Enable (0 Disabled)
 OMCR_M1TE       .EQU   $40    ; M1 Temporary Enable
 OMCR_IOC        .EQU   $20    ; IO Control (1 64180 Mode)
 
-;==================================================================================
+;==============================================================================
 ;
 ; Some definitions used with the YAZ-180 on-board peripherals:
 ;
 
 ; BREAK for Single Step Mode
-BREAK           .EQU    $2000      ; Any value written to $2000, halts CPU
+BREAK           .EQU    $2000      ; Any value written $2000->$21FF, halts CPU
 
 ; 82C55 PIO Port Definitions
 
@@ -250,14 +250,36 @@ PIOCNTL15       .EQU    $9B        ; ->A, ->B, ->CH, ->CL
 ; Mode 2 - Strobed Bidirectional Bus Input / Output
 ; TBA Later
 
-; Am9511A-1 FPU Port Address
+; Am9511A-1 APU Port Address
 
-FPU             .EQU    $C000      ; Base Address for Am9511A
-FPUDATA         .EQU    FPU+$00    ; FPU Data Port
-FPUCNTL         .EQU    FPU+$01    ; FPU Control Port
+APU                 .EQU    $C000      ; Base Address for Am9511A
+APUDATA             .EQU    APU+$00    ; APU Data Port
+APUCNTL             .EQU    APU+$01    ; APU Control Port
 
+APU_OP_ENT_CMD      .EQU    $40
+APU_OP_REM_CMD      .EQU    $50
+APU_OP_ENT16_CMD    .EQU    $40
+APU_OP_ENT32_CMD    .EQU    $41
+APU_OP_REM16_CMD    .EQU    $50
+APU_OP_REM32_CMD    .EQU    $51
 
-;==================================================================================
+; General TTY
+
+CTRLC           .EQU    03H     ; Control "C"
+CTRLG           .EQU    07H     ; Control "G"
+BKSP            .EQU    08H     ; Back space
+LF              .EQU    0AH     ; Line feed
+CS              .EQU    0CH     ; Clear screen
+CR              .EQU    0DH     ; Carriage return
+CTRLO           .EQU    0FH     ; Control "O"
+CTRLQ	        .EQU	11H     ; Control "Q"
+CTRLR           .EQU    12H     ; Control "R"
+CTRLS           .EQU    13H     ; Control "S"
+CTRLU           .EQU    15H     ; Control "U"
+ESC             .EQU    1BH     ; Escape
+DEL             .EQU    7FH     ; Delete
+
+;==============================================================================
 ;
 ; DEFINES SECTION
 ;
@@ -277,17 +299,12 @@ RAMSTOP_CA1     .EQU     $FFFF ; Top of Common 1 RAM
 RAMSTART        .EQU     RAMSTART_CA0
 RAMSTOP         .EQU     RAMSTOP_CA1
 
-INT0_APU        .EQU     $3800 ; temporary start of the APU IM1 asm code (RAM)
-
                                ; Top of BASIC line input buffer (CURPOS WRKSPC+0ABH)
                                ; so it is "free ram" when BASIC resets
                                ; set BASIC Work space WRKSPC $8000, in CA1 RAM
 WRKSPC          .EQU     $RAMSTART_CA1 
 
 TEMPSTACK       .EQU     WRKSPC+$AB
-
-CR              .EQU     0DH
-LF              .EQU     0AH
 
 ;==================================================================================
 ;
@@ -297,7 +314,7 @@ LF              .EQU     0AH
 SER_RX0_BUFSIZE .EQU     $FF   ; FIXED Rx buffer size, 256 Bytes, no range checking
 SER_TX0_BUFSIZE .EQU     $FF   ; FIXED Tx buffer size, 256 Bytes, no range checking
      
-serRx0Buf       .EQU     RAMSTART_CA0 ; must start on 0xnn00 for low byte roll-over
+serRx0Buf       .EQU     RAMSTART_CA0+$100 ; must start on 0xnn00 for low byte roll-over
 serTx0Buf       .EQU     serRx0Buf+SER_RX0_BUFSIZE+1
 serRx0InPtr     .EQU     serTx0Buf+SER_TX0_BUFSIZE+1
 serRx0OutPtr    .EQU     serRx0InPtr+2
@@ -305,68 +322,123 @@ serTx0InPtr     .EQU     serRx0OutPtr+2
 serTx0OutPtr    .EQU     serTx0InPtr+2
 serRx0BufUsed   .EQU     serTx0OutPtr+2
 serTx0BufUsed   .EQU     serRx0BufUsed+1
-basicStarted    .EQU     serTx0BufUsed+1   ; end of ASCI0 stuff is $220A
+basicStarted    .EQU     serTx0BufUsed+1   ; end of ASCI0 stuff is $320A
 
 ;==================================================================================
 ;
 ; Z80 INTERRUPT VECTOR SECTION 
 ;
 
+Z80_VECTOR_TABLE .EQU   RAMSTART_CA0    ; RAM vector address for Z80 RST
+
+VECTOR_PROTO      .EQU  0040H
+VECTOR_PROTO_SIZE .EQU  $1F
+
+;   Prototype Vector Defaults
+;   RST_08      .EQU    TX0         $2002   TX a character over ASCI0
+;   RST_10      .EQU    RX0         $2006   RX a character over ASCI0, block no bytes available
+;   RST_18      .EQU    RX0_CHK     $200A   Check ASCI0 status, return # bytes available
+;   RST_20      .EQU    NULL_INT    $200E
+;   RST_28      .EQU    NULL_INT    $2012
+;   RST_30      .EQU    NULL_INT    $2016
+;   INT_00      .EQU    NULL_INT    $201A
+;   INT_NMI     .EQU    NULL_NMI    $201E
+
+;==============================================================================
+;
+; Z80 INTERRUPT VECTOR PROTOTYPE TABLE
+;
+
 ;------------------------------------------------------------------------------
-; RESET - Reset
-
-                .ORG     0000H
-RST00:          DI                  ; Disable interrupts
-                JP       INIT       ; Initialize Hardware and go
-
-;------------------------------------------------------------------------------
-; RST08 - TX a character over ASCI
-
-                .ORG     0008H
-RST08:          JP       TX0
+; RESET / TRAP
+                .ORG    0000H
+                DI                  ; Disable interrupts
+                JP      INIT        ; Initialize Hardware and go
 
 ;------------------------------------------------------------------------------
-; RST10 - RX a character over ASCI Channel [Console], hold here until char ready
-
-                .ORG     0010H
-RST10:          JP       RX0
+; RST08
+                .ORG    0008H
+                JP      Z80_VECTOR_TABLE-VECTOR_PROTO+RST_08_LBL
 
 ;------------------------------------------------------------------------------
-; RST18 - Check serial status
+; RST10
+                .ORG    0010H
+                JP      Z80_VECTOR_TABLE-VECTOR_PROTO+RST_10_LBL
 
-                .ORG     0018H
-RST18:          JP       RX0_CHK
+;------------------------------------------------------------------------------
+; RST18
+                .ORG    0018H
+                JP      Z80_VECTOR_TABLE-VECTOR_PROTO+RST_18_LBL
 
 ;------------------------------------------------------------------------------
 ; RST 20
-
-                .ORG     0020H
-RST20:          RET                 ; just return
+                .ORG    0020H
+                JP      Z80_VECTOR_TABLE-VECTOR_PROTO+RST_20_LBL
 
 ;------------------------------------------------------------------------------
 ; RST 28
-
-                .ORG     0028H
-RST28:          RET                 ; just return
+                .ORG    0028H
+                JP      Z80_VECTOR_TABLE-VECTOR_PROTO+RST_28_LBL
 
 ;------------------------------------------------------------------------------
 ; RST 30
-;
-                .ORG     0030H
-RST30:          RET                 ; just return
+                .ORG    0030H
+                JP      Z80_VECTOR_TABLE-VECTOR_PROTO+RST_30_LBL
 
 ;------------------------------------------------------------------------------
 ; RST 38 - INTERRUPT VECTOR INT0 [ with IM 1 ]
 
-                .ORG     0038H
-RST38:          JP       INT0_APU   ; Jump into APU Interrupt
+                .ORG    0038H
+                JP      Z80_VECTOR_TABLE-VECTOR_PROTO+INT_00_LBL
+
+;------------------------------------------------------------------------------
+; Z80 INTERRUPT VECTOR TABLE PROTOTYPE [ Originating at $40 ]
+
+                .ORG    VECTOR_PROTO
+
+; WILL BE RELOCATED DURING INIT TO
+;
+;                .ORG    Z80_VECTOR_TABLE
+NULL_RET:
+                RET
+RST_08_LBL:
+                JP      RST_08
+                NOP
+RST_10_LBL:
+                JP      RST_10
+                NOP
+RST_18_LBL:
+                JP      RST_18
+                NOP
+RST_20_LBL:
+                JP      RST_20
+                NOP
+RST_28_LBL:
+                JP      RST_28
+                NOP
+RST_30_LBL:
+                JP      RST_30
+                NOP
+INT_00_LBL:
+                JP      INT_00
+                NOP
+INT_NMI_LBL:
+                JP      INT_NMI
+
+;------------------------------------------------------------------------------
+; NULL RETURN INSTRUCTIONS
+
+                .ORG    0060H
+NULL_INT:
+                RETI
+NULL_NMI:
+                RETN
 
 ;------------------------------------------------------------------------------
 ; NMI - INTERRUPT VECTOR NMI
 
-                .ORG     0066H
-NMI:            RETN                ; just return
-  
+                .ORG    0066H
+                JP      Z80_VECTOR_TABLE-VECTOR_PROTO+INT_NMI_LBL
 
 ;==================================================================================
 ;
@@ -711,6 +783,11 @@ INIT:
                LD        HL,TEMPSTACK    ; Temp stack
                LD        SP,HL           ; Set up a temporary stack
 
+                LD      HL,VECTOR_PROTO ; Establish Z80 RST Vector Table
+                LD      DE,Z80_VECTOR_TABLE
+                LD      BC,VECTOR_PROTO_SIZE
+                LDIR
+
                LD        HL,serRx0Buf    ; Initialise Rx Buffer
                LD        (serRx0InPtr),HL
                LD        (serRx0OutPtr),HL
@@ -749,9 +826,6 @@ INIT:
                LD        A,PIOCNTL12     ; Set Mode 12 ->A, B->, ->CH, CL->
                OUT       (C),A           ; output to the PIO control reg
 
-               LD        A,$C9           ; load the RET instruction, temporarily
-               LD        (INT0_APU),A    ; at the location of APU code
-
                EI                        ; enable interrupts
 
 START:                                     
@@ -777,7 +851,7 @@ CORW:
 COLDSTART:
                LD        A,'Y'           ; Set the BASIC STARTED flag
                LD        (basicStarted),A
-               JP        $0388           ; <<<< Start Basic COLD:
+               JP        $0390           ; <<<< Start Basic COLD:
 CHECKWARM:
                CP        'W'
                JR        NZ, CORW
@@ -787,7 +861,13 @@ CHECKWARM:
                LD        A,$0A
                RST       08H
 WARMSTART:
-               JP        $038B           ; <<<< Start Basic WARM:
+               JP        $0393           ; <<<< Start Basic WARM:
+
+
+;==============================================================================
+;
+; STRINGS
+;
 
 SIGNON1:       .BYTE     "YAZ180 - feilipu",CR,LF,0
 SIGNON2:       .BYTE     CR,LF
@@ -802,4 +882,24 @@ invalidTypeStr:    .BYTE "Inval Type",CR,LF,0
 badCheckSumStr:    .BYTE "Chksum Error",CR,LF,0
 LoadOKStr:         .BYTE "Done",CR,LF,0
 
-               .END
+;==============================================================================
+;
+; Z80 INTERRUPT VECTOR PROTOTYPE ASSIGNMENTS
+;
+
+RST_08      .EQU    TX0             ; TX a character over ASCI0
+RST_10      .EQU    RX0             ; RX a character over ASCI0, loop byte available
+RST_18      .EQU    RX0_CHK         ; Check ASCI0 status, return # bytes available
+RST_20      .EQU    NULL_RET        ; RET
+RST_28      .EQU    NULL_RET        ; RET
+RST_30      .EQU    NULL_RET        ; RET
+INT_00      .EQU    NULL_INT        ; RETI
+INT_NMI     .EQU    NULL_NMI        ; RETN
+
+;==============================================================================
+;
+            .END
+;
+;==============================================================================
+
+
