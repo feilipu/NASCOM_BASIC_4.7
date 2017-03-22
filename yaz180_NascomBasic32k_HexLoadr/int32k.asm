@@ -364,8 +364,7 @@ INIT:
             LD      A,3CH           ; Set Bank Area Physical $40000 -> 3CH
             OUT0    (BBR),A
 
-            LD      HL,TEMPSTACK    ; Temp stack
-            LD      SP,HL           ; Set up a temporary stack
+            LD      SP,TEMPSTACK    ; Set up a temporary stack
 
             LD      HL,VECTOR_PROTO ; Establish Z80 RST Vector Table
             LD      DE,Z80_VECTOR_TABLE
