@@ -1,6 +1,6 @@
 # HexLoadr
 
-The goal of this extension to the standard RC2014 boot ROM sequence is to load an arbitrary program in Intel HEX format into an arbitrary location in the Z80 address space, and allow you to start and use your program from Nascom Basic.
+The goal of this extension to the standard RC2014 boot ROM sequence is to load an arbitrary program in Intel HEX format into an arbitrary location in the Z80 address space, and allow you to start and use your program from Nascom Basic. Your program can be created in assembler, or in C, provided the code is available in Intel HEX format.
 
 There are are several stages to this process.
 
@@ -9,8 +9,23 @@ There are are several stages to this process.
 3. Then the HexLoadr program will initiate and look for your program's Intel HEX formatted information on the serial interface.
 4. Once the final line of the HEX code is read, the HexLoadr will return to Nascom Basic.
 5. The newly loaded program starting address must be loaded into the `USR(x)` jump location.
-6. Start the new arbitrary program by entering `USR(x)`.
-    
+6. Start the new arbitrary program from Basic by entering the`USR(x)` command.
+
+
+```bash
+SBSBC - Grant Searle
+ACIA - feilipu
+
+Cold or Warm start, or HexLoadr (C|W|H) ? C
+
+Memory top? 
+Z80 BASIC Ver 4.7b
+Copyright (C) 1978 by Microsoft
+31907 Bytes free
+
+Ok
+```
+
 # Important Addresses
 
 There are a number of important Z80 addresses or origins that need to be managed within your assembly program.
@@ -34,7 +49,7 @@ For convenience, because we can't easily change the ROM code interrupt routines 
 ## USR Jump Address & Parameter Access
 
 For the RC2014 with 32k Basic the `USR(x)` jump address is located at `0x8224`.
-For example, if your arbitrary program is located at `0xE000` then the Basic command to set the `USR(x)` jump address is `DOKE &h8224, &hE000`.
+For example, if the origin of your arbitrary program is located at `0xE000` then the Basic command to set the `USR(x)` jump address is `DOKE &h8224, &hE000`.
 
 Your assembly program can receive a 16 bit parameter passed in from the function by calling `DEINT` at `0x0C47`. The parameter is stored in register pair `DE`.
 
@@ -59,7 +74,7 @@ The `RC2014_LABELS.TXT` file is provided to advise of all the relevant RAM and R
 
 1. Select the preferred origin `.ORG` for your arbitrary program, and assemble a HEX file using your preferred assembler.
 
-2. Start your RC2014 with the `Memory top?` set to 57343 (`0xDFFF`) or lower. This leaves space for your program from `0xE000` through to `0xFFFF`. Adjust this if needed to suit your individual needs. For 56kB RAM module equipped RC2014 devices, just skip this step.
+2. Start your 32k RAM RC2014 with the `Memory top?` set to 57343 (`0xDFFF`) or lower. This leaves space for your program from `0xE000` through to `0xFFFF`. Adjust this if needed to suit your individual needs. For 56kB RAM module equipped RC2014 devices, just skip this step.
 
 3. Reset the RC2014 and type `H` when offered the `(C|W|H)` option when booting. `HexLoadr:` will wait for Intel HEX formatted data on the ACIA serial interface.
 
@@ -77,7 +92,7 @@ Note that your program and the `USR(x)` jump address setting will remain in plac
 
 Any Basic programs loaded will also remain in place during a Warm or HexLoadr RESET.
 
-This makes loading a new version of your assembly program as easy as 1. `RESET`, 2. `H`, then 3. `cat`.
+This makes loading a new version of your assembly program as easy as 1. hit `RESET` button, 2. type `H`, then 3. `cat` the new Intel HEX version of your program.
 
 # Credits
 

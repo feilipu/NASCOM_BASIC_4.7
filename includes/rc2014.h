@@ -111,7 +111,7 @@ SER_TX_BUFSIZE  .EQU    $0F  ; Size of the Tx Buffer, 15 Bytes
 Z80_VECTOR_TABLE .EQU   RAM_START   ; RAM vector address for Z80 RST 
                                     ; <<< SET THIS AS DESIRED >>>
 
-VECTOR_PROTO     .EQU   $0040
+VECTOR_PROTO     .EQU   $003E
 VECTOR_PROTO_SIZE .EQU  $1F
 
 ;   Prototype Vector Defaults to be defined in initialisation code.
@@ -128,7 +128,7 @@ VECTOR_PROTO_SIZE .EQU  $1F
 
 NULL_RET_ADDR   .EQU    VECTOR_PROTO    ; Write the NULL return location when removing an ISR
 NULL_INT_ADDR   .EQU    $0060
-NULL_NMI_ADDR   .EQU    $0062
+NULL_NMI_ADDR   .EQU    $0063
 
 RST_08_ADDR     .EQU    Z80_VECTOR_TABLE+$02   ; Write your ISR address to this location
 RST_10_ADDR     .EQU    Z80_VECTOR_TABLE+$06
