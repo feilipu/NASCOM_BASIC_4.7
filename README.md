@@ -133,7 +133,7 @@ For convenience, because we can't easily change ROM code interrupt routines alre
 
 By writing the address of your function into the `RST` jump table provided in the `YAZ180_LABELS.TXT` file you can modify the behaviour of any of the `RST` jumps, and set the address of the location for the `INT0` and `NMI` interrupts.
 
-Note the vector locations provided require only an address to be inserted. The `JP` instruction is already provided. For example, you can attach an `INT0` interrupt service routine by writing its origin address to location `$205A`.
+Note the vector locations provided require only an address to be inserted. The `JP` instruction is already provided. For example, you can attach an `INT0` interrupt service routine by writing its origin address to location `$201A`.
 
 ## USR Jump Address & Parameter Access
 
