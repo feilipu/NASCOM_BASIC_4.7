@@ -126,7 +126,7 @@ MO      .EQU    24H             ; Missing operand
 HX      .EQU    26H             ; HEX error
 BN      .EQU    28H             ; BIN error
 
-        .ORG    00390H          ; <<<< Modified to allow for Z180 Tx/Rx interrupt code
+        .ORG    0390H           ; <<<< Modified to allow for Z80 Tx/Rx interrupt & HexLoadr
 
 COLD:   JP      STARTB          ; Jump in for cold start (0390H)
 WARM:   JP      WARMST          ; Jump in for warm start (0393H)

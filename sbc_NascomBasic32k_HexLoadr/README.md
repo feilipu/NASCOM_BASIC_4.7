@@ -25,7 +25,7 @@ If you're using the RC2014 with 56kB of RAM, then all of the RAM between `0x2000
 
 ## RST locations
 
-For convenience, because your assembly program can't easily change the ROM code interrupt routines this ROM provides for the RC2014, the ACIA serial Tx and Rx routines are reachable from your assembly program by calling the `RST` instructions.
+For convenience, because we can't easily change the ROM code interrupt routines this ROM provides for the RC2014, the ACIA serial Tx and Rx routines are reachable from your assembly program by calling the `RST` instructions from your program.
 
 * Tx: `RST 08H` expects a byte to transmit in the `a` register.
 * Rx: `RST 10H` returns a received byte in the `a` register, and will block (loop) until it has a byte to return.
@@ -33,26 +33,27 @@ For convenience, because your assembly program can't easily change the ROM code 
 
 ## USR Jump Address & Parameter Access
 
-For the RC2014 the `USR(x)` jump address is located at `&h8124`.
-For example, if your arbitrary program is located at `&hE000` then the Basic command to set the `USR(x)` jump address is `DOKE &h8124, &hE000`.
+For the RC2014 with 32k Basic the `USR(x)` jump address is located at `0x8224`.
+For example, if your arbitrary program is located at `0xE000` then the Basic command to set the `USR(x)` jump address is `DOKE &h8224, &hE000`.
 
-Your assembly program can receive a 16 bit parameter passed in from the function by calling `DEINT` at `&h0B57`. The parameter is stored in register pair `DE`.
+Your assembly program can receive a 16 bit parameter passed in from the function by calling `DEINT` at `0x0C47`. The parameter is stored in register pair `DE`.
 
-When your assembly program is finished it can return a 16 bit parameter stored in `A` (MSB) and `B` (LSB) by jumping to `ABPASS` which is located at `&h12CC`.
+When your assembly program is finished it can return a 16 bit parameter stored in `A` (MSB) and `B` (LSB) by jumping to `ABPASS` which is located at `0x13BD`.
 
 ``` asm
                                 ; from Nascom Basic Symbol Tables
-DEINT           .EQU    $0B57   ; Function DEINT to get USR(x) into DE registers
-ABPASS          .EQU    $12CC   ; Function ABPASS to put output into AB register for return
+DEINT           .EQU    $0C47   ; Function DEINT to get USR(x) into DE registers
+ABPASS          .EQU    $13BD   ; Function ABPASS to put output into AB register for return
 
 
                 .ORG    E000H   ; your code origin, for example
-                call DEINT      ; get the USR(x) argument in DE
+                CALL    DEINT   ; get the USR(x) argument in DE
                  
                                 ; your code here
                                 
-                jp ABPASS       ; return the 16 bit value to USR(x). Note jp not ret
+                JP      ABPASS  ; return the 16 bit value to USR(x). Note JP not CALL
 ```
+The `RC2014_LABELS.TXT` file is provided to advise of all the relevant RAM and ROM locations.
 
 # Program Usage
 
@@ -62,17 +63,17 @@ ABPASS          .EQU    $12CC   ; Function ABPASS to put output into AB register
 
 3. Reset the RC2014 and type `H` when offered the `(C|W|H)` option when booting. `HexLoadr:` will wait for Intel HEX formatted data on the ACIA serial interface.
 
-4. Using a serial terminal, upload the HEX file for your arbitrary program that you prepared in Step 1. If desired the python `slowprint.py` program, or the Linux `cat` utility, can also be used for this purpose. `python slowprint.py < myprogram.hex > /dev/ttyUSB0` or `cat myprogram.hex > /dev/ttyUSB0`.
+4. Using a serial terminal, upload the HEX file for your arbitrary program that you prepared in Step 1, using the Linux `cat` utility or similar. If desired the python `slowprint.py` program can also be used for this purpose. `python slowprint.py > /dev/ttyUSB0 < myprogram.hex` or `cat > /dev/ttyUSB0 < myprogram.hex`.
 
-5. When HexLoadr has finished, and you are back at the Basic `ok` prompt, use the `DOKE` command relocate the address for the Basic `USR(x)` command to point to `.ORG` of your arbitrary program. For the RC2014 the `USR(x)` jump address is located at `&h8124`. If your arbitrary program is located at `&hE000` then the Basic command is `DOKE &h8124, &hE000`, for example.
+5. When HexLoadr has finished, and you are back at the Basic `ok` prompt, use the `DOKE` command relocate the address for the Basic `USR(x)` command to point to `.ORG` of your arbitrary program. For the RC2014 the `USR(x)` jump address is located at `0x8224`. If your arbitrary program is located at `0xE000` then the Basic command is `DOKE &h8224, &hE000`, for example.
 
-6. Start your arbitrary program using `PRINT USR(0)`, or other variant if you have parameters to pass to your program.
+6. Start your program using `PRINT USR(0)`, or other variant if you have parameters to pass to your program.
 
 7. Profit.
 
 ## Notes
 
-Note that your arbitrary program and the `USR(x)` jump address setting will remain in place through a RC2014 Cold or Warm RESET, provided you prevent Basic from initialising the RAM locations you have used. Also, you can reload your assembly program to the same RAM location through multiple Warm and HexLoadr RESETs, without reprogramming the `USR(x)` jump.
+Note that your program and the `USR(x)` jump address setting will remain in place through a RC2014 Cold or Warm RESET, provided you prevent Basic from initialising the RAM locations you have used. Also, you can reload your assembly program to the same RAM location through multiple Warm and HexLoadr RESETs, without reprogramming the `USR(x)` jump.
 
 Any Basic programs loaded will also remain in place during a Warm or HexLoadr RESET.
 

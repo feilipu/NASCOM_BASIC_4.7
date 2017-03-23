@@ -18,7 +18,7 @@
 ; Z80_VECTOR_TABLE  .EQU   RAMSTART_CA0    ; RAM vector address for Z80 RST
 ;
 ; #include          "d:/yaz180.h"   ; OR
-; #include          "d;/rc2014.h"
+; #include          "d:/rc2014.h"
 
 ;==============================================================================
 ;

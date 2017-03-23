@@ -343,8 +343,7 @@ PRINT:
 
 ;------------------------------------------------------------------------------
 INIT:
-               LD        HL,TEMPSTACK    ; Temp stack
-               LD        SP,HL           ; Set up a temporary stack
+               LD        SP,TEMPSTACK ; Set up a temporary stack
 
                LD        HL,serRxBuf     ; Initialise Rx Buffer
                LD        (serRxInPtr),HL
@@ -383,8 +382,6 @@ START:
 CORW:
                RST       10H
                AND       %11011111       ; lower to uppercase
-               CP        'X'             ; are we exiting Basic?
-               JP        Z, $E000        ; then jump to RAM at 0xE000
                CP        'C'
                JR        NZ, CHECKWARM
                RST       08H
@@ -395,7 +392,7 @@ CORW:
 COLDSTART:
                LD        A,'Y'           ; Set the BASIC STARTED flag
                LD        (basicStarted),A
-               JP        $01F0           ; <<<< Start Basic COLD:
+               JP        $0390           ; <<<< Start Basic COLD:
 CHECKWARM:
                CP        'W'
                JR        NZ, CORW
@@ -405,12 +402,12 @@ CHECKWARM:
                LD        A,$0A
                RST       08H
 WARMSTART:
-               JP        $01F3           ; <<<< Start Basic WARM:
+               JP        $0393           ; <<<< Start Basic WARM:
 
 SIGNON1:       .BYTE     "SBC - Grant Searle",CR,LF
                .BYTE     "ACIA - feilipu",CR,LF,0
 SIGNON2:       .BYTE     CR,LF
-               .BYTE     "Cold or Warm start, or eXit "
-               .BYTE     "$E000 (C|W|X) ? ",0
+               .BYTE     "Cold or Warm start"
+               .BYTE     " (C|W) ? ",0
 
                .END

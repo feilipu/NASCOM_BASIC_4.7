@@ -35,7 +35,7 @@ WRKSPC          .EQU     $RAMSTART_CA1
 
 TEMPSTACK       .EQU     WRKSPC+$AB
 
-;==================================================================================
+;==============================================================================
 ;
 ; CODE SECTION
 ;
@@ -451,7 +451,6 @@ WARMSTART:
 ;
 ; STRINGS
 ;
-
 SIGNON1:    .BYTE   "YAZ180 - feilipu",CR,LF,0
 SIGNON2:    .BYTE   CR,LF
             .BYTE   "Cold or Warm start, "

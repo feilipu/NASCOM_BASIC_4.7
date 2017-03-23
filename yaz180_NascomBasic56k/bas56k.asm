@@ -37,7 +37,7 @@ DEL     .EQU    7FH             ; Delete
 
 ; BASIC WORK SPACE LOCATIONS
 
-WRKSPC  .EQU    2700H           ; <<<< BASIC Work space ** larger Rx buffer & Tx buffer **
+WRKSPC  .EQU    2700H           ; <<<< BASIC Work space ** Rx buffer & Tx buffer located from 2100H **
 USR     .EQU    WRKSPC+3H       ; "USR (x)" jump
 OUTSUB  .EQU    WRKSPC+6H       ; "OUT p,n"
 OTPORT  .EQU    WRKSPC+7H       ; Port (p)

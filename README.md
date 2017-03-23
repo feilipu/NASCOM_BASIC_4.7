@@ -25,13 +25,18 @@ ACIA 6850 interrupt driven serial I/O to run modified NASCOM Basic 4.7.
 
 Full input and output buffering with incoming data hardware handshaking.
 Handshake shows full before the buffer is totally filled to allow run-on from the sender.
-Transmit and receive are interrupt driven.
+Transmit and receive are interrupt driven, and are fast.
 
 Receive buffer is 255 bytes, to allow efficient pasting of Basic into the editor.
 Transmit buffer is 15 bytes, because the RC2014 is too slow to fill the buffer.
 Receive buffer overflows are silently discarded.
 
-A jump to RAM at `0xE000` is provided to ease the exit to ASM programs.
+Two versions of initialisation routines for NASCOM Basic are provided.
+
+# 56k Basic
+
+Provides the maximum Basic program space, and requires a 64k/56k RAM module.
+No non-Basic programming features are provided.
 
 ```bash
 SBC - Grant Searle
@@ -42,9 +47,18 @@ Cold or Warm start, or eXit (C|W|X) $E000 ?C
 Memory top?  57343 [eg $DFFF]
 Z80 BASIC Ver 4.7b
 Copyright (C) 1978 by Microsoft
-xxxxx Bytes free
+56739 Bytes free
+
 Ok
 ```
+# 32k Basic with integrated HexLoadr
+
+This ROM works with the most basic of the RC2014 versions, with 32k of RAM.
+
+It can be used to simply provide accelerated I/O over the standard ROM, and it provides Basic programming space from `0x8000` RAM address. This is the ROM to choose if you want fast I/O from a standard RC2014.
+
+Also this ROM provides both HexLoadr functions, and a `RST`, `INT0`, and `NMI` JumP Table.
+This allows you to upload Assembly or compiled C programs, and then run them as described below. 
 
 ==================================================================================
 
@@ -52,7 +66,7 @@ Ok
 
 ASCI0 interrupt driven serial I/O to run modified NASCOM Basic 4.7.
 
-Two versions of NASCOM Basic are provided.
+Two versions of initialisation routines NASCOM Basic are provided.
 
 # 56k Basic with integrated HexLoadr
 
@@ -117,27 +131,27 @@ There are a number of important Z180 addresses or origins that need to be manage
 
 Your program (the one that you're doing all this for) needs to start in RAM located somewhere.
 
-If you're using the YAZ180 with 32kB Nascom Basic, then all of the RAM between `0x3000` and `0x7FFF` is available for your assembly programs, without limitation. The area between `0x2000` and `0x2FFF` is reserved for system calls, buffers, and stack space.
+If you're using the RC2014 or YAZ180 with 32kB Nascom Basic, then all of the RAM between `0x3000` and `0x7FFF` is available for your assembly programs, without limitation. In the YAZ180 the area between `0x2000` and `0x2FFF` is reserved for system calls, buffers, and stack space. For the RC2014 the area from `0x8000` is reserved for these uses.
 
-The area from `0x4000` to `0x7FFF` is the Banked memory area, and this RAM can be managed by the HexLoadr program to write to all of the physical RAM space using ESA Records.
+In the YAZ180, the area from `0x4000` to `0x7FFF` is the Banked memory area, and this RAM can be managed by the HexLoadr program to write to all of the physical RAM space using ESA Records.
 
 HexLoadr supports the Extended Segment Address Record Type, and will store the MSB of the ESA in the Z180 BBR Register. The LSB of the ESA is silently abandoned. When HexLoadr terminates the BBR is returned to the original value.
 
 ## RST locations
 
-For convenience, because we can't easily change ROM code interrupt routines already present in the YAZ180, the ASCI serial Tx and Rx routines are reachable by calling `RST` instructions from your assembly program.
+For convenience, because we can't easily change the ROM code interrupt routines already present in the YAZ180, the ASCI serial Tx and Rx routines are reachable by calling `RST` instructions from your program.
 
 * Tx: `RST 08H` expects a byte to transmit in the `a` register.
 * Rx: `RST 10H` returns a received byte in the `a` register, and will block (loop) until it has a byte to return.
 * Rx Check: `RST 18H` will immediately return the number of bytes in the Rx buffer (0 if buffer empty) in the `a` register.
 
-By writing the address of your function into the `RST` jump table provided in the `YAZ180_LABELS.TXT` file you can modify the behaviour of any of the `RST` jumps, and set the address of the location for the `INT0` and `NMI` interrupts.
+By writing the address of your function into the `RST` jump table locations provided in the`RC2014_LABELS.TXT` and `YAZ180_LABELS.TXT` files you can modify the behaviour of any of the `RST` jumps, and set the address of the location for the `INT0` and `NMI` interrupts.
 
 Note the vector locations provided require only an address to be inserted. The `JP` instruction is already provided. For example, you can attach an `INT0` interrupt service routine by writing its origin address to location `0x201A`.
 
 ## USR Jump Address & Parameter Access
 
-For the YAZ180 with 32k Basic the `USR(x)` jump address is located at `0x8004`. For the YAZ180 with 56k Basic the `USR(x)` jump address is located at `0x2704`. For example, if your arbitrary program is located at `0x3000` then the 32k Basic command to set the `USR(x)` jump address is `DOKE &h8004, &h3000`.
+For the RC2014 with 32k Basic the location for `USR(x)` is `0x8224`. For the YAZ180 with 32k Basic the `USR(x)` jump address is located at `0x8004`. For the YAZ180 with 56k Basic the `USR(x)` jump address is located at `0x2704`. For example, if your arbitrary program is located at `0x3000` then the 32k Basic command to set the `USR(x)` jump address is `DOKE &h8224, &h3000`.
 
 Your assembly program can receive a 16 bit parameter passed in from the function by calling `DEINT` at `0x0C47`. The parameter is stored in register pair `DE`.
 
@@ -163,9 +177,9 @@ The `YAZ180_LABELS.TXT` file is provided to advise of all the relevant RAM and R
 
 2. Reset the YAZ180 and type `H` when offered the `(C|W|H)` option when booting. `HexLoadr:` will wait for Intel HEX formatted data on the ASCI serial interface.
 
-3. Using a serial terminal, upload the HEX file for your arbitrary program that you prepared in Step 1. If desired the python `slowprint.py` program, or the Linux `cat` utility, can also be used for this purpose. `python slowprint.py < myprogram.hex > /dev/ttyUSB0` or `cat myprogram.hex > /dev/ttyUSB0`.
+3. Using a serial terminal, upload the HEX file for your arbitrary program that you prepared in Step 1. If desired the python `slowprint.py` program, or the Linux `cat` utility, can also be used for this purpose. `python slowprint.py > /dev/ttyUSB0 < myprogram.hex` or `cat > /dev/ttyUSB0 < myprogram.hex`.
 
-4. When HexLoadr has finished, and you are back at the Basic `ok` prompt, use the `DOKE` command relocate the address for the Basic `USR(x)` command to point to `.ORG` of your arbitrary program. For the YAZ180 the `USR(x)` jump address is located at either `0x8004` (32k) or `0x2704` (56k). If your arbitrary program is located at `0x3000` then the Basic command is `DOKE &h8004, &h3000`, for example.
+4. When HexLoadr has finished, and you are back at the Basic `ok` prompt, use the `DOKE` command relocate the address for the Basic `USR(x)` command to point to `.ORG` of your arbitrary program. For the YAZ180 the `USR(x)` jump address is located at `0x8224` (RC2014 32k), `0x8004` (YAZ180 32k), or `0x2704` (YAZ180 56k). If your arbitrary program is located at `0x3000` then the Basic command is `DOKE &h8224, &h3000`, for example.
 
 5. Start your arbitrary program using `PRINT USR(0)`, or other variant if you have parameters to pass to your program.
 
@@ -173,7 +187,7 @@ The `YAZ180_LABELS.TXT` file is provided to advise of all the relevant RAM and R
 
 ## Workflow Notes
 
-Note that your arbitrary program and the `USR(x)` jump will remain in place through a YAZ180 Cold or Warm RESET, provided you avoid using RAM that Basic initialises. Also, you can reload your assembly program to the same location through multiple Warm and HexLoadr RESETs, without reprogramming the `USR(x)` jump.
+Note that your arbitrary program and the `USR(x)` jump address setting will remain in place through a YAZ180 Cold or Warm RESET, provided you avoid using RAM that Basic initialises. Also, you can reload your assembly program to the same location through multiple Warm and HexLoadr RESETs, without reprogramming the `USR(x)` jump.
 
 Any Basic programs loaded will also remain in place during a Warm or HexLoadr RESET.
 
