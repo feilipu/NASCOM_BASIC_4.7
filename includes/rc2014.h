@@ -111,7 +111,7 @@ SER_TX_BUFSIZE  .EQU    $0F  ; Size of the Tx Buffer, 15 Bytes
 Z80_VECTOR_TABLE .EQU   RAM_START   ; RAM vector address for Z80 RST 
                                     ; <<< SET THIS AS DESIRED >>>
 
-VECTOR_PROTO     .EQU   $003E
+VECTOR_PROTO     .EQU   $0040
 VECTOR_PROTO_SIZE .EQU  $1F
 
 ;   Prototype Vector Defaults to be defined in initialisation code.
