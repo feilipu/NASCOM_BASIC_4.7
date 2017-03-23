@@ -56,7 +56,7 @@ Two versions of NASCOM Basic are provided.
 
 # 56k Basic with integrated HexLoadr
 
-The 56k version utilises the full 56k RAM memory space of the YAZ180, starting at 0x2000.
+The 56k version utilises the full 56k RAM memory space of the YAZ180, starting at `0x2000`.
 
 Full input and output ASCI0 buffering. Transmit and receive are interrupt driven.
 
@@ -69,7 +69,7 @@ Transmit function busy waits when buffer is full. No Tx characters lost.
 # 32k Basic with integrated HexLoadr
 
 The 32k version uses the CA0 space for buffers and the CA1 space for Basic.
-This leaves the Bank RAM / Flash space in 0x4000 to 0x7FFF available for other usage.
+This leaves the Bank RAM / Flash space in `0x4000` to `0x7FFF` available for other usage.
 
 The rationale is to allow in-circuit programming, and an exit to another system.
 An integrated HexLoadr program is provided for this purpose.
@@ -149,11 +149,11 @@ DEINT           .EQU    $0C47   ; Function DEINT to get USR(x) into DE registers
 ABPASS          .EQU    $13BD   ; Function ABPASS to put output into AB register for return
 
                 .ORG    3000H   ; your code origin, for example
-                call DEINT      ; get the USR(x) argument in DE
+                CALL DEINT      ; get the USR(x) argument in DE
                  
                                 ; your code here
                                 
-                jp ABPASS       ; return the 16 bit value to USR(x). Note jp not ret
+                JP ABPASS       ; return the 16 bit value to USR(x). Note JP not CALL
 ```
 The `YAZ180_LABELS.TXT` file is provided to advise of all the relevant RAM and ROM locations.
 
