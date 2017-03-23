@@ -459,7 +459,7 @@ SIGNON2:    .BYTE   CR,LF
 
 initString: .BYTE CR,LF
             .BYTE "HexLoadr: "
-                .BYTE CR,LF,0
+            .BYTE CR,LF,0
 
 invalidTypeStr: .BYTE "Inval Type",CR,LF,0
 badCheckSumStr: .BYTE "Chksum Error",CR,LF,0

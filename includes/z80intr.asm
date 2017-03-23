@@ -72,9 +72,9 @@
 
                 .ORG    VECTOR_PROTO
 
-; WILL BE RELOCATED DURING INIT TO
+; WILL BE DUPLICATED DURING INIT TO
 ;
-;                .ORG    Z80_VECTOR_TABLE
+;               .ORG    Z80_VECTOR_TABLE
 NULL_RET:
                 RET
 RST_08_LBL:
