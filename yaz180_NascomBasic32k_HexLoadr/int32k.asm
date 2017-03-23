@@ -19,7 +19,8 @@
 ; INCLUDES SECTION
 ;
 
-#include    "d:/yaz180.asm"
+#include    "d:/yaz180.h"
+#include    "d:/z80intr.asm"
 
 ;==============================================================================
 ;
@@ -477,6 +478,17 @@ RST_28      .EQU    NULL_RET        ; RET
 RST_30      .EQU    NULL_RET        ; RET
 INT_00      .EQU    NULL_INT        ; RETI
 INT_NMI     .EQU    NULL_NMI        ; RETN
+
+;==============================================================================
+;
+; Z180 INTERRUPT VECTOR SECTION 
+;
+
+;------------------------------------------------------------------------------
+; INTERRUPT VECTOR ASCI Channel 0 [ Vector at $8E ]
+
+                .ORG     VECTOR_ASCI0
+                JP       ASCI0_INTERRUPT
 
 ;==============================================================================
 ;

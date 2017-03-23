@@ -90,7 +90,6 @@ CBAR            .EQU    IO_BASE+$3A     ; MMU Common/Bank Area Reg
 OMCR            .EQU    IO_BASE+$3E     ; Operation Mode Control Reg
 ICR             .EQU    IO_BASE+$3F     ; I/O Control Reg
 
-
 ;==============================================================================
 ;
 ; Interrupt vectors (offsets) for Z180/HD64180 internal interrupts
@@ -302,21 +301,27 @@ RAMSTOP         .EQU    RAMSTOP_CA1
 
 STACKTOP        .EQU    $2FFE   ; start of global stack (any pushes pre-decrement)
 
-DRVSTART        .EQU    $3000   ; start of driver code (assorted)
+APU_CMD_BUFSIZE .EQU    $FF     ; FIXED CMD buffer size, 256 CMDs
+APU_PTR_BUFSIZE .EQU    $FF     ; FIXED DATA POINTER buffer size, 128 POINTERs
 
-USRSTART        .EQU    $4000   ; start of USR(x) asm code
+SER_RX0_BUFSIZE .EQU    $FF     ; FIXED Rx buffer size, 256 Bytes, no range checking
+SER_TX0_BUFSIZE .EQU    $FF     ; FIXED Tx buffer size, 256 Bytes, no range checking
+
+SER_RX1_BUFSIZE .EQU    $FF     ; FIXED Rx buffer size, 256 Bytes, no range checking
+SER_TX1_BUFSIZE .EQU    $FF     ; FIXED Tx buffer size, 256 Bytes, no range checking
 
 ;==============================================================================
 ;
-; GLOBAL VARIABLES SECTION - CAO
+; Interrupt vectors (offsets) for Z80 internal interrupts
 ;
 
-Z80_VECTOR_TABLE .EQU   RAMSTART_CA0    ; RAM vector address for Z80 RST
+Z80_VECTOR_TABLE .EQU   RAMSTART_CA0    ; RAM vector address for Z80 RST 
+                                        ; <<< SET THIS AS DESIRED >>>
 
-VECTOR_PROTO      .EQU  0040H
+VECTOR_PROTO     .EQU   0040H
 VECTOR_PROTO_SIZE .EQU  $1F
 
-;   Prototype Vector Defaults
+;   Prototype Vector Defaults to be defined in initialisation code.
 ;   RST_08      .EQU    TX0         TX a character over ASCI0
 ;   RST_10      .EQU    RX0         RX a character over ASCI0, block no bytes available
 ;   RST_18      .EQU    RX0_CHK     Check ASCI0 status, return # bytes available
@@ -328,27 +333,23 @@ VECTOR_PROTO_SIZE .EQU  $1F
 
 ;   Z80 RAM VECTOR ADDRESS TABLE
 
-NULL_RET_ADDR   .EQU    $2000   ; Write the NULL return location when removing an ISR
-NULL_INT_ADDR   .EQU    $2060
-NULL_NMI_ADDR   .EQU    $2062
+NULL_RET_ADDR   .EQU    Z80_VECTOR_TABLE+$00   ; Write the NULL return location when removing an ISR
+NULL_INT_ADDR   .EQU    Z80_VECTOR_TABLE+$60
+NULL_NMI_ADDR   .EQU    Z80_VECTOR_TABLE+$62
 
-RST_08_ADDR     .EQU    $2002   ; Write your ISR address to this location
-RST_10_ADDR     .EQU    $2006
-RST_18_ADDR     .EQU    $200A
-RST_20_ADDR     .EQU    $200E
-RST_28_ADDR     .EQU    $2012
-RST_30_ADDR     .EQU    $2016
-INT_00_ADDR     .EQU    $201A
-INT_NMI_ADDR    .EQU    $201E
+RST_08_ADDR     .EQU    Z80_VECTOR_TABLE+$02   ; Write your ISR address to this location
+RST_10_ADDR     .EQU    Z80_VECTOR_TABLE+$06
+RST_18_ADDR     .EQU    Z80_VECTOR_TABLE+$0A
+RST_20_ADDR     .EQU    Z80_VECTOR_TABLE+$0E
+RST_28_ADDR     .EQU    Z80_VECTOR_TABLE+$12
+RST_30_ADDR     .EQU    Z80_VECTOR_TABLE+$16
+INT_00_ADDR     .EQU    Z80_VECTOR_TABLE+$1A
+INT_NMI_ADDR    .EQU    Z80_VECTOR_TABLE+$1E
 
-APU_CMD_BUFSIZE .EQU    $FF    ; FIXED CMD buffer size, 256 CMDs
-APU_PTR_BUFSIZE .EQU    $FF    ; FIXED DATA POINTER buffer size, 128 POINTERs
-
-SER_RX0_BUFSIZE .EQU    $FF    ; FIXED Rx buffer size, 256 Bytes, no range checking
-SER_TX0_BUFSIZE .EQU    $FF    ; FIXED Tx buffer size, 256 Bytes, no range checking
-
-SER_RX1_BUFSIZE .EQU    $FF    ; FIXED Rx buffer size, 256 Bytes, no range checking
-SER_TX1_BUFSIZE .EQU    $FF    ; FIXED Tx buffer size, 256 Bytes, no range checking
+;==============================================================================
+;
+; GLOBAL VARIABLES SECTION - CAO
+;
 
 APUCMDInPtr     .EQU    Z80_VECTOR_TABLE+VECTOR_PROTO_SIZE+1
 APUCMDOutPtr    .EQU    APUCMDInPtr+2
@@ -374,7 +375,7 @@ serTx1BufUsed   .EQU    serRx1BufUsed+1
 
 basicStarted    .EQU    serTx1BufUsed+1
 
-; $2040 -> $20FF is slack memory.
+; $2041 -> $20FF is slack memory.
 
 APUCMDBuf       .EQU    RAMSTART_CA0+$100 ; must start on 0xnn00 for low byte roll-over
 APUPTRBuf       .EQU    APUCMDBuf+APU_CMD_BUFSIZE+1
@@ -384,113 +385,6 @@ serTx0Buf       .EQU    serRx0Buf+SER_RX0_BUFSIZE+1
 
 serRx1Buf       .EQU    serTx0Buf+SER_TX0_BUFSIZE+1 ; must start on 0xnn00
 serTx1Buf       .EQU    serRx1Buf+SER_RX1_BUFSIZE+1
-
-;==============================================================================
-;
-; Z80 INTERRUPT VECTOR PROTOTYPE TABLE
-;
-
-;------------------------------------------------------------------------------
-; RESET / TRAP
-                .ORG    0000H
-                DI                  ; Disable interrupts
-                JP      INIT        ; Initialize Hardware and go
-
-;------------------------------------------------------------------------------
-; RST08
-                .ORG    0008H
-                JP      Z80_VECTOR_TABLE-VECTOR_PROTO+RST_08_LBL
-
-;------------------------------------------------------------------------------
-; RST10
-                .ORG    0010H
-                JP      Z80_VECTOR_TABLE-VECTOR_PROTO+RST_10_LBL
-
-;------------------------------------------------------------------------------
-; RST18
-                .ORG    0018H
-                JP      Z80_VECTOR_TABLE-VECTOR_PROTO+RST_18_LBL
-
-;------------------------------------------------------------------------------
-; RST 20
-                .ORG    0020H
-                JP      Z80_VECTOR_TABLE-VECTOR_PROTO+RST_20_LBL
-
-;------------------------------------------------------------------------------
-; RST 28
-                .ORG    0028H
-                JP      Z80_VECTOR_TABLE-VECTOR_PROTO+RST_28_LBL
-
-;------------------------------------------------------------------------------
-; RST 30
-                .ORG    0030H
-                JP      Z80_VECTOR_TABLE-VECTOR_PROTO+RST_30_LBL
-
-;------------------------------------------------------------------------------
-; RST 38 - INTERRUPT VECTOR INT0 [ with IM 1 ]
-
-                .ORG    0038H
-                JP      Z80_VECTOR_TABLE-VECTOR_PROTO+INT_00_LBL
-
-;------------------------------------------------------------------------------
-; Z80 INTERRUPT VECTOR TABLE PROTOTYPE [ Originating at $40 ]
-
-                .ORG    VECTOR_PROTO
-
-; WILL BE RELOCATED DURING INIT TO
-;
-;                .ORG    Z80_VECTOR_TABLE
-NULL_RET:
-                RET
-RST_08_LBL:
-                JP      RST_08
-                NOP
-RST_10_LBL:
-                JP      RST_10
-                NOP
-RST_18_LBL:
-                JP      RST_18
-                NOP
-RST_20_LBL:
-                JP      RST_20
-                NOP
-RST_28_LBL:
-                JP      RST_28
-                NOP
-RST_30_LBL:
-                JP      RST_30
-                NOP
-INT_00_LBL:
-                JP      INT_00
-                NOP
-INT_NMI_LBL:
-                JP      INT_NMI
-
-;------------------------------------------------------------------------------
-; NULL RETURN INSTRUCTIONS
-
-                .ORG    0060H
-NULL_INT:
-                RETI
-NULL_NMI:
-                RETN
-
-;------------------------------------------------------------------------------
-; NMI - INTERRUPT VECTOR NMI
-
-                .ORG    0066H
-                JP      Z80_VECTOR_TABLE-VECTOR_PROTO+INT_NMI_LBL
-
-;==================================================================================
-;
-; Z180 INTERRUPT VECTOR SECTION 
-;
-
-;------------------------------------------------------------------------------
-; INTERRUPT VECTOR ASCI Channel 0 [ Vector at $8E ]
-
-                .ORG     VECTOR_ASCI0
-                JP       ASCI0_INTERRUPT
 
 ;==============================================================================
 ;
