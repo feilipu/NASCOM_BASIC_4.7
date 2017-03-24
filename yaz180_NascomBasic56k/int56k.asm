@@ -44,17 +44,15 @@ TEMPSTACK       .EQU     WRKSPC+$AB
 
 ;------------------------------------------------------------------------------
 ASCI0_INTERRUPT:
-
         push af
         push hl
                                     ; start doing the Rx stuff
 
         in0 a, (STAT0)              ; load the ASCI0 status register
-        tst SER_RDRF                ; test whether we have received on ASCI0
+        and SER_RDRF                ; test whether we have received on ASCI0
         jr z, ASCI0_TX_CHECK        ; if not, go check for bytes to transmit
 
 ASCI0_RX_GET:
-
         in0 l, (RDR0)               ; move Rx byte from the ASCI0 to l
 
         ld a, (serRx0BufUsed)       ; get the number of bytes in the Rx buffer      
@@ -65,26 +63,24 @@ ASCI0_RX_GET:
         ld hl, (serRx0InPtr)        ; get the pointer to where we poke
         ld (hl), a                  ; write the Rx byte to the serRx0InPtr target
 
-        inc l                       ; move the Rx pointer low byte along
+        inc l                       ; move the Rx pointer low byte along, 0xFF rollover
         ld (serRx0InPtr), hl        ; write where the next byte should be poked
 
         ld hl, serRx0BufUsed
         inc (hl)                    ; atomically increment Rx buffer count
 
-ASCI0_RX_CHECK:
-                                    ; Z8S180 has 4 byte Rx H/W FIFO
+ASCI0_RX_CHECK:                     ; Z8S180 has 4 byte Rx H/W FIFO
         in0 a, (STAT0)              ; load the ASCI0 status register
-        tst SER_RDRF                ; test whether we have received on ASCI0
+        and SER_RDRF                ; test whether we have received on ASCI0
         jr nz, ASCI0_RX_GET         ; if still more bytes in H/W FIFO, get them
 
 ASCI0_TX_CHECK:                     ; now start doing the Tx stuff
-
         ld a, (serTx0BufUsed)       ; get the number of bytes in the Tx buffer
         or a                        ; check whether it is zero
         jr z, ASCI0_TX_TIE0_CLEAR   ; if the count is zero, then disable the Tx Interrupt
 
         in0 a, (STAT0)              ; load the ASCI0 status register
-        tst SER_TDRE                ; test whether we can transmit on ASCI0
+        and SER_TDRE                ; test whether we can transmit on ASCI0
         jr z, ASCI0_TX_END          ; if not, then end
 
         ld hl, (serTx0OutPtr)       ; get the pointer to place where we pop the Tx byte
@@ -100,13 +96,11 @@ ASCI0_TX_CHECK:                     ; now start doing the Tx stuff
         jr nz, ASCI0_TX_END         ; if we've more Tx bytes to send, we're done for now
 
 ASCI0_TX_TIE0_CLEAR:
-
         in0 a, (STAT0)              ; get the ASCI0 status register
         and ~SER_TIE                ; mask out (disable) the Tx Interrupt
         out0 (STAT0), a             ; set the ASCI0 status register
 
 ASCI0_TX_END:
-
         pop hl
         pop af
 
@@ -116,7 +110,6 @@ ASCI0_TX_END:
 ;------------------------------------------------------------------------------
 RX0:
 RX0_WAIT_FOR_BYTE:
-
         ld a, (serRx0BufUsed)       ; get the number of bytes in the Rx buffer
 
         or a                        ; see if there are zero bytes available
@@ -128,7 +121,7 @@ RX0_WAIT_FOR_BYTE:
         ld a, (hl)                  ; get the Rx byte
         push af                     ; save the Rx byte on stack
 
-        inc l                       ; move the Rx pointer low byte along
+        inc l                       ; move the Rx pointer low byte along, 0xFF rollover
         ld (serRx0OutPtr), hl       ; write where the next byte should be popped
 
         ld hl, serRx0BufUsed
@@ -149,7 +142,7 @@ TX0:
         jr nz, TX0_BUFFER_OUT       ; buffer not empty, so abandon immediate Tx
         
         in0 a, (STAT0)              ; get the ASCI0 status register
-        tst SER_TDRE                ; test whether we can transmit on ASCI0
+        and SER_TDRE                ; test whether we can transmit on ASCI0
         jr z, TX0_BUFFER_OUT        ; if not, so abandon immediate Tx
         
         ld a, l                     ; Retrieve Tx character for immediate Tx
@@ -158,7 +151,6 @@ TX0:
         jr TX0_CLEAN_UP             ; and just complete
 
 TX0_BUFFER_OUT:
-
         ld a, (serTx0BufUsed)       ; Get the number of bytes in the Tx buffer
         cp SER_TX0_BUFSIZE          ; check whether there is space in the buffer
         jr nc, TX0_BUFFER_OUT       ; buffer full, so wait for free buffer for Tx
@@ -173,18 +165,18 @@ TX0_BUFFER_OUT:
         ld hl, serTx0BufUsed
         inc (hl)                    ; atomic increment of Tx count
 
+        di                          ; critical section begin
         in0 a, (STAT0)              ; load the ASCI0 status register
         tst SER_TIE                 ; test whether ASCI0 interrupt is set        
-        jr nz, TX0_CLEAN_UP         ; if so then just clean up        
-
-        di                          ; critical section begin
-        in0 a, (STAT0)              ; so get the ASCI status register   
+        jr nz, TX0_BUFFER_CLEAN_UP  ; if so then just clean up        
+  
         or SER_TIE                  ; mask in (enable) the Tx Interrupt
         out0 (STAT0), a             ; set the ASCI status register
+        
+TX0_BUFFER_CLEAN_UP:
         ei                          ; critical section end
 
 TX0_CLEAN_UP:
-
         pop hl                      ; recover HL
         ret
 
@@ -199,7 +191,7 @@ TX0_PRINT:
         LD      A,(HL)              ; Get character
         OR      A                   ; Is it $00 ?
         RET     Z                   ; Then RETurn on terminator
-        RST     08H                 ; Print it
+        CALL    TX0                 ; Print it
         INC     HL                  ; Next Character
         JR      TX0_PRINT           ; Continue until $00
 
@@ -451,8 +443,8 @@ WARMSTART:
 ;
 ; STRINGS
 ;
-
 SIGNON1:    .BYTE   "YAZ180 - feilipu",CR,LF,0
+
 SIGNON2:    .BYTE   CR,LF
             .BYTE   "Cold or Warm start, "
             .BYTE   "or HexLoadr (C|W|H) ? ",0
@@ -476,7 +468,7 @@ RST_18      .EQU    RX0_CHK         ; Check ASCI0 status, return # bytes availab
 RST_20      .EQU    NULL_RET        ; RET
 RST_28      .EQU    NULL_RET        ; RET
 RST_30      .EQU    NULL_RET        ; RET
-INT_00      .EQU    NULL_INT        ; RETI
+INT_00      .EQU    NULL_INT        ; EI RETI
 INT_NMI     .EQU    NULL_NMI        ; RETN
 
 ;==============================================================================

@@ -97,14 +97,14 @@ ICR             .EQU    IO_BASE+$3F     ; I/O Control Reg
 
 VECTOR_BASE     .EQU   $80      ; Vector Base address (IL) <<< SET THIS AS DESIRED >>>
 
-VECTOR_INT1     .EQU   VECTOR_BASE+$00    ; external /INT1 
-VECTOR_INT2     .EQU   VECTOR_BASE+$02    ; external /INT2 
-VECTOR_PRT0     .EQU   VECTOR_BASE+$04    ; PRT channel 0 
-VECTOR_PRT1     .EQU   VECTOR_BASE+$06    ; PRT channel 1 
-VECTOR_DMA0     .EQU   VECTOR_BASE+$08    ; DMA channel 0 
-VECTOR_DMA1     .EQU   VECTOR_BASE+$0A    ; DMA Channel 1 
-VECTOR_CSIO     .EQU   VECTOR_BASE+$0C    ; Clocked serial I/O 
-VECTOR_ASCI0    .EQU   VECTOR_BASE+$0E    ; Async channel 0 
+VECTOR_INT1     .EQU   VECTOR_BASE+$00    ; external /INT1
+VECTOR_INT2     .EQU   VECTOR_BASE+$02    ; external /INT2
+VECTOR_PRT0     .EQU   VECTOR_BASE+$04    ; PRT channel 0
+VECTOR_PRT1     .EQU   VECTOR_BASE+$06    ; PRT channel 1
+VECTOR_DMA0     .EQU   VECTOR_BASE+$08    ; DMA channel 0
+VECTOR_DMA1     .EQU   VECTOR_BASE+$0A    ; DMA Channel 1
+VECTOR_CSIO     .EQU   VECTOR_BASE+$0C    ; Clocked serial I/O
+VECTOR_ASCI0    .EQU   VECTOR_BASE+$0E    ; Async channel 0
 VECTOR_ASCI1    .EQU   VECTOR_BASE+$10    ; Async channel 1
 
 ;==============================================================================
@@ -318,7 +318,7 @@ SER_TX1_BUFSIZE .EQU    $FF     ; FIXED Tx buffer size, 256 Bytes, no range chec
 Z80_VECTOR_TABLE .EQU   RAMSTART_CA0    ; RAM vector address for Z80 RST 
                                         ; <<< SET THIS AS DESIRED >>>
 
-VECTOR_PROTO     .EQU   0040H
+VECTOR_PROTO     .EQU   $0040
 VECTOR_PROTO_SIZE .EQU  $1F
 
 ;   Prototype Vector Defaults to be defined in initialisation code.
@@ -334,8 +334,8 @@ VECTOR_PROTO_SIZE .EQU  $1F
 ;   Z80 RAM VECTOR ADDRESS TABLE
 
 NULL_RET_ADDR   .EQU    VECTOR_PROTO    ;Write the NULL return location when removing an ISR
-NULL_INT_ADDR   .EQU    $0060
-NULL_NMI_ADDR   .EQU    $0063
+NULL_NMI_ADDR   .EQU    $0060
+NULL_INT_ADDR   .EQU    $0062
 
 RST_08_ADDR     .EQU    Z80_VECTOR_TABLE+$02   ; Write your ISR address to this location
 RST_10_ADDR     .EQU    Z80_VECTOR_TABLE+$06
