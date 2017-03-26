@@ -169,10 +169,10 @@ TX0_BUFFER_OUT:
         in0 a, (STAT0)              ; load the ASCI0 status register
         tst SER_TIE                 ; test whether ASCI0 interrupt is set        
         jr nz, TX0_BUFFER_CLEAN_UP  ; if so then just clean up        
-  
+
         or SER_TIE                  ; mask in (enable) the Tx Interrupt
         out0 (STAT0), a             ; set the ASCI status register
-        
+
 TX0_BUFFER_CLEAN_UP:
         ei                          ; critical section end
 
@@ -413,7 +413,7 @@ START:
             CALL    TX0_PRINT       ; Output string
 CORW:
             RST     10H
-            AND     %11011111       ; lower to uppercase
+            AND     11011111B       ; lower to uppercase
             CP      'H'             ; are we trying to load an Intel HEX program?
             JP      Z, HEX_START    ; then jump to HexLoadr
             CP      'C'
@@ -459,7 +459,7 @@ LoadOKStr:      .BYTE "Done",CR,LF,0
 
 ;==============================================================================
 ;
-; Z80 INTERRUPT VECTOR PROTOTYPE ASSIGNMENTS
+; Z80 INTERRUPT VECTOR DESTINATION ADDRESS ASSIGNMENTS
 ;
 
 RST_08      .EQU    TX0             ; TX a character over ASCI0

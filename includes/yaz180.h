@@ -319,7 +319,7 @@ Z80_VECTOR_TABLE .EQU   RAMSTART_CA0    ; RAM vector address for Z80 RST
                                         ; <<< SET THIS AS DESIRED >>>
 
 VECTOR_PROTO     .EQU   $0040
-VECTOR_PROTO_SIZE .EQU  $1F
+VECTOR_PROTO_SIZE .EQU  $20
 
 ;   Prototype Vector Defaults to be defined in initialisation code.
 ;   RST_08      .EQU    TX0         TX a character over ASCI0
@@ -333,25 +333,25 @@ VECTOR_PROTO_SIZE .EQU  $1F
 
 ;   Z80 RAM VECTOR ADDRESS TABLE
 
-NULL_RET_ADDR   .EQU    VECTOR_PROTO    ;Write the NULL return location when removing an ISR
-NULL_NMI_ADDR   .EQU    $0060
-NULL_INT_ADDR   .EQU    $0062
+NULL_NMI_ADDR   .EQU    VECTOR_PROTO+$20        ; Write the NULL return location
+NULL_INT_ADDR   .EQU    VECTOR_PROTO+$22        ; when removing an ISR
+NULL_RET_ADDR   .EQU    VECTOR_PROTO+$25
 
-RST_08_ADDR     .EQU    Z80_VECTOR_TABLE+$02   ; Write your ISR address to this location
-RST_10_ADDR     .EQU    Z80_VECTOR_TABLE+$06
-RST_18_ADDR     .EQU    Z80_VECTOR_TABLE+$0A
-RST_20_ADDR     .EQU    Z80_VECTOR_TABLE+$0E
-RST_28_ADDR     .EQU    Z80_VECTOR_TABLE+$12
-RST_30_ADDR     .EQU    Z80_VECTOR_TABLE+$16
-INT_00_ADDR     .EQU    Z80_VECTOR_TABLE+$1A
-INT_NMI_ADDR    .EQU    Z80_VECTOR_TABLE+$1E
+RST_08_ADDR     .EQU    Z80_VECTOR_TABLE+$01    ; Write your ISR address to this location
+RST_10_ADDR     .EQU    Z80_VECTOR_TABLE+$05
+RST_18_ADDR     .EQU    Z80_VECTOR_TABLE+$09
+RST_20_ADDR     .EQU    Z80_VECTOR_TABLE+$0D
+RST_28_ADDR     .EQU    Z80_VECTOR_TABLE+$11
+RST_30_ADDR     .EQU    Z80_VECTOR_TABLE+$15
+INT_00_ADDR     .EQU    Z80_VECTOR_TABLE+$19
+INT_NMI_ADDR    .EQU    Z80_VECTOR_TABLE+$1D
 
 ;==============================================================================
 ;
 ; GLOBAL VARIABLES SECTION - CAO
 ;
 
-APUCMDInPtr     .EQU    Z80_VECTOR_TABLE+VECTOR_PROTO_SIZE+1
+APUCMDInPtr     .EQU    Z80_VECTOR_TABLE+VECTOR_PROTO_SIZE
 APUCMDOutPtr    .EQU    APUCMDInPtr+2
 APUPTRInPtr     .EQU    APUCMDOutPtr+2
 APUPTROutPtr    .EQU    APUPTRInPtr+2
