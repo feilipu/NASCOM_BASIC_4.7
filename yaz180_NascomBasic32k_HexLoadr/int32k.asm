@@ -119,7 +119,7 @@ RX0_WAIT_FOR_BYTE:
 
         ld hl, (serRx0OutPtr)       ; get the pointer to place where we pop the Rx byte
         ld a, (hl)                  ; get the Rx byte
-        push af                     ; save the Rx byte on stack
+;        push af                     ; save the Rx byte on stack
 
         inc l                       ; move the Rx pointer low byte along, 0xFF rollover
         ld (serRx0OutPtr), hl       ; write where the next byte should be popped
@@ -127,7 +127,7 @@ RX0_WAIT_FOR_BYTE:
         ld hl, serRx0BufUsed
         dec (hl)                    ; atomically decrement Rx count
 
-        pop af                      ; get the Rx byte from stack
+;        pop af                      ; get the Rx byte from stack
         pop hl                      ; recover HL
 
         ret                         ; char ready in A

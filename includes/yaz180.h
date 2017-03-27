@@ -120,14 +120,14 @@ SER_TE          .EQU   $20    ; Transmit Enable
 SER_RTS0        .EQU   $10    ; _RTS Request To Send
 SER_EFR         .EQU   $08    ; Error Flag Reset
 
-SER_7N1         .EQU   $00    ; 7 Bits No Parity 1 Stop Bit
-SER_7N2         .EQU   $01    ; 7 Bits No Parity 2 Stop Bits
-SER_7P1         .EQU   $02    ; 7 Bits    Parity 1 Stop Bit
-SER_7P2         .EQU   $03    ; 7 Bits    Parity 2 Stop Bits
-SER_8N1         .EQU   $04    ; 8 Bits No Parity 1 Stop Bit
-SER_8N2         .EQU   $05    ; 8 Bits No Parity 2 Stop Bits
-SER_8P1         .EQU   $06    ; 8 Bits    Parity 1 Stop Bit
 SER_8P2         .EQU   $07    ; 8 Bits    Parity 2 Stop Bits
+SER_8P1         .EQU   $06    ; 8 Bits    Parity 1 Stop Bit
+SER_8N2         .EQU   $05    ; 8 Bits No Parity 2 Stop Bits
+SER_8N1         .EQU   $04    ; 8 Bits No Parity 1 Stop Bit
+SER_7P2         .EQU   $03    ; 7 Bits    Parity 2 Stop Bits
+SER_7P1         .EQU   $02    ; 7 Bits    Parity 1 Stop Bit
+SER_7N2         .EQU   $01    ; 7 Bits No Parity 2 Stop Bits
+SER_7N1         .EQU   $00    ; 7 Bits No Parity 1 Stop Bit
 
 ; ASCI Control Reg B (CNTLBn)
                               ; BAUD Rate = PHI / PS / SS / DR
@@ -138,14 +138,14 @@ SER_PS          .EQU   $20    ; Prescale PHI by 10 (PS 0) or 30 (PS 1)
 SER_PEO         .EQU   $10    ; Parity Even or Odd
 SER_DR          .EQU   $08    ; Divide SS by 16 (DR 0) or 64 (DR 1)
 
-SER_SS_DIV_1    .EQU   $00    ; Divide PS by  1
-SER_SS_DIV_2    .EQU   $01    ; Divide PS by  2
-SER_SS_DIV_4    .EQU   $02    ; Divide PS by  4
-SER_SS_DIV_8    .EQU   $03    ; Divide PS by  8
-SER_SS_DIV_16   .EQU   $04    ; Divide PS by 16
-SER_SS_DIV_32   .EQU   $05    ; Divide PS by 32
-SER_SS_DIV_64   .EQU   $06    ; Divide PS by 64
 SER_SS_EXT      .EQU   $07    ; External Clock Source <= PHI / 40
+SER_SS_DIV_64   .EQU   $06    ; Divide PS by 64
+SER_SS_DIV_32   .EQU   $05    ; Divide PS by 32
+SER_SS_DIV_16   .EQU   $04    ; Divide PS by 16
+SER_SS_DIV_8    .EQU   $03    ; Divide PS by  8
+SER_SS_DIV_4    .EQU   $02    ; Divide PS by  4
+SER_SS_DIV_2    .EQU   $01    ; Divide PS by  2
+SER_SS_DIV_1    .EQU   $00    ; Divide PS by  1
 
 ; ASCI Status Reg (STATn)
 
@@ -252,16 +252,16 @@ PIOCNTL15       .EQU    $9B     ; ->A, ->B, ->CH, ->CL
 
 ; Am9511A-1 APU Port Address
 
-APU                 .EQU    $C000      ; Base Address for Am9511A
-APUDATA             .EQU    APU+$00    ; APU Data Port
-APUCNTL             .EQU    APU+$01    ; APU Control Port
+APU                 .EQU    $C000   ; Base Address for Am9511A
+APUDATA             .EQU    APU+$00 ; APU Data Port
+APUCNTL             .EQU    APU+$01 ; APU Control Port
 
-APU_OP_ENT_CMD      .EQU    $40
-APU_OP_REM_CMD      .EQU    $50
-APU_OP_ENT16_CMD    .EQU    $40
-APU_OP_ENT32_CMD    .EQU    $41
-APU_OP_REM16_CMD    .EQU    $50
-APU_OP_REM32_CMD    .EQU    $51
+APU_OP_ENT      .EQU    $40
+APU_OP_REM      .EQU    $50
+APU_OP_ENT16    .EQU    $40
+APU_OP_ENT32    .EQU    $41
+APU_OP_REM16    .EQU    $50
+APU_OP_REM32    .EQU    $51
 
 ; General TTY
 
@@ -333,12 +333,12 @@ VECTOR_PROTO_SIZE .EQU  $20
 
 ;   Z80 RAM VECTOR ADDRESS TABLE
 
-NULL_NMI_ADDR   .EQU    VECTOR_PROTO+$20        ; Write the NULL return location
-NULL_INT_ADDR   .EQU    VECTOR_PROTO+$22        ; when removing an ISR
+NULL_NMI_ADDR   .EQU    VECTOR_PROTO+$20    ; Write the NULL return location
+NULL_INT_ADDR   .EQU    VECTOR_PROTO+$22    ;  when removing an ISR
 NULL_RET_ADDR   .EQU    VECTOR_PROTO+$25
 
-RST_08_ADDR     .EQU    Z80_VECTOR_TABLE+$01    ; Write your ISR address to this location
-RST_10_ADDR     .EQU    Z80_VECTOR_TABLE+$05
+RST_08_ADDR     .EQU    Z80_VECTOR_TABLE+$01    ; Write your ISR address
+RST_10_ADDR     .EQU    Z80_VECTOR_TABLE+$05    ;  to these locations
 RST_18_ADDR     .EQU    Z80_VECTOR_TABLE+$09
 RST_20_ADDR     .EQU    Z80_VECTOR_TABLE+$0D
 RST_28_ADDR     .EQU    Z80_VECTOR_TABLE+$11
@@ -359,7 +359,7 @@ APUCMDBufUsed   .EQU    APUPTROutPtr+2
 APUPTRBufUsed   .EQU    APUCMDBufUsed+1
 APUSTATUS       .EQU    APUPTRBufUsed+1
 
-serRx0InPtr     .EQU    APUSTATUS+2
+serRx0InPtr     .EQU    Z80_VECTOR_TABLE+VECTOR_PROTO_SIZE+$20
 serRx0OutPtr    .EQU    serRx0InPtr+2
 serTx0InPtr     .EQU    serRx0OutPtr+2
 serTx0OutPtr    .EQU    serTx0InPtr+2
@@ -375,7 +375,7 @@ serTx1BufUsed   .EQU    serRx1BufUsed+1
 
 basicStarted    .EQU    serTx1BufUsed+1
 
-; $2041 -> $20FF is slack memory.
+; $2040 -> $20FF is slack memory.
 
 APUCMDBuf       .EQU    RAMSTART_CA0+$100 ; must start on 0xnn00 for low byte roll-over
 APUPTRBuf       .EQU    APUCMDBuf+APU_CMD_BUFSIZE+1
