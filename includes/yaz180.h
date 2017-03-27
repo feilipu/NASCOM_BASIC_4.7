@@ -252,9 +252,9 @@ PIOCNTL15       .EQU    $9B     ; ->A, ->B, ->CH, ->CL
 
 ; Am9511A-1 APU Port Address
 
-APU                 .EQU    $C000   ; Base Address for Am9511A
-APUDATA             .EQU    APU+$00 ; APU Data Port
-APUCNTL             .EQU    APU+$01 ; APU Control Port
+APU             .EQU    $C000   ; Base Address for Am9511A
+APUDATA         .EQU    APU+$00 ; APU Data Port
+APUCNTL         .EQU    APU+$01 ; APU Control Port
 
 APU_OP_ENT      .EQU    $40
 APU_OP_REM      .EQU    $50

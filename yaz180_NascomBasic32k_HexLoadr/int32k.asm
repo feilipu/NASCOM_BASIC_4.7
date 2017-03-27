@@ -475,8 +475,8 @@ INT_NMI     .EQU    NULL_NMI        ; RETN
 ;------------------------------------------------------------------------------
 ; INTERRUPT VECTOR ASCI Channel 0 [ Vector at $8E ]
 
-                .ORG     VECTOR_ASCI0
-                JP       ASCI0_INTERRUPT
+            .ORG    VECTOR_ASCI0
+            JP      ASCI0_INTERRUPT
 
 ;==============================================================================
 ;
