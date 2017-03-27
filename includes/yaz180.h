@@ -359,23 +359,24 @@ APUCMDBufUsed   .EQU    APUPTROutPtr+2
 APUPTRBufUsed   .EQU    APUCMDBufUsed+1
 APUSTATUS       .EQU    APUPTRBufUsed+1
 
-serRx0InPtr     .EQU    Z80_VECTOR_TABLE+VECTOR_PROTO_SIZE+$20
+serRx0InPtr     .EQU    Z80_VECTOR_TABLE+VECTOR_PROTO_SIZE+$10
 serRx0OutPtr    .EQU    serRx0InPtr+2
 serTx0InPtr     .EQU    serRx0OutPtr+2
 serTx0OutPtr    .EQU    serTx0InPtr+2
 serRx0BufUsed   .EQU    serTx0OutPtr+2
 serTx0BufUsed   .EQU    serRx0BufUsed+1
 
-serRx1InPtr     .EQU    serTx0BufUsed+1
+basicStarted    .EQU    serTx0BufUsed+1
+
+serRx1InPtr     .EQU    Z80_VECTOR_TABLE+VECTOR_PROTO_SIZE+$20
 serRx1OutPtr    .EQU    serRx1InPtr+2
 serTx1InPtr     .EQU    serRx1OutPtr+2
 serTx1OutPtr    .EQU    serTx1InPtr+2
 serRx1BufUsed   .EQU    serTx1OutPtr+2
 serTx1BufUsed   .EQU    serRx1BufUsed+1
 
-basicStarted    .EQU    serTx1BufUsed+1
 
-; $2040 -> $20FF is slack memory.
+; $2050 -> $20FF is slack memory.
 
 APUCMDBuf       .EQU    RAMSTART_CA0+$100 ; must start on 0xnn00 for low byte roll-over
 APUPTRBuf       .EQU    APUCMDBuf+APU_CMD_BUFSIZE+1

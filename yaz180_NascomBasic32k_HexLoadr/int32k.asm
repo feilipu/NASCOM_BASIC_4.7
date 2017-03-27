@@ -32,7 +32,6 @@
 ; set BASIC Work space WRKSPC $8000, in CA1 RAM
 
 WRKSPC          .EQU     RAMSTART_CA1 
-
 TEMPSTACK       .EQU     WRKSPC+$AB
 
 ;==============================================================================
@@ -109,17 +108,16 @@ ASCI0_TX_END:
 
 ;------------------------------------------------------------------------------
 RX0:
+        push hl                     ; Store HL so we don't clobber it
+
 RX0_WAIT_FOR_BYTE:
         ld a, (serRx0BufUsed)       ; get the number of bytes in the Rx buffer
 
         or a                        ; see if there are zero bytes available
         jr z, RX0_WAIT_FOR_BYTE     ; wait, if there are no bytes available
 
-        push hl                     ; Store HL so we don't clobber it
-
         ld hl, (serRx0OutPtr)       ; get the pointer to place where we pop the Rx byte
         ld a, (hl)                  ; get the Rx byte
-;        push af                     ; save the Rx byte on stack
 
         inc l                       ; move the Rx pointer low byte along, 0xFF rollover
         ld (serRx0OutPtr), hl       ; write where the next byte should be popped
@@ -127,9 +125,7 @@ RX0_WAIT_FOR_BYTE:
         ld hl, serRx0BufUsed
         dec (hl)                    ; atomically decrement Rx count
 
-;        pop af                      ; get the Rx byte from stack
         pop hl                      ; recover HL
-
         ret                         ; char ready in A
 
 ;------------------------------------------------------------------------------
@@ -140,7 +136,7 @@ TX0:
         ld a, (serTx0BufUsed)       ; get the number of bytes in the Tx buffer
         or a                        ; check whether the buffer is empty
         jr nz, TX0_BUFFER_OUT       ; buffer not empty, so abandon immediate Tx
-        
+
         in0 a, (STAT0)              ; get the ASCI0 status register
         and SER_TDRE                ; test whether we can transmit on ASCI0
         jr z, TX0_BUFFER_OUT        ; if not, so abandon immediate Tx
@@ -364,15 +360,15 @@ INIT:
             LD      BC,VECTOR_PROTO_SIZE
             LDIR
 
-            LD      HL,serRx0Buf    ; Initialise Rx Buffer
+            LD      HL,serRx0Buf    ; Initialise Rx0 Buffer
             LD      (serRx0InPtr),HL
             LD      (serRx0OutPtr),HL
 
-            LD      HL,serTx0Buf    ; Initialise Tx Buffer
+            LD      HL,serTx0Buf    ; Initialise Tx0 Buffer
             LD      (serTx0InPtr),HL
             LD      (serTx0OutPtr),HL              
 
-            XOR     A               ; 0 the Tx & Rx Buffer Counts
+            XOR     A               ; 0 the Tx0 & Rx0 Buffer Counts
             LD      (serRx0BufUsed),A
             LD      (serTx0BufUsed),A
 

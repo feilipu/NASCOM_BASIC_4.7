@@ -3,7 +3,7 @@ Label        Value      Label        Value      Label        Value
 
     FUNCTIONS
 
-RX0           0154      RX0_CHK       01A9      TX0           016B
+RX0           0151      RX0_CHK       01A0      TX0           0166
 HEXLOADR      01B6      DEINT         0C47      ABPASS        13BD
 
     Z80 VECTOR ADDRESS TABLE
@@ -20,13 +20,13 @@ APUCMDInPtr   2020      APUCMDOutPtr  2022      APUPTRInPtr   2024
 APUPTROutPtr  2026      APUCMDBufUsed 2028      APUPTRBufUsed 2029
 APUSTATUS     202A
 
-serRx0InPtr   202C      serRx0OutPtr  202E      serTx0InPtr   2030
-serTx0OutPtr  2032      serRx0BufUsed 2034      serTx0BufUsed 2035
+serRx0InPtr   2030      serRx0OutPtr  2032      serTx0InPtr   2034
+serTx0OutPtr  2036      serRx0BufUsed 2038      serTx0BufUsed 2039
 
-serRx1InPtr   2036      serRx1OutPtr  2038      serTx1InPtr   203A
-serTx1OutPtr  203C      serRx1BufUsed 203E      serTx1BufUsed 203F
+serRx1InPtr   2040      serRx1OutPtr  2042      serTx1InPtr   2044
+serTx1OutPtr  2046      serRx1BufUsed 2048      serTx1BufUsed 2049
 
-basicStarted  2040
+basicStarted  203A
 
     BUFFERS
 
