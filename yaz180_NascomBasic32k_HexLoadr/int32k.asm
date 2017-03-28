@@ -108,13 +108,12 @@ ASCI0_TX_END:
 
 ;------------------------------------------------------------------------------
 RX0:
-        push hl                     ; Store HL so we don't clobber it
-
-RX0_WAIT_FOR_BYTE:
         ld a, (serRx0BufUsed)       ; get the number of bytes in the Rx buffer
-
         or a                        ; see if there are zero bytes available
-        jr z, RX0_WAIT_FOR_BYTE     ; wait, if there are no bytes available
+        jr z, RX0                   ; wait, if there are no bytes available
+        
+        di                          ; critical section begin
+        push hl                     ; Store HL so we don't clobber it
 
         ld hl, (serRx0OutPtr)       ; get the pointer to place where we pop the Rx byte
         ld a, (hl)                  ; get the Rx byte
@@ -126,12 +125,12 @@ RX0_WAIT_FOR_BYTE:
         dec (hl)                    ; atomically decrement Rx count
 
         pop hl                      ; recover HL
+        ei                          ; critical section end
         ret                         ; char ready in A
 
 ;------------------------------------------------------------------------------
 TX0:
-        push hl                     ; store HL so we don't clobber it        
-        ld l, a                     ; store Tx character 
+        ld r, a                     ; store Tx character in Refresh Register
 
         ld a, (serTx0BufUsed)       ; get the number of bytes in the Tx buffer
         or a                        ; check whether the buffer is empty
@@ -141,17 +140,20 @@ TX0:
         and SER_TDRE                ; test whether we can transmit on ASCI0
         jr z, TX0_BUFFER_OUT        ; if not, so abandon immediate Tx
         
-        ld a, l                     ; Retrieve Tx character for immediate Tx
+        ld a, r                     ; Retrieve Tx character for immediate Tx
         out0 (TDR0), a              ; output the Tx byte to the ASCI0
-        
-        jr TX0_CLEAN_UP             ; and just complete
+        ret                         ; and just complete
 
 TX0_BUFFER_OUT:
         ld a, (serTx0BufUsed)       ; Get the number of bytes in the Tx buffer
         cp SER_TX0_BUFSIZE          ; check whether there is space in the buffer
         jr nc, TX0_BUFFER_OUT       ; buffer full, so wait for free buffer for Tx
 
-        ld a, l                     ; retrieve Tx character
+        ld a, r                     ; retrieve Tx character from Refresh Register
+
+        di                          ; critical section begin
+        push hl                     ; store HL so we don't clobber it     
+
         ld hl, (serTx0InPtr)        ; get the pointer to where we poke
         ld (hl), a                  ; write the Tx byte to the serTx0InPtr   
 
@@ -161,19 +163,17 @@ TX0_BUFFER_OUT:
         ld hl, serTx0BufUsed
         inc (hl)                    ; atomic increment of Tx count
 
-        di                          ; critical section begin
+        pop hl                      ; recover HL        
+
         in0 a, (STAT0)              ; load the ASCI0 status register
         tst SER_TIE                 ; test whether ASCI0 interrupt is set        
-        jr nz, TX0_BUFFER_CLEAN_UP  ; if so then just clean up        
+        jr nz, TX0_CLEAN_UP         ; if so then just clean up        
 
         or SER_TIE                  ; mask in (enable) the Tx Interrupt
         out0 (STAT0), a             ; set the ASCI status register
 
-TX0_BUFFER_CLEAN_UP:
-        ei                          ; critical section end
-
 TX0_CLEAN_UP:
-        pop hl                      ; recover HL
+        ei                          ; critical section end        
         ret
 
 ;------------------------------------------------------------------------------
@@ -398,7 +398,6 @@ INIT:
             OUT     (C),A           ; output to the PIO control reg
 
             EI                      ; enable interrupts
-
 START:                                     
             LD      HL,SIGNON1      ; Sign-on message
             CALL    TX0_PRINT       ; Output string              
@@ -423,6 +422,7 @@ COLDSTART:
             LD      A,'Y'           ; Set the BASIC STARTED flag
             LD      (basicStarted),A
             JP      $0390           ; <<<< Start Basic COLD:
+
 CHECKWARM:
             CP      'W'
             JR      NZ, CORW

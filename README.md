@@ -38,22 +38,24 @@ Two versions of initialisation routines for NASCOM Basic are provided.
 Provides the maximum Basic program space, and requires a 64k/56k RAM module.
 No non-Basic programming features are provided.
 
+# 32k Basic with integrated HexLoadr
+
+This ROM works with the most basic of the RC2014 versions, with 32k of RAM.
+
+
 ```bash
 SBC - Grant Searle
 ACIA - feilipu
 
-Cold or Warm start, or eXit (C|W|X) $E000 ?C
+Cold or Warm start, or HexLoadr (C|W|H) ? C
 
-Memory top?  57343 [eg $DFFF]
+Memory top?  [eg $DFFF]
 Z80 BASIC Ver 4.7b
 Copyright (C) 1978 by Microsoft
-56739 Bytes free
+31907 Bytes free
 
 Ok
 ```
-# 32k Basic with integrated HexLoadr
-
-This ROM works with the most basic of the RC2014 versions, with 32k of RAM.
 
 It can be used to simply provide accelerated I/O over the standard ROM, and it provides Basic programming space from `0x8000` RAM address. This is the ROM to choose if you want fast I/O from a standard RC2014.
 
