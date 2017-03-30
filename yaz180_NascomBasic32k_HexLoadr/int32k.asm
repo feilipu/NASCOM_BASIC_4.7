@@ -32,7 +32,7 @@
 ; set BASIC Work space WRKSPC $8000, in CA1 RAM
 
 WRKSPC          .EQU     RAMSTART_CA1 
-TEMPSTACK       .EQU     WRKSPC+$AB
+;TEMPSTACK       .EQU     WRKSPC+$AB
 
 ;==============================================================================
 ;
@@ -74,13 +74,13 @@ ASCI0_RX_CHECK:                     ; Z8S180 has 4 byte Rx H/W FIFO
         jr nz, ASCI0_RX_GET         ; if still more bytes in H/W FIFO, get them
 
 ASCI0_TX_CHECK:                     ; now start doing the Tx stuff
-        ld a, (serTx0BufUsed)       ; get the number of bytes in the Tx buffer
-        or a                        ; check whether it is zero
-        jr z, ASCI0_TX_TIE0_CLEAR   ; if the count is zero, then disable the Tx Interrupt
-
         in0 a, (STAT0)              ; load the ASCI0 status register
         and SER_TDRE                ; test whether we can transmit on ASCI0
         jr z, ASCI0_TX_END          ; if not, then end
+
+        ld a, (serTx0BufUsed)       ; get the number of bytes in the Tx buffer
+        or a                        ; check whether it is zero
+        jr z, ASCI0_TX_TIE0_CLEAR   ; if the count is zero, then disable the Tx Interrupt
 
         ld hl, (serTx0OutPtr)       ; get the pointer to place where we pop the Tx byte
         ld a, (hl)                  ; get the Tx byte
@@ -111,8 +111,7 @@ RX0:
         ld a, (serRx0BufUsed)       ; get the number of bytes in the Rx buffer
         or a                        ; see if there are zero bytes available
         jr z, RX0                   ; wait, if there are no bytes available
-        
-        di                          ; critical section begin
+
         push hl                     ; Store HL so we don't clobber it
 
         ld hl, (serRx0OutPtr)       ; get the pointer to place where we pop the Rx byte
@@ -125,12 +124,11 @@ RX0:
         dec (hl)                    ; atomically decrement Rx count
 
         pop hl                      ; recover HL
-        ei                          ; critical section end
         ret                         ; char ready in A
 
 ;------------------------------------------------------------------------------
 TX0:
-        ld r, a                     ; store Tx character in Refresh Register
+        ld i, a                     ; store Tx character in Interrupt Register
 
         ld a, (serTx0BufUsed)       ; get the number of bytes in the Tx buffer
         or a                        ; check whether the buffer is empty
@@ -140,7 +138,7 @@ TX0:
         and SER_TDRE                ; test whether we can transmit on ASCI0
         jr z, TX0_BUFFER_OUT        ; if not, so abandon immediate Tx
         
-        ld a, r                     ; Retrieve Tx character for immediate Tx
+        ld a, i                     ; Retrieve Tx character for immediate Tx
         out0 (TDR0), a              ; output the Tx byte to the ASCI0
         ret                         ; and just complete
 
@@ -149,9 +147,8 @@ TX0_BUFFER_OUT:
         cp SER_TX0_BUFSIZE          ; check whether there is space in the buffer
         jr nc, TX0_BUFFER_OUT       ; buffer full, so wait for free buffer for Tx
 
-        ld a, r                     ; retrieve Tx character from Refresh Register
+        ld a, i                     ; retrieve Tx character from Interrupt Register
 
-        di                          ; critical section begin
         push hl                     ; store HL so we don't clobber it     
 
         ld hl, (serTx0InPtr)        ; get the pointer to where we poke
@@ -163,17 +160,17 @@ TX0_BUFFER_OUT:
         ld hl, serTx0BufUsed
         inc (hl)                    ; atomic increment of Tx count
 
-        pop hl                      ; recover HL        
+        pop hl                      ; recover HL
 
-        in0 a, (STAT0)              ; load the ASCI0 status register
-        tst SER_TIE                 ; test whether ASCI0 interrupt is set        
-        jr nz, TX0_CLEAN_UP         ; if so then just clean up        
+;        in0 a, (STAT0)              ; load the ASCI0 status register
+;        tst SER_TIE                 ; test whether ASCI0 interrupt is set        
+;        ret nz                      ; if so then just return       
 
+        di                          ; critical section begin
+        in0 a, (STAT0)              ; so get the ASCI status register   
         or SER_TIE                  ; mask in (enable) the Tx Interrupt
         out0 (STAT0), a             ; set the ASCI status register
-
-TX0_CLEAN_UP:
-        ei                          ; critical section end        
+        ei                          ; critical section end      
         ret
 
 ;------------------------------------------------------------------------------
@@ -353,7 +350,7 @@ INIT:
             LD      A,3CH           ; Set Bank Area Physical $40000 -> 3CH
             OUT0    (BBR),A
 
-            LD      SP,TEMPSTACK    ; Set up a temporary stack
+            LD      SP,STACKTOP     ; Set up a temporary stack
 
             LD      HL,VECTOR_PROTO ; Establish Z80 RST Vector Table
             LD      DE,Z80_VECTOR_TABLE
@@ -407,7 +404,7 @@ START:
             LD      HL,SIGNON2      ; Cold/warm message
             CALL    TX0_PRINT       ; Output string
 CORW:
-            RST     10H
+            CALL    RX0
             AND     11011111B       ; lower to uppercase
             CP      'H'             ; are we trying to load an Intel HEX program?
             JP      Z, HEX_START    ; then jump to HexLoadr

@@ -1,0 +1,19 @@
+Label        Value      Label        Value      Label        Value
+------------------      ------------------      ------------------
+
+    FUNCTIONS
+
+RXA           009F      RXA_CHK       010C      TXA           00CB
+DEINT         0C47      ABPASS        13BD
+
+    VARIABLES
+
+serRxInPtr    2110      serRxOutPtr   2112      serTxInPtr    2114      
+serTxOutPtr   2116      serRxBufUsed  2118      serTxBufUsed  2119
+
+basicStarted  211B
+
+    BUFFERS
+
+serRxBuf      2000      serTxBuf      2100
+
