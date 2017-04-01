@@ -74,13 +74,13 @@ ASCI0_RX_CHECK:                     ; Z8S180 has 4 byte Rx H/W FIFO
         jr nz, ASCI0_RX_GET         ; if still more bytes in H/W FIFO, get them
 
 ASCI0_TX_CHECK:                     ; now start doing the Tx stuff
-        ld a, (serTx0BufUsed)       ; get the number of bytes in the Tx buffer
-        or a                        ; check whether it is zero
-        jr z, ASCI0_TX_TIE0_CLEAR   ; if the count is zero, then disable the Tx Interrupt
-
         in0 a, (STAT0)              ; load the ASCI0 status register
         and SER_TDRE                ; test whether we can transmit on ASCI0
         jr z, ASCI0_TX_END          ; if not, then end
+
+        ld a, (serTx0BufUsed)       ; get the number of bytes in the Tx buffer
+        or a                        ; check whether it is zero
+        jr z, ASCI0_TX_TIE0_CLEAR   ; if the count is zero, then disable the Tx Interrupt
 
         ld hl, (serTx0OutPtr)       ; get the pointer to place where we pop the Tx byte
         ld a, (hl)                  ; get the Tx byte
