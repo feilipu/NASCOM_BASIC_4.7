@@ -108,13 +108,11 @@ ASCI0_TX_END:
 
 ;------------------------------------------------------------------------------
 RX0:
-        push hl                     ; Store HL so we don't clobber it
-
-RX0_WAIT_FOR_BYTE:
         ld a, (serRx0BufUsed)       ; get the number of bytes in the Rx buffer
-
         or a                        ; see if there are zero bytes available
-        jr z, RX0_WAIT_FOR_BYTE     ; wait, if there are no bytes available
+        jr z, RX0                   ; wait, if there are no bytes available
+
+        push hl                     ; Store HL so we don't clobber it
 
         ld hl, (serRx0OutPtr)       ; get the pointer to place where we pop the Rx byte
         ld a, (hl)                  ; get the Rx byte
@@ -144,7 +142,8 @@ TX0:
         ld a, l                     ; Retrieve Tx character for immediate Tx
         out0 (TDR0), a              ; output the Tx byte to the ASCI0
         
-        jr TX0_CLEAN_UP             ; and just complete
+        pop hl                      ; recover HL
+        ret                         ; and just complete
 
 TX0_BUFFER_OUT:
         ld a, (serTx0BufUsed)       ; Get the number of bytes in the Tx buffer
@@ -161,19 +160,17 @@ TX0_BUFFER_OUT:
         ld hl, serTx0BufUsed
         inc (hl)                    ; atomic increment of Tx count
 
-        di                          ; critical section begin
+        pop hl                      ; recover HL
+
         in0 a, (STAT0)              ; load the ASCI0 status register
         tst SER_TIE                 ; test whether ASCI0 interrupt is set        
-        jr nz, TX0_BUFFER_CLEAN_UP  ; if so then just clean up        
+        ret nz                      ; if so then just return       
 
+        di                          ; critical section begin
+        in0 a, (STAT0)              ; get the ASCI status register again
         or SER_TIE                  ; mask in (enable) the Tx Interrupt
         out0 (STAT0), a             ; set the ASCI status register
-
-TX0_BUFFER_CLEAN_UP:
         ei                          ; critical section end
-
-TX0_CLEAN_UP:
-        pop hl                      ; recover HL
         ret
 
 ;------------------------------------------------------------------------------
@@ -184,11 +181,11 @@ RX0_CHK:
 
 ;------------------------------------------------------------------------------
 TX0_PRINT:
-        LD      A,(HL)              ; Get character
+        LD      A,(HL)              ; Get a byte
         OR      A                   ; Is it $00 ?
         RET     Z                   ; Then RETurn on terminator
         CALL    TX0                 ; Print it
-        INC     HL                  ; Next Character
+        INC     HL                  ; Next byte
         JR      TX0_PRINT           ; Continue until $00
 
 ;------------------------------------------------------------------------------
@@ -305,7 +302,7 @@ INIT:
             OUT0    (ICR),A         ; Standard I/O Mapping (0 Enabled)
 
                                     ; Set interrupt vector base (IL)
-            LD      A,VECTOR_BASE   ; IL = $80 [001x xxxx] for Vectors at $80 - $90
+            LD      A,VECTOR_BASE   ; IL = $80 [100x xxxx] for Vectors at $80 - $90
             OUT0    (IL),A          ; Output to the Interrupt Vector Low reg
 
             IM      1               ; Interrupt mode 1 for INT0 (used for APU)
@@ -408,7 +405,7 @@ START:
             LD      HL,SIGNON2      ; Cold/warm message
             CALL    TX0_PRINT       ; Output string
 CORW:
-            RST     10H
+            CALL    RX0
             AND     11011111B       ; lower to uppercase
             CP      'H'             ; are we trying to load an Intel HEX program?
             JP      Z, HEX_START    ; then jump to HexLoadr
@@ -423,6 +420,7 @@ COLDSTART:
             LD      A,'Y'           ; Set the BASIC STARTED flag
             LD      (basicStarted),A
             JP      $0390           ; <<<< Start Basic COLD:
+
 CHECKWARM:
             CP      'W'
             JR      NZ, CORW
@@ -458,8 +456,8 @@ LoadOKStr:      .BYTE "Done",CR,LF,0
 ; Z80 INTERRUPT VECTOR DESTINATION ADDRESS ASSIGNMENTS
 ;
 
-RST_08      .EQU    TX0             ; TX a character over ASCI0
-RST_10      .EQU    RX0             ; RX a character over ASCI0, loop byte available
+RST_08      .EQU    TX0             ; TX a byte over ASCI0
+RST_10      .EQU    RX0             ; RX a byte over ASCI0, loop byte available
 RST_18      .EQU    RX0_CHK         ; Check ASCI0 status, return # bytes available
 RST_20      .EQU    NULL_RET        ; RET
 RST_28      .EQU    NULL_RET        ; RET

@@ -3,8 +3,8 @@ Label        Value      Label        Value      Label        Value
 
     FUNCTIONS
 
-RX0           0151      RX0_CHK       01A0      TX0           0166
-HEXLOADR      01B6      DEINT         0C47      ABPASS        13BD
+RX0           0151      RX0_CHK       01A4      TX0           0166
+HEXLOADR      01B3      DEINT         0C47      ABPASS        13BD
 
     Z80 VECTOR ADDRESS TABLE
 

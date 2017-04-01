@@ -32,7 +32,7 @@
 ; set BASIC Work space WRKSPC $8000, in CA1 RAM
 
 WRKSPC          .EQU     RAMSTART_CA1 
-;TEMPSTACK       .EQU     WRKSPC+$AB
+TEMPSTACK       .EQU     WRKSPC+$AB
 
 ;==============================================================================
 ;
@@ -74,13 +74,13 @@ ASCI0_RX_CHECK:                     ; Z8S180 has 4 byte Rx H/W FIFO
         jr nz, ASCI0_RX_GET         ; if still more bytes in H/W FIFO, get them
 
 ASCI0_TX_CHECK:                     ; now start doing the Tx stuff
-        in0 a, (STAT0)              ; load the ASCI0 status register
-        and SER_TDRE                ; test whether we can transmit on ASCI0
-        jr z, ASCI0_TX_END          ; if not, then end
-
         ld a, (serTx0BufUsed)       ; get the number of bytes in the Tx buffer
         or a                        ; check whether it is zero
         jr z, ASCI0_TX_TIE0_CLEAR   ; if the count is zero, then disable the Tx Interrupt
+
+        in0 a, (STAT0)              ; load the ASCI0 status register
+        and SER_TDRE                ; test whether we can transmit on ASCI0
+        jr z, ASCI0_TX_END          ; if not, then end
 
         ld hl, (serTx0OutPtr)       ; get the pointer to place where we pop the Tx byte
         ld a, (hl)                  ; get the Tx byte
@@ -128,7 +128,8 @@ RX0:
 
 ;------------------------------------------------------------------------------
 TX0:
-        ld i, a                     ; store Tx character in Interrupt Register
+        push hl                     ; store HL so we don't clobber it        
+        ld l, a                     ; store Tx character 
 
         ld a, (serTx0BufUsed)       ; get the number of bytes in the Tx buffer
         or a                        ; check whether the buffer is empty
@@ -137,9 +138,11 @@ TX0:
         in0 a, (STAT0)              ; get the ASCI0 status register
         and SER_TDRE                ; test whether we can transmit on ASCI0
         jr z, TX0_BUFFER_OUT        ; if not, so abandon immediate Tx
-        
-        ld a, i                     ; Retrieve Tx character for immediate Tx
+
+        ld a, l                     ; Retrieve Tx character for immediate Tx
         out0 (TDR0), a              ; output the Tx byte to the ASCI0
+
+        pop hl                      ; recover HL
         ret                         ; and just complete
 
 TX0_BUFFER_OUT:
@@ -147,10 +150,7 @@ TX0_BUFFER_OUT:
         cp SER_TX0_BUFSIZE          ; check whether there is space in the buffer
         jr nc, TX0_BUFFER_OUT       ; buffer full, so wait for free buffer for Tx
 
-        ld a, i                     ; retrieve Tx character from Interrupt Register
-
-        push hl                     ; store HL so we don't clobber it     
-
+        ld a, l                     ; retrieve Tx character
         ld hl, (serTx0InPtr)        ; get the pointer to where we poke
         ld (hl), a                  ; write the Tx byte to the serTx0InPtr   
 
@@ -162,12 +162,12 @@ TX0_BUFFER_OUT:
 
         pop hl                      ; recover HL
 
-;        in0 a, (STAT0)              ; load the ASCI0 status register
-;        tst SER_TIE                 ; test whether ASCI0 interrupt is set        
-;        ret nz                      ; if so then just return       
+        in0 a, (STAT0)              ; load the ASCI0 status register
+        tst SER_TIE                 ; test whether ASCI0 interrupt is set        
+        ret nz                      ; if so then just return       
 
         di                          ; critical section begin
-        in0 a, (STAT0)              ; so get the ASCI status register   
+        in0 a, (STAT0)              ; get the ASCI status register again
         or SER_TIE                  ; mask in (enable) the Tx Interrupt
         out0 (STAT0), a             ; set the ASCI status register
         ei                          ; critical section end      
@@ -181,11 +181,11 @@ RX0_CHK:
 
 ;------------------------------------------------------------------------------
 TX0_PRINT:
-        LD      A,(HL)              ; Get character
+        LD      A,(HL)              ; Get a byte
         OR      A                   ; Is it $00 ?
         RET     Z                   ; Then RETurn on terminator
         CALL    TX0                 ; Print it
-        INC     HL                  ; Next Character
+        INC     HL                  ; Next byte
         JR      TX0_PRINT           ; Continue until $00
 
 ;------------------------------------------------------------------------------
@@ -302,7 +302,7 @@ INIT:
             OUT0    (ICR),A         ; Standard I/O Mapping (0 Enabled)
 
                                     ; Set interrupt vector base (IL)
-            LD      A,VECTOR_BASE   ; IL = $80 [001x xxxx] for Vectors at $80 - $90
+            LD      A,VECTOR_BASE   ; IL = $80 [100x xxxx] for Vectors at $80 - $90
             OUT0    (IL),A          ; Output to the Interrupt Vector Low reg
 
             IM      1               ; Interrupt mode 1 for INT0 (used for APU)
@@ -330,7 +330,7 @@ INIT:
 ;                                   ; if using ZS8180 or Z80182 at High-Speed
 ;           LD      A,CCR_XTAL_X2   ; Set Hi-Speed flag: PHI = internal clock
 ;           OUT0    (CCR),A         ; CPU Control Reg (CCR)
-
+               
                                     ; DMA/Wait Control Reg Set I/O Wait States
             LD      A,DCNTL_IWI0
             OUT0    (DCNTL),A       ; 0 Memory Wait & 2 I/O Wait
@@ -350,7 +350,7 @@ INIT:
             LD      A,3CH           ; Set Bank Area Physical $40000 -> 3CH
             OUT0    (BBR),A
 
-            LD      SP,STACKTOP     ; Set up a temporary stack
+            LD      SP,TEMPSTACK    ; Set up a temporary stack
 
             LD      HL,VECTOR_PROTO ; Establish Z80 RST Vector Table
             LD      DE,Z80_VECTOR_TABLE
@@ -395,6 +395,7 @@ INIT:
             OUT     (C),A           ; output to the PIO control reg
 
             EI                      ; enable interrupts
+
 START:                                     
             LD      HL,SIGNON1      ; Sign-on message
             CALL    TX0_PRINT       ; Output string              
@@ -455,8 +456,8 @@ LoadOKStr:      .BYTE "Done",CR,LF,0
 ; Z80 INTERRUPT VECTOR DESTINATION ADDRESS ASSIGNMENTS
 ;
 
-RST_08      .EQU    TX0             ; TX a character over ASCI0
-RST_10      .EQU    RX0             ; RX a character over ASCI0, loop byte available
+RST_08      .EQU    TX0             ; TX a byte over ASCI0
+RST_10      .EQU    RX0             ; RX a byte over ASCI0, loop byte available
 RST_18      .EQU    RX0_CHK         ; Check ASCI0 status, return # bytes available
 RST_20      .EQU    NULL_RET        ; RET
 RST_28      .EQU    NULL_RET        ; RET

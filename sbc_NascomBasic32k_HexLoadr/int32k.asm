@@ -87,7 +87,6 @@ serialInt:
         ld hl, serRxBufUsed
         inc (hl)                    ; atomically increment Rx buffer count
 
-
 im1_tx_check:                       ; now start doing the Tx stuff
         ld a, (serTxBufUsed)        ; get the number of bytes in the Tx buffer
         or a                        ; check whether it is zero
@@ -113,7 +112,7 @@ im1_tx_no_wrap:
         ld hl, serTxBufUsed
         dec (hl)                    ; atomically decrement current Tx count
         jr nz, im1_txa_end          ; if we've more Tx bytes to send, we're done for now
-        
+
 im1_tei_clear:
         ld a, (serControl)          ; get the ACIA control echo byte
         and ~SER_TEI_MASK           ; mask out the Tx interrupt bits

@@ -189,6 +189,8 @@ DCNTL_DIM0      .EQU   $01    ; DMA Channel 1 I/O & Memory Mode
 
 ; INT/TRAP Control Register (ITC)
 
+ITC_TRAP        .EQU   $80    ; TRAP Encountered
+ITC_UFO         .EQU   $40    ; Unidentified Fetch Object
 ITC_ITE2        .EQU   $04    ; Interrupt Enable #2
 ITC_ITE1        .EQU   $02    ; Interrupt Enable #1
 ITC_ITE0        .EQU   $01    ; Interrupt Enable #0 (1 Default)
@@ -197,6 +199,8 @@ ITC_ITE0        .EQU   $01    ; Interrupt Enable #0 (1 Default)
 
 RCR_REFE        .EQU   $80    ; DRAM Refresh Enable
 RCR_REFW        .EQU   $40    ; DRAM Refresh 2 or 3 Wait states
+RCR_CYC1        .EQU   $02    ; Cycles x4
+RCR_CYC0        .EQU   $01    ; Cycles x2 on base 10 T states
 
 ; Operation Mode Control Reg (OMCR)
 
@@ -351,7 +355,7 @@ INT_NMI_ADDR    .EQU    Z80_VECTOR_TABLE+$1D
 ; GLOBAL VARIABLES SECTION - CAO
 ;
 
-APUCMDInPtr     .EQU    Z80_VECTOR_TABLE+VECTOR_PROTO_SIZE+$10
+APUCMDInPtr     .EQU    Z80_VECTOR_TABLE+VECTOR_PROTO_SIZE
 APUCMDOutPtr    .EQU    APUCMDInPtr+2
 APUPTRInPtr     .EQU    APUCMDOutPtr+2
 APUPTROutPtr    .EQU    APUPTRInPtr+2
@@ -359,7 +363,7 @@ APUCMDBufUsed   .EQU    APUPTROutPtr+2
 APUPTRBufUsed   .EQU    APUCMDBufUsed+1
 APUSTATUS       .EQU    APUPTRBufUsed+1
 
-serRx0InPtr     .EQU    Z80_VECTOR_TABLE+VECTOR_PROTO_SIZE+$20
+serRx0InPtr     .EQU    Z80_VECTOR_TABLE+VECTOR_PROTO_SIZE+$10
 serRx0OutPtr    .EQU    serRx0InPtr+2
 serTx0InPtr     .EQU    serRx0OutPtr+2
 serTx0OutPtr    .EQU    serTx0InPtr+2
@@ -368,15 +372,14 @@ serTx0BufUsed   .EQU    serRx0BufUsed+1
 
 basicStarted    .EQU    serTx0BufUsed+1
 
-serRx1InPtr     .EQU    Z80_VECTOR_TABLE+VECTOR_PROTO_SIZE+$30
+serRx1InPtr     .EQU    Z80_VECTOR_TABLE+VECTOR_PROTO_SIZE+$20
 serRx1OutPtr    .EQU    serRx1InPtr+2
 serTx1InPtr     .EQU    serRx1OutPtr+2
 serTx1OutPtr    .EQU    serTx1InPtr+2
 serRx1BufUsed   .EQU    serTx1OutPtr+2
 serTx1BufUsed   .EQU    serRx1BufUsed+1
 
-
-; $2040 -> $20FF is slack memory.
+; $2030 -> $20FF is slack memory.
 
 APUCMDBuf       .EQU    RAMSTART_CA0+$100 ; must start on 0xnn00 for low byte roll-over
 APUPTRBuf       .EQU    APUCMDBuf+APU_CMD_BUFSIZE+1
