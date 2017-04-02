@@ -319,9 +319,10 @@ SER_TX1_BUFSIZE .EQU    $FF     ; FIXED Tx buffer size, 256 Bytes, no range chec
 ; Interrupt vectors (offsets) for Z80 internal interrupts
 ;
 
-Z80_VECTOR_TABLE .EQU   RAMSTART_CA0    ; RAM vector address for Z80 RST 
-                                        ; <<< SET THIS AS DESIRED >>>
+Z80_VECTOR_TABLE .EQU   RAMSTART_CA0        ; RAM vector address for Z80 RST Table
+                                            ; <<< SET THIS AS DESIRED >>>
 
+; Squeezed between INT0 0x0038 and NMI 0x0066
 VECTOR_PROTO     .EQU   $0040
 VECTOR_PROTO_SIZE .EQU  $20
 
@@ -355,6 +356,7 @@ INT_NMI_ADDR    .EQU    Z80_VECTOR_TABLE+$1D
 ; GLOBAL VARIABLES SECTION - CAO
 ;
 
+; Starting immediately after the Z80 Vector Table.
 APUCMDInPtr     .EQU    Z80_VECTOR_TABLE+VECTOR_PROTO_SIZE
 APUCMDOutPtr    .EQU    APUCMDInPtr+2
 APUPTRInPtr     .EQU    APUCMDOutPtr+2
@@ -379,15 +381,16 @@ serTx1OutPtr    .EQU    serTx1InPtr+2
 serRx1BufUsed   .EQU    serTx1OutPtr+2
 serTx1BufUsed   .EQU    serRx1BufUsed+1
 
-; $2030 -> $20FF is slack memory.
+; $nn30 -> $nnFF is slack memory.
 
-APUCMDBuf       .EQU    RAMSTART_CA0+$100 ; must start on 0xnn00 for low byte roll-over
+; I/O Buffers must start on 0xnn00 because we increment low byte to roll-over
+BUFSTART_IO     .EQU    (Z80_VECTOR_TABLE-(Z80_VECTOR_TABLE%$100) + $100
+
+APUCMDBuf       .EQU    BUFSTART_IO
 APUPTRBuf       .EQU    APUCMDBuf+APU_CMD_BUFSIZE+1
-
-serRx0Buf       .EQU    APUPTRBuf+APU_PTR_BUFSIZE+1 ; must start on 0xnn00
+serRx0Buf       .EQU    APUPTRBuf+APU_PTR_BUFSIZE+1
 serTx0Buf       .EQU    serRx0Buf+SER_RX0_BUFSIZE+1
-
-serRx1Buf       .EQU    serTx0Buf+SER_TX0_BUFSIZE+1 ; must start on 0xnn00
+serRx1Buf       .EQU    serTx0Buf+SER_TX0_BUFSIZE+1
 serTx1Buf       .EQU    serRx1Buf+SER_RX1_BUFSIZE+1
 
 ;==============================================================================
