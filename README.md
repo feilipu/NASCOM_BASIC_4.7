@@ -36,12 +36,30 @@ Two versions of initialisation routines for NASCOM Basic are provided.
 # 56k Basic
 
 Provides the maximum Basic program space, and requires a 64k/56k RAM module.
-No non-Basic programming features are provided.
+The 56k version utilises the full 56k RAM memory space of the RC2014, starting at `0x2000`.
+
+No non-Basic programming features are provided, however a `RST`, `INT0`,
+and `NMI` JumP Table is provided.
+
+```bash
+SBC - Grant Searle
+ACIA - feilipu
+
+Cold or Warm start (C|W) ? C
+
+Memory top? 
+Z80 BASIC Ver 4.7b
+Copyright (C) 1978 by Microsoft
+56739 Bytes free
+
+Ok
+```
+
 
 # 32k Basic with integrated HexLoadr
 
-This ROM works with the most basic of the RC2014 versions, with 32k of RAM.
-
+This ROM works with the most basic default version of the RC2014, with 32k of RAM.
+This is the ROM to choose if you want fast I/O from a standard RC2014.
 
 ```bash
 SBC - Grant Searle
@@ -57,9 +75,9 @@ Copyright (C) 1978 by Microsoft
 Ok
 ```
 
-It can be used to simply provide accelerated I/O over the standard ROM, and it provides Basic programming space from `0x8000` RAM address. This is the ROM to choose if you want fast I/O from a standard RC2014.
+It can be used to simply provide accelerated I/O over the standard ROM, and it provides Basic programming space from `0x8000` RAM address.
 
-Also this ROM provides both HexLoadr functions, and a `RST`, `INT0`, and `NMI` JumP Table.
+Also, this ROM provides both Intel HexLoadr functions and a `RST`, `INT0`, and `NMI` JumP Table.
 This allows you to upload Assembly or compiled C programs, and then run them as described below. 
 
 ==================================================================================
@@ -115,7 +133,7 @@ https://feilipu.me/2016/05/23/another-z80-project/
 
 # HexLoadr extension
 
-The goal of this extension to the standard YAZ180 boot sequence is to load an arbitrary program in Intel HEX format into an arbitrary location in the Z180 address space, and allow you to start the program from Nascom Basic.
+The goal of this extension to the standard RC2014 and YAZ180 boot sequence is to load an arbitrary program in Intel HEX format into an arbitrary location in the Z180 address space, and allow you to start the program from Nascom Basic.
 
 There are are several stages to this process.
 
