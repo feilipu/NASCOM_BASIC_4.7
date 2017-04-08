@@ -31,8 +31,8 @@
 ; so it is "free ram" when BASIC resets
 ; set BASIC Work space WRKSPC $8000, in CA1 RAM
 
-WRKSPC          .EQU     RAMSTART_CA1 
-TEMPSTACK       .EQU     WRKSPC+$AB
+WRKSPC      .EQU     RAMSTART_CA1 
+TEMPSTACK   .EQU     WRKSPC+$AB
 
 ;==============================================================================
 ;
@@ -46,7 +46,6 @@ ASCI0_INTERRUPT:
         push af
         push hl
                                     ; start doing the Rx stuff
-
         in0 a, (STAT0)              ; load the ASCI0 status register
         and SER_RDRF                ; test whether we have received on ASCI0
         jr z, ASCI0_TX_CHECK        ; if not, go check for bytes to transmit
@@ -74,13 +73,13 @@ ASCI0_RX_CHECK:                     ; Z8S180 has 4 byte Rx H/W FIFO
         jr nz, ASCI0_RX_GET         ; if still more bytes in H/W FIFO, get them
 
 ASCI0_TX_CHECK:                     ; now start doing the Tx stuff
-        ld a, (serTx0BufUsed)       ; get the number of bytes in the Tx buffer
-        or a                        ; check whether it is zero
-        jr z, ASCI0_TX_TIE0_CLEAR   ; if the count is zero, then disable the Tx Interrupt
-
         in0 a, (STAT0)              ; load the ASCI0 status register
         and SER_TDRE                ; test whether we can transmit on ASCI0
         jr z, ASCI0_TX_END          ; if not, then end
+
+        ld a, (serTx0BufUsed)       ; get the number of bytes in the Tx buffer
+        or a                        ; check whether it is zero
+        jr z, ASCI0_TX_TIE0_CLEAR   ; if the count is zero, then disable the Tx Interrupt
 
         ld hl, (serTx0OutPtr)       ; get the pointer to place where we pop the Tx byte
         ld a, (hl)                  ; get the Tx byte
@@ -305,14 +304,7 @@ INIT:
             LD      A,VECTOR_BASE   ; IL = $80 [100x xxxx] for Vectors at $80 - $90
             OUT0    (IL),A          ; Output to the Interrupt Vector Low reg
 
-            IM      1               ; Interrupt mode 1 for INT0 (used for APU)
-
             XOR     A               ; Zero Accumulator
-
-                                    ; Clear Refresh Control Reg (RCR)
-            OUT0    (RCR),A         ; DRAM Refresh Enable (0 Disabled)
-
-            OUT0    (TCR),A         ; Disable PRT downcounting
 
                                     ; Set Operation Mode Control Reg (OMCR)
                                     ; Disable M1, disable 64180 I/O _RD Mode
@@ -320,6 +312,11 @@ INIT:
 
                                     ; Set INT/TRAP Control Register (ITC)             
             OUT0    (ITC),A         ; Disable all external interrupts. 
+
+            OUT0    (TCR),A         ; Disable PRT downcounting
+
+                                    ; Clear Refresh Control Reg (RCR)
+            OUT0    (RCR),A         ; DRAM Refresh Enable (0 Disabled)
 
                                     ; Set internal clock = crystal x 2 = 36.864MHz
                                     ; if using ZS8180 or Z80182 at High-Speed
@@ -393,6 +390,8 @@ INIT:
             LD      BC,PIOCNTL      ; 82C55 CNTL address in bc
             LD      A,PIOCNTL12     ; Set Mode 12 ->A, B->, ->CH, CL->
             OUT     (C),A           ; output to the PIO control reg
+
+            IM      1               ; Interrupt mode 1 for INT0
 
             EI                      ; enable interrupts
 
