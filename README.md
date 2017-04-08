@@ -50,7 +50,7 @@ Cold or Warm start (C|W) ? C
 Memory top? 
 Z80 BASIC Ver 4.7b
 Copyright (C) 1978 by Microsoft
-56739 Bytes free
+56483 Bytes free
 
 Ok
 ```
