@@ -21,6 +21,7 @@
 
 #include    "d:/yaz180.h"
 #include    "d:/z80intr.asm"
+#include    "d:/z180intr.asm"
 
 ;==============================================================================
 ;
@@ -43,6 +44,7 @@ TEMPSTACK   .EQU     WRKSPC+$AB
 
 ;------------------------------------------------------------------------------
 ASCI0_INTERRUPT:
+        di
         push af
         push hl
                                     ; start doing the Rx stuff
@@ -73,7 +75,7 @@ ASCI0_RX_GET:
 
 ASCI0_RX_ERROR:
         in0 a, (CNTLA0)             ; get the CNTRLA0 register
-        and ~SER_EFR                ; to clear EFR, the error flag, to 0 
+        and ~SER_EFR                ; to clear the error flag, EFR, to 0 
         out0 (CNTLA0), a            ; and write it back
 
 ASCI0_RX_CHECK:                     ; Z8S180 has 4 byte Rx H/W FIFO
@@ -303,85 +305,28 @@ HEX_READ_END:
             ret                     ; return the byte read in a
 
 ;------------------------------------------------------------------------------
-INIT:
-                                    ; Set I/O Control Reg (ICR)
-            LD      A,IO_BASE       ; ICR = $00 [xx00 0000] for I/O Registers at $00 - $3F
-            OUT0    (ICR),A         ; Standard I/O Mapping (0 Enabled)
 
-                                    ; Set interrupt vector base (IL)
-            LD      A,VECTOR_BASE   ; IL = $80 [100x xxxx] for Vectors at $80 - $90
-            OUT0    (IL),A          ; Output to the Interrupt Vector Low reg
-
-            XOR     A               ; Zero Accumulator
-
-                                    ; Set Operation Mode Control Reg (OMCR)
-                                    ; Disable M1, disable 64180 I/O _RD Mode
-            OUT0    (OMCR),A        ; X80 Mode (M1 Disabled, IOC Disabled)
-
-                                    ; Set INT/TRAP Control Register (ITC)             
-            OUT0    (ITC),A         ; Disable all external interrupts. 
-
-            OUT0    (TCR),A         ; Disable PRT downcounting
-
-                                    ; Clear Refresh Control Reg (RCR)
-            OUT0    (RCR),A         ; DRAM Refresh Enable (0 Disabled)
-
-                                    ; Set internal clock = crystal x 2 = 36.864MHz
-                                    ; if using ZS8180 or Z80182 at High-Speed
-            LD      A,CMR_X2        ; Set Hi-Speed flag
-            OUT0    (CMR),A         ; CPU Clock Multiplier Reg (CMR)
-
-;                                   ; Bypass PHI = internal clock / 2
-;                                   ; if using ZS8180 or Z80182 at High-Speed
-;           LD      A,CCR_XTAL_X2   ; Set Hi-Speed flag: PHI = internal clock
-;           OUT0    (CCR),A         ; CPU Control Reg (CCR)
-               
-                                    ; DMA/Wait Control Reg Set I/O Wait States
-            LD      A,DCNTL_IWI0
-            OUT0    (DCNTL),A       ; 0 Memory Wait & 2 I/O Wait
-
-                                    ; Set Logical Addresses
+Z180_INIT:
+                                    ; Set Logical RAM Addresses
                                     ; $8000-$FFFF RAM CA1 -> 80H
                                     ; $4000-$7FFF RAM BANK -> 04H
                                     ; $2000-$3FFF RAM CA0
                                     ; $0000-$1FFF Flash CA0
-            LD      A,84H           ; Set New Common / Bank Areas
-            OUT0    (CBAR),A        ; for RAM
-
-                                    ; Physical Addresses
+                                    
+            LD      A,84H           ; Set New Common / Bank Areas for RAM
+            OUT0    (CBAR),A
             LD      A,78H           ; Set Common 1 Area Physical $80000 -> 78H
             OUT0    (CBR),A
-
             LD      A,3CH           ; Set Bank Area Physical $40000 -> 3CH
             OUT0    (BBR),A
 
-            LD      SP,TEMPSTACK    ; Set up a temporary stack
-
-            LD      HL,VECTOR_PROTO ; Establish Z80 RST Vector Table
-            LD      DE,Z80_VECTOR_TABLE
-            LD      BC,VECTOR_PROTO_SIZE
-            LDIR
-
-            LD      HL,serRx0Buf    ; Initialise Rx0 Buffer
-            LD      (serRx0InPtr),HL
-            LD      (serRx0OutPtr),HL
-
-            LD      HL,serTx0Buf    ; Initialise Tx0 Buffer
-            LD      (serTx0InPtr),HL
-            LD      (serTx0OutPtr),HL              
-
-            XOR     A               ; 0 the Tx0 & Rx0 Buffer Counts
-            LD      (serRx0BufUsed),A
-            LD      (serTx0BufUsed),A
-
                                     ; load the default ASCI configuration
-                                    ; 
                                     ; BAUD = 115200 8n1
                                     ; receive enabled
                                     ; transmit enabled
                                     ; receive interrupt enabled
                                     ; transmit interrupt disabled
-                                         
+
             LD      A,SER_RE|SER_TE|SER_8N1
             OUT0    (CNTLA0),A      ; output to the ASCI0 control A reg
 
@@ -400,18 +345,30 @@ INIT:
             LD      A,PIOCNTL12     ; Set Mode 12 ->A, B->, ->CH, CL->
             OUT     (C),A           ; output to the PIO control reg
 
-            IM      1               ; Interrupt mode 1 for INT0
+            LD      SP,TEMPSTACK    ; Set up a temporary stack
+
+            LD      HL,serRx0Buf    ; Initialise Rx0 Buffer
+            LD      (serRx0InPtr),HL
+            LD      (serRx0OutPtr),HL
+
+            LD      HL,serTx0Buf    ; Initialise Tx0 Buffer
+            LD      (serTx0InPtr),HL
+            LD      (serTx0OutPtr),HL              
+
+            XOR     A               ; 0 the Tx0 & Rx0 Buffer Counts
+            LD      (serRx0BufUsed),A
+            LD      (serTx0BufUsed),A
 
             EI                      ; enable interrupts
 
 START:                                     
             LD      HL,SIGNON1      ; Sign-on message
-            RST     08H             ; Output string
+            CALL    TX0_PRINT       ; Output string
             LD      A,(basicStarted); Check the BASIC STARTED flag
             CP      'Y'             ; to see if this is power-up
             JR      NZ,COLDSTART    ; If not BASIC started then always do cold start
             LD      HL,SIGNON2      ; Cold/warm message
-            RST     08H             ; Output string
+            CALL    TX0_PRINT       ; Output string
 CORW:
             RST     10H             ; get a byte from ASCI0
             AND     11011111B       ; lower to uppercase
@@ -461,7 +418,7 @@ LoadOKStr:      .BYTE "Done",CR,LF,0
 
 ;==============================================================================
 ;
-; Z80 INTERRUPT VECTOR DESTINATION ADDRESS ASSIGNMENTS
+; Z80 INTERRUPT VECTOR SERVICE ROUTINES
 ;
 
 RST_08      .EQU    TX0             ; TX a byte over ASCI0
@@ -475,14 +432,18 @@ INT_NMI     .EQU    NULL_NMI        ; RETN
 
 ;==============================================================================
 ;
-; Z180 INTERRUPT VECTOR SECTION 
+; Z180 INTERRUPT VECTOR SERVICE ROUTINES
 ;
 
-;------------------------------------------------------------------------------
-; INTERRUPT VECTOR ASCI Channel 0 [ Vector at $8E ]
-
-            .ORG    VECTOR_ASCI0
-            JP      ASCI0_INTERRUPT
+INT_INT1    .EQU    NULL_RET        ; external /INT1
+INT_INT2    .EQU    NULL_RET        ; external /INT2
+INT_PRT0    .EQU    NULL_RET        ; PRT channel 0
+INT_PRT1    .EQU    NULL_RET        ; PRT channel 1
+INT_DMA0    .EQU    NULL_RET        ; DMA channel 0
+INT_DMA1    .EQU    NULL_RET        ; DMA Channel 1
+INT_CSIO    .EQU    NULL_RET        ; Clocked serial I/O
+INT_ASCI0   .EQU    ASCI0_INTERRUPT ; Async channel 0
+INT_ASCI1   .EQU    NULL_RET        ; Async channel 1
 
 ;==============================================================================
 ;

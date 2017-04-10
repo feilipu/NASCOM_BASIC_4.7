@@ -49,68 +49,11 @@ ASCI0_INTERRUPT:
         push de
         push hl
         
-        LD      BC,PIOB             ; 82C55 IO PORT B address in BC
-        LD      E,$10
-        OUT     (C),E               ; put usage HEX Code onto Port B
+        LD BC,PIOB                  ; 82C55 IO PORT B address in BC
+        INC E
+        OUT (C),E                   ; put usage HEX Code onto Port B
 
-                                    ; start doing the Rx stuff
-        in0 a, (STAT0)              ; load the ASCI0 status register
-        and SER_RDRF                ; test whether we have received on ASCI0
-        jr z, ASCI0_END             ; if not, go to end
-
-ASCI0_RX_GET:
-
-        LD      BC,PIOB             ; 82C55 IO PORT B address in BC
-        LD      E,$20
-        OUT     (C),E               ; put usage HEX Code onto Port B
-
-        in0 l, (RDR0)               ; move Rx byte from the ASCI0 to l
-
-        LD      BC,PIOB             ; 82C55 IO PORT B address in BC
-        LD      E,$30
-        OUT     (C),E               ; put usage HEX Code onto Port B
-
-        ld a, (serRx0BufUsed)       ; get the number of bytes in the Rx buffer      
-        cp SER_RX0_BUFSIZE          ; check whether there is space in the buffer
-        jr nc, ASCI0_RX_CHECK       ; buffer full, check whether we need to drain H/W FIFO
-
-        LD      BC,PIOB             ; 82C55 IO PORT B address in BC
-        LD      E,$40
-        OUT     (C),E               ; put usage HEX Code onto Port B
-
-        ld a, l                     ; get Rx byte from l
-        ld hl, (serRx0InPtr)        ; get the pointer to where we poke
-        ld (hl), a                  ; write the Rx byte to the serRx0InPtr target
-
-        LD      BC,PIOB             ; 82C55 IO PORT B address in BC
-        LD      E,$50
-        OUT     (C),E               ; put usage HEX Code onto Port B
-
-        inc l                       ; move the Rx pointer low byte along, 0xFF rollover
-        ld (serRx0InPtr), hl        ; write where the next byte should be poked
-
-        LD      BC,PIOB             ; 82C55 IO PORT B address in BC
-        LD      E,$60
-        OUT     (C),E               ; put usage HEX Code onto Port B
-
-        ld hl, serRx0BufUsed
-        inc (hl)                    ; atomically increment Rx buffer count
-
-ASCI0_RX_CHECK:                     ; Z8S180 has 4 byte Rx H/W FIFO
-
-        LD      BC,PIOB             ; 82C55 IO PORT B address in BC
-        LD      E,$70
-        OUT     (C),E               ; put usage HEX Code onto Port B
-
-        in0 a, (STAT0)              ; load the ASCI0 status register
-        and SER_RDRF                ; test whether we have received on ASCI0
-        jr nz, ASCI0_RX_GET         ; if still more bytes in H/W FIFO, get them
-
-ASCI0_END:
-
-        LD      BC,PIOB             ; 82C55 IO PORT B address in BC
-        LD      E,$80
-        OUT     (C),E               ; put usage HEX Code onto Port B
+        in0 A, (RDR0)               ; move Rx byte from the ASCI0 to l
 
         pop hl
         pop de
@@ -143,66 +86,27 @@ RX0:
 ;------------------------------------------------------------------------------
 
             .ORG    0300H
-INIT:
-                                    ; Set I/O Control Reg (ICR)
-            LD      A,IO_BASE       ; ICR = $00 [xx00 0000] for I/O Registers at $00 - $3F
-            OUT0    (ICR),A         ; Standard I/O Mapping (0 Enabled)
-
-            LD      A,Z180_VECTOR_BASE/$100
-            LD      I,A             ; Set interrupt vector address high byte (I)
-            
-                                    ; Set interrupt vector address low byte (IL)
-                                    ; IL = $20 [001x xxxx] for Vectors at $nn20 - $nn2F
-            LD      A,Z180_VECTOR_BASE%$100
-            OUT0    (IL),A          ; Output to the Interrupt Vector Low reg
-
-            IM      1               ; Interrupt mode 1 for INT0
-
-            XOR     A               ; Zero Accumulator
-
-                                    ; Clear Refresh Control Reg (RCR)
-            OUT0    (RCR),A         ; DRAM Refresh Enable (0 Disabled)
-
-            OUT0    (TCR),A         ; Disable PRT downcounting
-
-                                    ; Set Operation Mode Control Reg (OMCR)
-                                    ; Disable M1, disable 64180 I/O _RD Mode
-            OUT0    (OMCR),A        ; X80 Mode (M1 Disabled, IOC Disabled)
-
-                                    ; Set INT/TRAP Control Register (ITC)             
-            OUT0    (ITC),A         ; Disable all external interrupts. 
-
-                                    ; Set internal clock = crystal x 2 = 36.864MHz
-                                    ; if using ZS8180 or Z80182 at High-Speed
-            LD      A,CMR_X2        ; Set Hi-Speed flag
-            OUT0    (CMR),A         ; CPU Clock Multiplier Reg (CMR)
-
-                                    ; DMA/Wait Control Reg Set I/O Wait States
-            LD      A,DCNTL_IWI0
-            OUT0    (DCNTL),A       ; 0 Memory Wait & 2 I/O Wait
-
-                                    ; Set Logical Addresses
+Z180_INIT:
+                                    ; Set Logical RAM Addresses
                                     ; $8000-$FFFF RAM CA1 -> 80H
                                     ; $4000-$7FFF RAM BANK -> 04H
                                     ; $2000-$3FFF RAM CA0
                                     ; $0000-$1FFF Flash CA0
-            LD      A,84H           ; Set New Common / Bank Areas
-            OUT0    (CBAR),A        ; for RAM
-
-                                    ; Physical Addresses
+                                    
+            LD      A,84H           ; Set New Common / Bank Areas for RAM
+            OUT0    (CBAR),A
             LD      A,78H           ; Set Common 1 Area Physical $80000 -> 78H
             OUT0    (CBR),A
-
             LD      A,3CH           ; Set Bank Area Physical $40000 -> 3CH
             OUT0    (BBR),A
 
                                     ; load the default ASCI configuration
-                                    ; 
                                     ; BAUD = 115200 8n1
                                     ; receive enabled
                                     ; transmit enabled
                                     ; receive interrupt enabled
                                     ; transmit interrupt disabled
+
             LD      A,SER_RE|SER_TE|SER_8N1
             OUT0    (CNTLA0),A      ; output to the ASCI0 control A reg
 
@@ -232,16 +136,6 @@ INIT:
 INITIALISE:
             LD      SP,TEMPSTACK    ; Set up a temporary stack
 
-            LD      HL,Z80_VECTOR_PROTO ; Establish Z80 RST Vector Table
-            LD      DE,Z80_VECTOR_BASE
-            LD      BC,Z80_VECTOR_SIZE
-            LDIR
-
-            LD      HL,Z180_VECTOR_PROTO ; Establish Z180 Vector Table
-            LD      DE,Z180_VECTOR_BASE
-            LD      BC,Z180_VECTOR_SIZE
-            LDIR
-
             LD      HL,serRx0Buf    ; Initialise Rx0 Buffer
             LD      (serRx0InPtr),HL
             LD      (serRx0OutPtr),HL
@@ -258,9 +152,9 @@ INITIALISE:
 
 START:
 ;            RST     10H             ; input
-            LD      BC,PIOB         ; 82C55 IO PORT B address in BC
-            LD      A,(serRx0BufUsed)
-            OUT     (C),A           ; put usage HEX Code onto Port B
+;            LD      BC,PIOB         ; 82C55 IO PORT B address in BC
+;            LD      A,(serRx0BufUsed)
+;            OUT     (C),A           ; put usage HEX Code onto Port B
             JP      START
 
 ;------------------------------------------------------------------------------
@@ -429,15 +323,16 @@ LoadOKStr:      .BYTE "Done",CR,LF,0
 
 ;==============================================================================
 ;
-; Z80 INTERRUPT VECTOR DESTINATION ADDRESS ASSIGNMENTS
+; Z80 INTERRUPT VECTOR SERVICE ROUTINES
 ;
 
-RST_08      .EQU    NULL_RET        ; RET
 ;RST_08      .EQU    TX0             ; TX a byte over ASCI0
-;RST_10      .EQU    NULL_RET        ; RET
-RST_10      .EQU    RX0             ; RX a byte over ASCI0, loop byte available
-RST_18      .EQU    NULL_RET        ; RET
+;RST_10      .EQU    RX0             ; RX a byte over ASCI0, loop byte available
 ;RST_18      .EQU    RX0_CHK         ; Check ASCI0 status, return # bytes available
+
+RST_08      .EQU    NULL_RET        ; RET
+RST_10      .EQU    NULL_RET        ; RET
+RST_18      .EQU    NULL_RET        ; RET
 RST_20      .EQU    NULL_RET        ; RET
 RST_28      .EQU    NULL_RET        ; RET
 RST_30      .EQU    NULL_RET        ; RET
@@ -446,10 +341,18 @@ INT_NMI     .EQU    NULL_NMI        ; RETN
 
 ;==============================================================================
 ;
-; Z180 INTERRUPT VECTOR DESTINATION ADDRESS ASSIGNMENTS
+; Z180 INTERRUPT VECTOR SERVICE ROUTINES
 ;
 
-INT_ASCI0   .EQU    ASCI0_INTERRUPT ; ASCI0 Interrupt
+INT_INT1    .EQU    NULL_RET        ; external /INT1
+INT_INT2    .EQU    NULL_RET        ; external /INT2
+INT_PRT0    .EQU    NULL_RET        ; PRT channel 0
+INT_PRT1    .EQU    NULL_RET        ; PRT channel 1
+INT_DMA0    .EQU    NULL_RET        ; DMA channel 0
+INT_DMA1    .EQU    NULL_RET        ; DMA Channel 1
+INT_CSIO    .EQU    NULL_RET        ; Clocked serial I/O
+INT_ASCI0   .EQU    ASCI0_INTERRUPT ; Async channel 0
+INT_ASCI1   .EQU    NULL_RET        ; Async channel 1
 
 ;==============================================================================
 ;

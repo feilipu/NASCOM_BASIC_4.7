@@ -34,18 +34,17 @@ INIT:
             AND     ITC_TRAP
             JR      NZ, Z180_TRAP   ; Handle the TRAP event
 
-            POP     AF              ; Probably unnecessary, since this is RESET
-
+            POP     AF
+                                    ; Set interrupt vector address high byte (I)
             LD      A,Z180_VECTOR_BASE/$100
-            LD      I,A             ; Set interrupt vector address high byte (I)
-            
+            LD      I,A
                                     ; Set interrupt vector address low byte (IL)
                                     ; IL = $20 [001x xxxx] for Vectors at $nn20 - $nn2F
             LD      A,Z180_VECTOR_BASE%$100
             OUT0    (IL),A          ; Set the interrupt vector low byte
 
             IM      1               ; Interrupt mode 1 for INT0
-            
+
             XOR     A               ; Zero Accumulator
 
                                     ; Clear Refresh Control Reg (RCR)
@@ -87,7 +86,6 @@ Z180_TRAP:
                                     ; TODO Build proper TRAP handling
             POP     AF
             HALT                    
-
 
 ;==============================================================================
 ;

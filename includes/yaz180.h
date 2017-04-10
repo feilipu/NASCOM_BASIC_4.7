@@ -79,7 +79,7 @@ Z180_VECTOR_IL      .EQU    $20     ; Vector Base address (IL)
 
 Z180_VECTOR_TRAP    .EQU    $0070   ; Locate the TRAP management just after NMI
 
-Z180_VECTOR_PROTO   .EQU    $00C0   ; Locate the prototypes just after TRAP
+Z180_VECTOR_PROTO   .EQU    $00C0   ; Locate the prototypes just after TRAP code
 
 Z180_VECTOR_BASE    .EQU    (Z80_VECTOR_BASE-(Z80_VECTOR_BASE%$100) + Z180_VECTOR_IL
 Z180_VECTOR_SIZE    .EQU    $20
@@ -251,7 +251,6 @@ DCNTL_DMS0      .EQU   $04    ; DMA Request Sense 0
 DCNTL_DIM1      .EQU   $02    ; DMA Channel 1 I/O & Memory Mode
 DCNTL_DIM0      .EQU   $01    ; DMA Channel 1 I/O & Memory Mode
 
-
 ; INT/TRAP Control Register (ITC)
 
 ITC_TRAP        .EQU   $80    ; TRAP Encountered
@@ -279,6 +278,7 @@ OMCR_IOC        .EQU   $20    ; IO Control (1 64180 Mode)
 ;
 
 ; BREAK for Single Step Mode
+
 BREAK           .EQU    $2000       ; Any value written $2000->$21FF, halts CPU
 
 ; 82C55 PIO Port Definitions

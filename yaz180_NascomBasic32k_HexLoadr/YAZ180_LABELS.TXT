@@ -3,33 +3,6 @@ Label        Value      Label        Value      Label        Value
 
     FUNCTIONS
 
-RX0           0151      RX0_CHK       01A4      TX0           0166
-HEXLOADR      01B3      DEINT         0C47      ABPASS        13BD
+RX0           015F      RX0_CHK       01AF      TX0           0174
+HEXLOADR      01BE      DEINT         0C47      ABPASS        13BD
 
-    Z80 VECTOR ADDRESS TABLE
-
-NULL_NMI_ADDR 0060      NULL_INT_ADDR 0062      NULL_RET_ADDR 0065
-
-RST_08_ADDR   2001      RST_10_ADDR   2005      RST_18_ADDR   2009
-RST_20_ADDR   200D      RST_28_ADDR   2011      RST_30_ADDR   2015
-INT_00_ADDR   2019      INT_NMI_ADDR  201D
-
-    VARIABLES
-
-APUCMDInPtr   2020      APUCMDOutPtr  2022      APUPTRInPtr   2024
-APUPTROutPtr  2026      APUCMDBufUsed 2028      APUPTRBufUsed 2029
-APUSTATUS     202A
-
-serRx0InPtr   2030      serRx0OutPtr  2032      serTx0InPtr   2034
-serTx0OutPtr  2036      serRx0BufUsed 2038      serTx0BufUsed 2039
-
-serRx1InPtr   2040      serRx1OutPtr  2042      serTx1InPtr   2044
-serTx1OutPtr  2046      serRx1BufUsed 2048      serTx1BufUsed 2049
-
-basicStarted  203A
-
-    BUFFERS
-
-APUCMDBuf     2100      APUPTRBuf     2200
-serRx0Buf     2300      serTx0Buf     2400
-serRx1Buf     2500      serTx1Buf     2600
