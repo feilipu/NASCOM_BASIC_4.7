@@ -16,6 +16,98 @@
 
 ;==============================================================================
 ;
+; DEFINES SECTION
+;
+
+ROMSTART        .EQU    $0000   ; Bottom of FLASH
+ROMSTOP         .EQU    $1FFF   ; Top of FLASH
+
+RAMSTART_CA0    .EQU    $2000   ; Bottom of Common 0 RAM
+RAMSTOP_CA0     .EQU    $3FFF   ; Top of Common 0 RAM
+
+RAMSTART_BANK   .EQU    $4000   ; Bottom of Banked RAM
+RAMSTOP_BANK    .EQU    $7FFF   ; Top of Banked RAM
+
+RAMSTART_CA1    .EQU    $8000   ; Bottom of Common 1 RAM
+RAMSTOP_CA1     .EQU    $FFFF   ; Top of Common 1 RAM
+
+RAMSTART        .EQU    RAMSTART_CA0
+RAMSTOP         .EQU    RAMSTOP_CA1
+
+STACKTOP        .EQU    $2FFE   ; start of a global stack (any pushes pre-decrement)
+
+APU_CMD_BUFSIZE .EQU    $FF     ; FIXED CMD buffer size, 256 CMDs
+APU_PTR_BUFSIZE .EQU    $FF     ; FIXED DATA POINTER buffer size, 128 POINTERs
+
+SER_RX0_BUFSIZE .EQU    $FF     ; FIXED Rx buffer size, 256 Bytes, no range checking
+SER_TX0_BUFSIZE .EQU    $FF     ; FIXED Tx buffer size, 256 Bytes, no range checking
+
+SER_RX1_BUFSIZE .EQU    $FF     ; FIXED Rx buffer size, 256 Bytes, no range checking
+SER_TX1_BUFSIZE .EQU    $FF     ; FIXED Tx buffer size, 256 Bytes, no range checking
+
+;==============================================================================
+;
+; Interrupt vectors (offsets) for Z80 RST, INT0, and NMI interrupts
+;
+
+Z80_VECTOR_BASE .EQU    RAMSTART_CA0        ; RAM vector address for Z80 RST Table
+                                            ; <<< SET THIS AS DESIRED >>>
+
+; Squeezed between INT0 0x0038 and NMI 0x0066
+Z80_VECTOR_PROTO    .EQU    $0040
+Z80_VECTOR_SIZE     .EQU    $20
+
+;   Prototype Vector Defaults to be defined in initialisation code.
+;   RST_08      .EQU    TX0         TX a character over ASCI0
+;   RST_10      .EQU    RX0         RX a character over ASCI0, block no bytes available
+;   RST_18      .EQU    RX0_CHK     Check ASCI0 status, return # bytes available
+;   RST_20      .EQU    NULL_INT
+;   RST_28      .EQU    NULL_INT
+;   RST_30      .EQU    NULL_INT
+;   INT_00      .EQU    NULL_INT
+;   INT_NMI     .EQU    NULL_NMI
+
+;   Z80 RAM VECTOR ADDRESS TABLE
+
+NULL_NMI_ADDR   .EQU    Z80_VECTOR_PROTO+$20    ; Write the NULL return location
+NULL_INT_ADDR   .EQU    Z80_VECTOR_PROTO+$22    ;  when removing an ISR
+NULL_RET_ADDR   .EQU    Z80_VECTOR_PROTO+$25
+
+RST_08_ADDR     .EQU    Z80_VECTOR_BASE+$01    ; Write your ISR address
+RST_10_ADDR     .EQU    Z80_VECTOR_BASE+$05    ;  to these locations
+RST_18_ADDR     .EQU    Z80_VECTOR_BASE+$09
+RST_20_ADDR     .EQU    Z80_VECTOR_BASE+$0D
+RST_28_ADDR     .EQU    Z80_VECTOR_BASE+$11
+RST_30_ADDR     .EQU    Z80_VECTOR_BASE+$15
+INT_00_ADDR     .EQU    Z80_VECTOR_BASE+$19
+INT_NMI_ADDR    .EQU    Z80_VECTOR_BASE+$1D
+
+;==============================================================================
+;
+; Interrupt vectors (offsets) for Z180/HD64180 external and internal interrupts
+;
+
+; Starting immediately after the Z80 Vector Table.
+Z180_VECTOR_LOW .EQU    $20     ; Vector Base address (IL)
+                                ; [001x xxxx] for Vectors at $nn20 - $nn3F
+
+Z180_VECTOR_PROTO .EQU   $0070  ; locate the prototypes just after NMI Vector
+
+Z180_VECTOR_BASE .EQU   (Z80_VECTOR_BASE-(Z80_VECTOR_BASE%$100) + Z180_VECTOR_LOW
+Z180_VECTOR_SIZE .EQU   $20
+
+VECTOR_INT1     .EQU    Z180_VECTOR_BASE+$00     ; external /INT1
+VECTOR_INT2     .EQU    Z180_VECTOR_BASE+$02     ; external /INT2
+VECTOR_PRT0     .EQU    Z180_VECTOR_BASE+$04     ; PRT channel 0
+VECTOR_PRT1     .EQU    Z180_VECTOR_BASE+$06     ; PRT channel 1
+VECTOR_DMA0     .EQU    Z180_VECTOR_BASE+$08     ; DMA channel 0
+VECTOR_DMA1     .EQU    Z180_VECTOR_BASE+$0A     ; DMA Channel 1
+VECTOR_CSIO     .EQU    Z180_VECTOR_BASE+$0C     ; Clocked serial I/O
+VECTOR_ASCI0    .EQU    Z180_VECTOR_BASE+$0E     ; Async channel 0
+VECTOR_ASCI1    .EQU    Z180_VECTOR_BASE+$10     ; Async channel 1
+
+;==============================================================================
+;
 ; Z180 Register Mnemonics
 ;
 
@@ -89,23 +181,6 @@ CBAR            .EQU    IO_BASE+$3A     ; MMU Common/Bank Area Reg
 
 OMCR            .EQU    IO_BASE+$3E     ; Operation Mode Control Reg
 ICR             .EQU    IO_BASE+$3F     ; I/O Control Reg
-
-;==============================================================================
-;
-; Interrupt vectors (offsets) for Z180/HD64180 internal interrupts
-;
-
-VECTOR_BASE     .EQU   $80      ; Vector Base address (IL) <<< SET THIS AS DESIRED >>>
-
-VECTOR_INT1     .EQU   VECTOR_BASE+$00    ; external /INT1
-VECTOR_INT2     .EQU   VECTOR_BASE+$02    ; external /INT2
-VECTOR_PRT0     .EQU   VECTOR_BASE+$04    ; PRT channel 0
-VECTOR_PRT1     .EQU   VECTOR_BASE+$06    ; PRT channel 1
-VECTOR_DMA0     .EQU   VECTOR_BASE+$08    ; DMA channel 0
-VECTOR_DMA1     .EQU   VECTOR_BASE+$0A    ; DMA Channel 1
-VECTOR_CSIO     .EQU   VECTOR_BASE+$0C    ; Clocked serial I/O
-VECTOR_ASCI0    .EQU   VECTOR_BASE+$0E    ; Async channel 0
-VECTOR_ASCI1    .EQU   VECTOR_BASE+$10    ; Async channel 1
 
 ;==============================================================================
 ;
@@ -285,79 +360,11 @@ DEL             .EQU    7FH     ; Delete
 
 ;==============================================================================
 ;
-; DEFINES SECTION
-;
-
-ROMSTART        .EQU    $0000   ; Bottom of FLASH
-ROMSTOP         .EQU    $1FFF   ; Top of FLASH
-
-RAMSTART_CA0    .EQU    $2000   ; Bottom of Common 0 RAM
-RAMSTOP_CA0     .EQU    $3FFF   ; Top of Common 0 RAM
-
-RAMSTART_BANK   .EQU    $4000   ; Bottom of Banked RAM
-RAMSTOP_BANK    .EQU    $7FFF   ; Top of Banked RAM
-
-RAMSTART_CA1    .EQU    $8000   ; Bottom of Common 1 RAM
-RAMSTOP_CA1     .EQU    $FFFF   ; Top of Common 1 RAM
-
-RAMSTART        .EQU    RAMSTART_CA0
-RAMSTOP         .EQU    RAMSTOP_CA1
-
-STACKTOP        .EQU    $2FFE   ; start of global stack (any pushes pre-decrement)
-
-APU_CMD_BUFSIZE .EQU    $FF     ; FIXED CMD buffer size, 256 CMDs
-APU_PTR_BUFSIZE .EQU    $FF     ; FIXED DATA POINTER buffer size, 128 POINTERs
-
-SER_RX0_BUFSIZE .EQU    $FF     ; FIXED Rx buffer size, 256 Bytes, no range checking
-SER_TX0_BUFSIZE .EQU    $FF     ; FIXED Tx buffer size, 256 Bytes, no range checking
-
-SER_RX1_BUFSIZE .EQU    $FF     ; FIXED Rx buffer size, 256 Bytes, no range checking
-SER_TX1_BUFSIZE .EQU    $FF     ; FIXED Tx buffer size, 256 Bytes, no range checking
-
-;==============================================================================
-;
-; Interrupt vectors (offsets) for Z80 internal interrupts
-;
-
-Z80_VECTOR_TABLE .EQU   RAMSTART_CA0        ; RAM vector address for Z80 RST Table
-                                            ; <<< SET THIS AS DESIRED >>>
-
-; Squeezed between INT0 0x0038 and NMI 0x0066
-VECTOR_PROTO     .EQU   $0040
-VECTOR_PROTO_SIZE .EQU  $20
-
-;   Prototype Vector Defaults to be defined in initialisation code.
-;   RST_08      .EQU    TX0         TX a character over ASCI0
-;   RST_10      .EQU    RX0         RX a character over ASCI0, block no bytes available
-;   RST_18      .EQU    RX0_CHK     Check ASCI0 status, return # bytes available
-;   RST_20      .EQU    NULL_INT
-;   RST_28      .EQU    NULL_INT
-;   RST_30      .EQU    NULL_INT
-;   INT_00      .EQU    NULL_INT
-;   INT_NMI     .EQU    NULL_NMI
-
-;   Z80 RAM VECTOR ADDRESS TABLE
-
-NULL_NMI_ADDR   .EQU    VECTOR_PROTO+$20    ; Write the NULL return location
-NULL_INT_ADDR   .EQU    VECTOR_PROTO+$22    ;  when removing an ISR
-NULL_RET_ADDR   .EQU    VECTOR_PROTO+$25
-
-RST_08_ADDR     .EQU    Z80_VECTOR_TABLE+$01    ; Write your ISR address
-RST_10_ADDR     .EQU    Z80_VECTOR_TABLE+$05    ;  to these locations
-RST_18_ADDR     .EQU    Z80_VECTOR_TABLE+$09
-RST_20_ADDR     .EQU    Z80_VECTOR_TABLE+$0D
-RST_28_ADDR     .EQU    Z80_VECTOR_TABLE+$11
-RST_30_ADDR     .EQU    Z80_VECTOR_TABLE+$15
-INT_00_ADDR     .EQU    Z80_VECTOR_TABLE+$19
-INT_NMI_ADDR    .EQU    Z80_VECTOR_TABLE+$1D
-
-;==============================================================================
-;
 ; GLOBAL VARIABLES SECTION - CAO
 ;
 
-; Starting immediately after the Z80 Vector Table.
-APUCMDInPtr     .EQU    Z80_VECTOR_TABLE+VECTOR_PROTO_SIZE
+; Starting immediately after the Z180 Vector Table.
+APUCMDInPtr     .EQU    Z180_VECTOR_BASE+Z180_VECTOR_SIZE
 APUCMDOutPtr    .EQU    APUCMDInPtr+2
 APUPTRInPtr     .EQU    APUCMDOutPtr+2
 APUPTROutPtr    .EQU    APUPTRInPtr+2
@@ -365,7 +372,7 @@ APUCMDBufUsed   .EQU    APUPTROutPtr+2
 APUPTRBufUsed   .EQU    APUCMDBufUsed+1
 APUSTATUS       .EQU    APUPTRBufUsed+1
 
-serRx0InPtr     .EQU    Z80_VECTOR_TABLE+VECTOR_PROTO_SIZE+$10
+serRx0InPtr     .EQU    Z180_VECTOR_BASE+Z180_VECTOR_SIZE+$10
 serRx0OutPtr    .EQU    serRx0InPtr+2
 serTx0InPtr     .EQU    serRx0OutPtr+2
 serTx0OutPtr    .EQU    serTx0InPtr+2
@@ -374,17 +381,17 @@ serTx0BufUsed   .EQU    serRx0BufUsed+1
 
 basicStarted    .EQU    serTx0BufUsed+1
 
-serRx1InPtr     .EQU    Z80_VECTOR_TABLE+VECTOR_PROTO_SIZE+$20
+serRx1InPtr     .EQU    Z180_VECTOR_BASE+Z180_VECTOR_SIZE+$20
 serRx1OutPtr    .EQU    serRx1InPtr+2
 serTx1InPtr     .EQU    serRx1OutPtr+2
 serTx1OutPtr    .EQU    serTx1InPtr+2
 serRx1BufUsed   .EQU    serTx1OutPtr+2
 serTx1BufUsed   .EQU    serRx1BufUsed+1
 
-; $nn30 -> $nnFF is slack memory.
+; $nn70 -> $nnFF is slack memory.
 
 ; I/O Buffers must start on 0xnn00 because we increment low byte to roll-over
-BUFSTART_IO     .EQU    (Z80_VECTOR_TABLE-(Z80_VECTOR_TABLE%$100) + $100
+BUFSTART_IO     .EQU    (Z180_VECTOR_BASE-(Z180_VECTOR_BASE%$100) + $100
 
 APUCMDBuf       .EQU    BUFSTART_IO
 APUPTRBuf       .EQU    APUCMDBuf+APU_CMD_BUFSIZE+1

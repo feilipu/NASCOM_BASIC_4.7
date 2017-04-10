@@ -71,8 +71,8 @@ INIT:
             OUT0    (CMR),A         ; CPU Clock Multiplier Reg (CMR)
 
                                     ; DMA/Wait Control Reg Set I/O Wait States
-            LD      A,DCNTL_IWI0|DCNTL_IWI1
-            OUT0    (DCNTL),A       ; 0 Memory Wait & 4 I/O Wait
+            LD      A,DCNTL_IWI0
+            OUT0    (DCNTL),A       ; 0 Memory Wait & 2 I/O Wait
 
                                     ; Set Logical Addresses
                                     ; $8000-$FFFF RAM CA1 -> 80H
@@ -118,26 +118,62 @@ INIT:
             LD      A,$01           ; Set Port B TIL311 XXX
             OUT     (C),A           ; put debug HEX Code onto Port B
 
-            LD      SP,$4000        ; Set up a temporary stack
-            
-;            LD      (RAMSTOP-1),SP  ; Save the current SP, though stack gone.
-;            LD      SP,RAMSTOP-1    ; Set up a temporary stack at RAMSTOP
+            LD      SP,RAMSTOP-1    ; Set up a temporary stack at RAMSTOP
+            LD      IX,INITIALISE
             JP      MEMTEST         ; do a memory test XXX
-            
+
+INITIALISE:
+            LD      SP,TEMPSTACK    ; Set up a temporary stack
+
+            LD      HL,VECTOR_PROTO ; Establish Z80 RST Vector Table
+            LD      DE,Z80_VECTOR_TABLE
+            LD      BC,VECTOR_PROTO_SIZE
+            LDIR
+
+            LD      HL,serRx0Buf    ; Initialise Rx0 Buffer
+            LD      (serRx0InPtr),HL
+            LD      (serRx0OutPtr),HL
+
+            LD      HL,serTx0Buf    ; Initialise Tx0 Buffer
+            LD      (serTx0InPtr),HL
+            LD      (serTx0OutPtr),HL              
+
+            XOR     A               ; 0 the Tx0 & Rx0 Buffer Counts
+            LD      (serRx0BufUsed),A
+            LD      (serTx0BufUsed),A
+
+            EI                      ; enable interrupts
+
+START:
+            RST     08H
+            RST     10H
+            RST     18H
+            RST     20H
+            RST     28H
+            RST     30H
+            LD      BC,PIOB         ; 82C55 IO PORT B address in BC
+            LD      A,$01           ; Set Port B TIL311 XXX
+            OUT     (C),A           ; put debug HEX Code onto Port B
+            RST     38H             ; EI RETI
+            LD      BC,PIOB         ; 82C55 IO PORT B address in BC
+            LD      A,$10           ; Set Port B TIL311 XXX
+            OUT     (C),A           ; put debug HEX Code onto Port B
+            JP      START
 
 ;------------------------------------------------------------------------------
 
             .ORG    0400H
 MEMTEST:
-;            LD      HL,RAMSTART_BANK
-;            LD      DE,RAMSTOP_BANK-RAMSTART_BANK
-;            CALL    RAMTST
-;            JR      NC, MEMTEST     ; repeat if no error
+            LD      HL,RAMSTART
+            LD      DE,RAMSTOP-RAMSTART-40H ; make sure the stack has space
+            CALL    RAMTST
+            JP      C,MEMTEST_HALT
+            JP      (IX)            ; return if no error
 
+MEMTEST_HALT:
                                     ; halt if there's an error
             LD      BC,PIOB         ; 82C55 IO PORT B address in BC
-            LD      A,$FF           ; Set Port B TIL311 XXX
-            OUT     (C),A           ; put debug HEX Code onto Port B
+            OUT     (C),H           ; put address HEX Code onto Port B
             HALT
 ;------------------------------------------------------------------------------
 ; Test a RAM area
@@ -146,6 +182,7 @@ MEMTEST:
 ; and indicates where the error occured and what value it used in the test.
 ;
 ; Entry
+;       IX = return address
 ;       HL = base address of test area
 ;       DE = size of the area to test in bytes
 ;
@@ -158,7 +195,7 @@ MEMTEST:
 ;       A  = expected value of byte written
 ;
 ; Registers used
-;       AF, BC, DE, HL
+;       AF, BC, DE, HL, IX
 ;
 
 RAMTST:
@@ -267,6 +304,25 @@ RAMTST_IO:
             OUT     (C),H        ; output upper adddress byte to PIO Port B
             POP     BC
             RET
+
+            
+;==============================================================================
+;
+; STRINGS
+;
+SIGNON1:    .BYTE   "YAZ180 - feilipu",CR,LF,0
+
+SIGNON2:    .BYTE   CR,LF
+            .BYTE   "Cold or Warm start, "
+            .BYTE   "or HexLoadr (C|W|H) ? ",0
+
+initString: .BYTE CR,LF
+            .BYTE "HexLoadr: "
+            .BYTE CR,LF,0
+
+invalidTypeStr: .BYTE "Inval Type",CR,LF,0
+badCheckSumStr: .BYTE "Chksum Error",CR,LF,0
+LoadOKStr:      .BYTE "Done",CR,LF,0
 
 ;==============================================================================
 ;

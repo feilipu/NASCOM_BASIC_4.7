@@ -21,6 +21,7 @@
 
 #include    "d:/yaz180.h"
 #include    "d:/z80intr.asm"
+#include    "d:/z180intr.asm"
 
 ;==============================================================================
 ;
@@ -44,63 +45,76 @@ TEMPSTACK       .EQU     WRKSPC+$AB
 ;------------------------------------------------------------------------------
 ASCI0_INTERRUPT:
         push af
+        push bc
+        push de
         push hl
-                                    ; start doing the Rx stuff
+        
+        LD      BC,PIOB             ; 82C55 IO PORT B address in BC
+        LD      E,$10
+        OUT     (C),E               ; put usage HEX Code onto Port B
 
+                                    ; start doing the Rx stuff
         in0 a, (STAT0)              ; load the ASCI0 status register
         and SER_RDRF                ; test whether we have received on ASCI0
-        jr z, ASCI0_TX_CHECK        ; if not, go check for bytes to transmit
+        jr z, ASCI0_END             ; if not, go to end
 
 ASCI0_RX_GET:
+
+        LD      BC,PIOB             ; 82C55 IO PORT B address in BC
+        LD      E,$20
+        OUT     (C),E               ; put usage HEX Code onto Port B
+
         in0 l, (RDR0)               ; move Rx byte from the ASCI0 to l
+
+        LD      BC,PIOB             ; 82C55 IO PORT B address in BC
+        LD      E,$30
+        OUT     (C),E               ; put usage HEX Code onto Port B
 
         ld a, (serRx0BufUsed)       ; get the number of bytes in the Rx buffer      
         cp SER_RX0_BUFSIZE          ; check whether there is space in the buffer
         jr nc, ASCI0_RX_CHECK       ; buffer full, check whether we need to drain H/W FIFO
 
+        LD      BC,PIOB             ; 82C55 IO PORT B address in BC
+        LD      E,$40
+        OUT     (C),E               ; put usage HEX Code onto Port B
+
         ld a, l                     ; get Rx byte from l
         ld hl, (serRx0InPtr)        ; get the pointer to where we poke
         ld (hl), a                  ; write the Rx byte to the serRx0InPtr target
 
+        LD      BC,PIOB             ; 82C55 IO PORT B address in BC
+        LD      E,$50
+        OUT     (C),E               ; put usage HEX Code onto Port B
+
         inc l                       ; move the Rx pointer low byte along, 0xFF rollover
         ld (serRx0InPtr), hl        ; write where the next byte should be poked
+
+        LD      BC,PIOB             ; 82C55 IO PORT B address in BC
+        LD      E,$60
+        OUT     (C),E               ; put usage HEX Code onto Port B
 
         ld hl, serRx0BufUsed
         inc (hl)                    ; atomically increment Rx buffer count
 
 ASCI0_RX_CHECK:                     ; Z8S180 has 4 byte Rx H/W FIFO
+
+        LD      BC,PIOB             ; 82C55 IO PORT B address in BC
+        LD      E,$70
+        OUT     (C),E               ; put usage HEX Code onto Port B
+
         in0 a, (STAT0)              ; load the ASCI0 status register
         and SER_RDRF                ; test whether we have received on ASCI0
         jr nz, ASCI0_RX_GET         ; if still more bytes in H/W FIFO, get them
 
-ASCI0_TX_CHECK:                     ; now start doing the Tx stuff
-        in0 a, (STAT0)              ; load the ASCI0 status register
-        and SER_TDRE                ; test whether we can transmit on ASCI0
-        jr z, ASCI0_TX_END          ; if not, then end
+ASCI0_END:
 
-        ld a, (serTx0BufUsed)       ; get the number of bytes in the Tx buffer
-        or a                        ; check whether it is zero
-        jr z, ASCI0_TX_TIE0_CLEAR   ; if the count is zero, then disable the Tx Interrupt
+        LD      BC,PIOB             ; 82C55 IO PORT B address in BC
+        LD      E,$80
+        OUT     (C),E               ; put usage HEX Code onto Port B
 
-        ld hl, (serTx0OutPtr)       ; get the pointer to place where we pop the Tx byte
-        ld a, (hl)                  ; get the Tx byte
-        out0 (TDR0), a              ; output the Tx byte to the ASCI0
-
-        inc l                       ; move the Tx pointer low byte along, 0xFF rollover
-        ld (serTx0OutPtr), hl       ; write where the next byte should be popped
-
-        ld hl, serTx0BufUsed
-        dec (hl)                    ; atomically decrement current Tx count
-
-        jr nz, ASCI0_TX_END         ; if we've more Tx bytes to send, we're done for now
-
-ASCI0_TX_TIE0_CLEAR:
-        in0 a, (STAT0)              ; get the ASCI0 status register
-        and ~SER_TIE                ; mask out (disable) the Tx Interrupt
-        out0 (STAT0), a             ; set the ASCI0 status register
-
-ASCI0_TX_END:
         pop hl
+        pop de
+        pop bc
         pop af
 
         ei
@@ -127,175 +141,6 @@ RX0:
         ret                         ; char ready in A
 
 ;------------------------------------------------------------------------------
-TX0:
-        push hl                     ; store HL so we don't clobber it        
-        ld l, a                     ; store Tx character 
-
-        ld a, (serTx0BufUsed)       ; get the number of bytes in the Tx buffer
-        or a                        ; check whether the buffer is empty
-        jr nz, TX0_BUFFER_OUT       ; buffer not empty, so abandon immediate Tx
-
-        in0 a, (STAT0)              ; get the ASCI0 status register
-        and SER_TDRE                ; test whether we can transmit on ASCI0
-        jr z, TX0_BUFFER_OUT        ; if not, so abandon immediate Tx
-
-        ld a, l                     ; Retrieve Tx character for immediate Tx
-        out0 (TDR0), a              ; output the Tx byte to the ASCI0
-
-        pop hl                      ; recover HL
-        ret                         ; and just complete
-
-TX0_BUFFER_OUT:
-        ld a, (serTx0BufUsed)       ; Get the number of bytes in the Tx buffer
-        cp SER_TX0_BUFSIZE          ; check whether there is space in the buffer
-        jr nc, TX0_BUFFER_OUT       ; buffer full, so wait for free buffer for Tx
-
-        ld a, l                     ; retrieve Tx character
-        ld hl, (serTx0InPtr)        ; get the pointer to where we poke
-        ld (hl), a                  ; write the Tx byte to the serTx0InPtr   
-
-        inc l                       ; move the Tx pointer low byte along, 0xFF rollover
-        ld (serTx0InPtr), hl        ; write where the next byte should be poked
-
-        ld hl, serTx0BufUsed
-        inc (hl)                    ; atomic increment of Tx count
-
-        pop hl                      ; recover HL
-
-        in0 a, (STAT0)              ; load the ASCI0 status register
-        tst SER_TIE                 ; test whether ASCI0 interrupt is set        
-        ret nz                      ; if so then just return       
-
-        di                          ; critical section begin
-        in0 a, (STAT0)              ; get the ASCI status register again
-        or SER_TIE                  ; mask in (enable) the Tx Interrupt
-        out0 (STAT0), a             ; set the ASCI status register
-        ei                          ; critical section end
-        ret
-
-;------------------------------------------------------------------------------
-RX0_CHK:
-        LD      A,(serRx0BufUsed)
-        CP      $0
-        RET
-
-;------------------------------------------------------------------------------
-TX0_PRINT:
-        LD      A,(HL)              ; Get a byte
-        OR      A                   ; Is it $00 ?
-        RET     Z                   ; Then RETurn on terminator
-        CALL    TX0                 ; Print it
-        INC     HL                  ; Next byte
-        JR      TX0_PRINT           ; Continue until $00
-
-;------------------------------------------------------------------------------
-HEX_START:
-            ld hl, initString
-            call TX0_PRINT
-
-            ld c,0                  ; non zero c is our ESA flag
-
-HEX_WAIT_COLON:
-            call RX0                ; Rx byte
-            cp ':'                  ; wait for ':'
-            jr nz, HEX_WAIT_COLON
-            ld hl, 0                ; reset hl to compute checksum
-            call HEX_READ_BYTE      ; read byte count
-            ld b, a                 ; store it in b
-            call HEX_READ_BYTE      ; read upper byte of address
-            ld d, a                 ; store in d
-            call HEX_READ_BYTE      ; read lower byte of address
-            ld e, a                 ; store in e
-            call HEX_READ_BYTE      ; read record type
-            cp 02                   ; check if record type is 02 (ESA)
-            jr z, HEX_ESA_DATA
-            cp 01                   ; check if record type is 01 (end of file)
-            jr z, HEX_END_LOAD
-            cp 00                   ; check if record type is 00 (data)
-            jr nz, HEX_INVAL_TYPE   ; if not, error
-HEX_READ_DATA:
-            ld a, '*'               ; "*" per byte loaded  # DEBUG
-            call TX0                ; Print it             # DEBUG
-            call HEX_READ_BYTE
-            ld (de), a              ; write the byte at the RAM address
-            inc de
-            djnz HEX_READ_DATA      ; if b non zero, loop to get more data
-HEX_READ_CHKSUM:
-            call HEX_READ_BYTE      ; read checksum, but we don't need to keep it
-            ld a, l                 ; lower byte of hl checksum should be 0
-            or a
-            jr nz, HEX_BAD_CHK      ; non zero, we have an issue
-            ld a, '#'               ; "#" per line loaded
-            call TX0                ; Print it
-            ld a, CR                ; CR                   # DEBUG
-            call TX0                ; Print it             # DEBUG
-            ld a, LF                ; LF                   # DEBUG
-            call TX0                ; Print it             # DEBUG
-            jr HEX_WAIT_COLON
-
-HEX_ESA_DATA:
-            in0 a, (BBR)            ; grab the current Bank Base Value
-            ld c, a                 ; store BBR for later recovery
-            call HEX_READ_BYTE      ; get high byte of ESA
-            out0 (BBR), a           ; write it to the BBR  
-            call HEX_READ_BYTE      ; get low byte of ESA, abandon it, but calc checksum
-            jr HEX_READ_CHKSUM      ; calculate checksum
-
-HEX_END_LOAD:
-            call HEX_READ_BYTE      ; read checksum, but we don't need to keep it
-            ld a, l                 ; lower byte of hl checksum should be 0
-            or a
-            jr nz, HEX_BAD_CHK      ; non zero, we have an issue
-            call HEX_BBR_RESTORE    ; clean up the BBR
-            ld hl, LoadOKStr
-            call TX0_PRINT
-            jp WARMSTART            ; ready to run our loaded program from Basic
-            
-HEX_INVAL_TYPE:
-            call HEX_BBR_RESTORE    ; clean up the BBR
-            ld hl, invalidTypeStr
-            call TX0_PRINT
-            jp START                ; go back to start
-
-HEX_BAD_CHK:
-            call HEX_BBR_RESTORE    ; clean up the BBR
-            ld hl, badCheckSumStr
-            call TX0_PRINT
-            jp START                ; go back to start
-
-HEX_BBR_RESTORE:
-            ld a, c                 ; get our BBR back
-            ret z                   ; if it is zero, chances are we don't need it
-            out0 (BBR), a           ; write it to the BBR
-            ret
-
-HEX_READ_BYTE:                      ; Returns byte in a, checksum in hl
-            push bc
-            call RX0                ; Rx byte
-            sub '0'
-            cp 10
-            jr c, HEX_READ_NBL2     ; if a<10 read the second nibble
-            sub 7                   ; else subtract 'A'-'0' (17) and add 10
-HEX_READ_NBL2:
-            rlca                    ; shift accumulator left by 4 bits
-            rlca
-            rlca
-            rlca
-            ld c, a                 ; temporarily store the first nibble in c
-            call RX0                ; Rx byte
-            sub '0'
-            cp 10
-            jr c, HEX_READ_END      ; if a<10 finalize
-            sub 7                   ; else subtract 'A' (17) and add 10
-HEX_READ_END:
-            or c                    ; assemble two nibbles into one byte in a
-            ld b, 0                 ; add the byte read to hl (for checksum)
-            ld c, a
-            add hl, bc
-            pop bc
-            ret                     ; return the byte read in a
-
-;------------------------------------------------------------------------------
 
             .ORG    0300H
 INIT:
@@ -303,11 +148,15 @@ INIT:
             LD      A,IO_BASE       ; ICR = $00 [xx00 0000] for I/O Registers at $00 - $3F
             OUT0    (ICR),A         ; Standard I/O Mapping (0 Enabled)
 
-                                    ; Set interrupt vector base (IL)
-            LD      A,VECTOR_BASE   ; IL = $80 [100x xxxx] for Vectors at $80 - $90
+            LD      A,Z180_VECTOR_BASE/$100
+            LD      I,A             ; Set interrupt vector address high byte (I)
+            
+                                    ; Set interrupt vector address low byte (IL)
+                                    ; IL = $20 [001x xxxx] for Vectors at $nn20 - $nn2F
+            LD      A,Z180_VECTOR_BASE%$100
             OUT0    (IL),A          ; Output to the Interrupt Vector Low reg
 
-            IM      1               ; Interrupt mode 1 for INT0 (used for APU)
+            IM      1               ; Interrupt mode 1 for INT0
 
             XOR     A               ; Zero Accumulator
 
@@ -327,11 +176,6 @@ INIT:
                                     ; if using ZS8180 or Z80182 at High-Speed
             LD      A,CMR_X2        ; Set Hi-Speed flag
             OUT0    (CMR),A         ; CPU Clock Multiplier Reg (CMR)
-
-;                                   ; Bypass PHI = internal clock / 2
-;                                   ; if using ZS8180 or Z80182 at High-Speed
-;           LD      A,CCR_XTAL_X2   ; Set Hi-Speed flag: PHI = internal clock
-;           OUT0    (CCR),A         ; CPU Control Reg (CCR)
 
                                     ; DMA/Wait Control Reg Set I/O Wait States
             LD      A,DCNTL_IWI0
@@ -380,19 +224,22 @@ INIT:
             LD      BC,PIOB         ; 82C55 IO PORT B address in BC
             LD      A,$01           ; Set Port B TIL311 XXX
             OUT     (C),A           ; put debug HEX Code onto Port B
-            
-MEMORY_TEST:
-            LD      (RAMSTOP-1),SP  ; Save the current SP, though stack gone.
+
             LD      SP,RAMSTOP-1    ; Set up a temporary stack at RAMSTOP
-            CALL    MEMTEST         ; do a memory test XXX
+            LD      IX,INITIALISE
+            JP      MEMTEST         ; do a memory test XXX
 
+INITIALISE:
             LD      SP,TEMPSTACK    ; Set up a temporary stack
-                        
-            JP      MEMORY_TEST
 
-            LD      HL,VECTOR_PROTO ; Establish Z80 RST Vector Table
-            LD      DE,Z80_VECTOR_TABLE
-            LD      BC,VECTOR_PROTO_SIZE
+            LD      HL,Z80_VECTOR_PROTO ; Establish Z80 RST Vector Table
+            LD      DE,Z80_VECTOR_BASE
+            LD      BC,Z80_VECTOR_SIZE
+            LDIR
+
+            LD      HL,Z180_VECTOR_PROTO ; Establish Z180 Vector Table
+            LD      DE,Z180_VECTOR_BASE
+            LD      BC,Z180_VECTOR_SIZE
             LDIR
 
             LD      HL,serRx0Buf    ; Initialise Rx0 Buffer
@@ -408,55 +255,28 @@ MEMORY_TEST:
             LD      (serTx0BufUsed),A
 
             EI                      ; enable interrupts
-START:                                     
-            LD      HL,SIGNON1      ; Sign-on message
-            CALL    TX0_PRINT       ; Output string              
-            LD      A,(basicStarted); Check the BASIC STARTED flag
-            CP      'Y'             ; to see if this is power-up
-            JR      NZ,COLDSTART    ; If not BASIC started then always do cold start
-            LD      HL,SIGNON2      ; Cold/warm message
-            CALL    TX0_PRINT       ; Output string
-CORW:
-            CALL    RX0
-            AND     11011111B       ; lower to uppercase
-            CP      'H'             ; are we trying to load an Intel HEX program?
-            JP      Z, HEX_START    ; then jump to HexLoadr
-            CP      'C'
-            JR      NZ, CHECKWARM
-            RST     08H
-            LD      A,$0D
-            RST     08H
-            LD      A,$0A
-            RST     08H
-COLDSTART:
-            LD      A,'Y'           ; Set the BASIC STARTED flag
-            LD      (basicStarted),A
-            JP      START            ; <<<< Start COLD:
-CHECKWARM:
-            CP      'W'
-            JR      NZ, CORW
-            RST     08H
-            LD      A,$0D
-            RST     08H
-            LD      A,$0A
-            RST     08H
-WARMSTART:
-            RST     10H          ; wait for a character
-            RST     08H          ; echo it back
-            JP      WARMSTART
+
+START:
+;            RST     10H             ; input
+            LD      BC,PIOB         ; 82C55 IO PORT B address in BC
+            LD      A,(serRx0BufUsed)
+            OUT     (C),A           ; put usage HEX Code onto Port B
+            JP      START
 
 ;------------------------------------------------------------------------------
 
             .ORG    0400H
-
 MEMTEST:
             LD      HL,RAMSTART
             LD      DE,RAMSTOP-RAMSTART-40H ; make sure the stack has space
             CALL    RAMTST
-            JR      C,MEMTEST_HALT  ; halt if there's an error
-            RET
+            JP      C,MEMTEST_HALT
+            JP      (IX)            ; return if no error
 
 MEMTEST_HALT:
+                                    ; halt if there's an error
+            LD      BC,PIOB         ; 82C55 IO PORT B address in BC
+            OUT     (C),H           ; put address HEX Code onto Port B
             HALT
 ;------------------------------------------------------------------------------
 ; Test a RAM area
@@ -465,6 +285,7 @@ MEMTEST_HALT:
 ; and indicates where the error occured and what value it used in the test.
 ;
 ; Entry
+;       IX = return address
 ;       HL = base address of test area
 ;       DE = size of the area to test in bytes
 ;
@@ -477,7 +298,7 @@ MEMTEST_HALT:
 ;       A  = expected value of byte written
 ;
 ; Registers used
-;       AF, BC, DE, HL
+;       AF, BC, DE, HL, IX
 ;
 
 RAMTST:
@@ -611,12 +432,12 @@ LoadOKStr:      .BYTE "Done",CR,LF,0
 ; Z80 INTERRUPT VECTOR DESTINATION ADDRESS ASSIGNMENTS
 ;
 
-;RST_08      .EQU    TX0             ; TX a byte over ASCI0
-;RST_10      .EQU    RX0             ; RX a byte over ASCI0, loop byte available
-;RST_18      .EQU    RX0_CHK         ; Check ASCI0 status, return # bytes available
 RST_08      .EQU    NULL_RET        ; RET
-RST_10      .EQU    NULL_RET        ; RET
+;RST_08      .EQU    TX0             ; TX a byte over ASCI0
+;RST_10      .EQU    NULL_RET        ; RET
+RST_10      .EQU    RX0             ; RX a byte over ASCI0, loop byte available
 RST_18      .EQU    NULL_RET        ; RET
+;RST_18      .EQU    RX0_CHK         ; Check ASCI0 status, return # bytes available
 RST_20      .EQU    NULL_RET        ; RET
 RST_28      .EQU    NULL_RET        ; RET
 RST_30      .EQU    NULL_RET        ; RET
@@ -625,14 +446,10 @@ INT_NMI     .EQU    NULL_NMI        ; RETN
 
 ;==============================================================================
 ;
-; Z180 INTERRUPT VECTOR SECTION 
+; Z180 INTERRUPT VECTOR DESTINATION ADDRESS ASSIGNMENTS
 ;
 
-;------------------------------------------------------------------------------
-; INTERRUPT VECTOR ASCI Channel 0 [ Vector at $8E ]
-
-            .ORG    VECTOR_ASCI0
-            JP      NULL_RET        ; RET
+INT_ASCI0   .EQU    ASCI0_INTERRUPT ; ASCI0 Interrupt
 
 ;==============================================================================
 ;
