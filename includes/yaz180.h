@@ -57,30 +57,16 @@ Z80_VECTOR_BASE .EQU    RAMSTART_CA0        ; RAM vector address for Z80 RST Tab
 Z80_VECTOR_PROTO    .EQU    $0040
 Z80_VECTOR_SIZE     .EQU    $20
 
-;   Prototype Vector Defaults to be defined in initialisation code.
-;   RST_08      .EQU    TX0         TX a character over ASCI0
-;   RST_10      .EQU    RX0         RX a character over ASCI0, block no bytes available
-;   RST_18      .EQU    RX0_CHK     Check ASCI0 status, return # bytes available
-;   RST_20      .EQU    NULL_INT
-;   RST_28      .EQU    NULL_INT
-;   RST_30      .EQU    NULL_INT
-;   INT_00      .EQU    NULL_INT
-;   INT_NMI     .EQU    NULL_NMI
-
-;   Z80 RAM VECTOR ADDRESS TABLE
-
-NULL_NMI_ADDR   .EQU    Z80_VECTOR_PROTO+$20    ; Write the NULL return location
-NULL_INT_ADDR   .EQU    Z80_VECTOR_PROTO+$22    ;  when removing an ISR
-NULL_RET_ADDR   .EQU    Z80_VECTOR_PROTO+$25
-
-RST_08_ADDR     .EQU    Z80_VECTOR_BASE+$01    ; Write your ISR address
-RST_10_ADDR     .EQU    Z80_VECTOR_BASE+$05    ;  to these locations
-RST_18_ADDR     .EQU    Z80_VECTOR_BASE+$09
-RST_20_ADDR     .EQU    Z80_VECTOR_BASE+$0D
-RST_28_ADDR     .EQU    Z80_VECTOR_BASE+$11
-RST_30_ADDR     .EQU    Z80_VECTOR_BASE+$15
-INT_00_ADDR     .EQU    Z80_VECTOR_BASE+$19
-INT_NMI_ADDR    .EQU    Z80_VECTOR_BASE+$1D
+;   Prototype Interrupt Service Routines - complete in main program
+;
+;   RST_08          .EQU    TX0         TX a character over ASCI0
+;   RST_10          .EQU    RX0         RX a character over ASCI0, block no bytes available
+;   RST_18          .EQU    RX0_CHK     Check ASCI0 status, return # bytes available
+;   RST_20          .EQU    NULL_INT
+;   RST_28          .EQU    NULL_INT
+;   RST_30          .EQU    NULL_INT
+;   INT_00          .EQU    NULL_INT
+;   INT_NMI         .EQU    NULL_NMI
 
 ;==============================================================================
 ;
@@ -88,99 +74,103 @@ INT_NMI_ADDR    .EQU    Z80_VECTOR_BASE+$1D
 ;
 
 ; Starting immediately after the Z80 Vector Table.
-Z180_VECTOR_LOW .EQU    $20     ; Vector Base address (IL)
-                                ; [001x xxxx] for Vectors at $nn20 - $nn3F
+Z180_VECTOR_IL      .EQU    $20     ; Vector Base address (IL)
+                                    ; [001x xxxx] for Vectors at $nn20 - $nn3F
 
-Z180_VECTOR_PROTO .EQU   $0070  ; locate the prototypes just after NMI Vector
+Z180_VECTOR_TRAP    .EQU    $0070   ; Locate the TRAP management just after NMI
 
-Z180_VECTOR_BASE .EQU   (Z80_VECTOR_BASE-(Z80_VECTOR_BASE%$100) + Z180_VECTOR_LOW
-Z180_VECTOR_SIZE .EQU   $20
+Z180_VECTOR_PROTO   .EQU    $00C0   ; Locate the prototypes just after TRAP
 
-VECTOR_INT1     .EQU    Z180_VECTOR_BASE+$00     ; external /INT1
-VECTOR_INT2     .EQU    Z180_VECTOR_BASE+$02     ; external /INT2
-VECTOR_PRT0     .EQU    Z180_VECTOR_BASE+$04     ; PRT channel 0
-VECTOR_PRT1     .EQU    Z180_VECTOR_BASE+$06     ; PRT channel 1
-VECTOR_DMA0     .EQU    Z180_VECTOR_BASE+$08     ; DMA channel 0
-VECTOR_DMA1     .EQU    Z180_VECTOR_BASE+$0A     ; DMA Channel 1
-VECTOR_CSIO     .EQU    Z180_VECTOR_BASE+$0C     ; Clocked serial I/O
-VECTOR_ASCI0    .EQU    Z180_VECTOR_BASE+$0E     ; Async channel 0
-VECTOR_ASCI1    .EQU    Z180_VECTOR_BASE+$10     ; Async channel 1
+Z180_VECTOR_BASE    .EQU    (Z80_VECTOR_BASE-(Z80_VECTOR_BASE%$100) + Z180_VECTOR_IL
+Z180_VECTOR_SIZE    .EQU    $20
+
+;   Prototype Interrupt Service Routines - complete in main program
+;
+;   INT_INT1        .EQU    NULL_RET        ; external /INT1
+;   INT_INT2        .EQU    NULL_RET        ; external /INT2
+;   INT_PRT0        .EQU    NULL_RET        ; PRT channel 0
+;   INT_PRT1        .EQU    NULL_RET        ; PRT channel 1
+;   INT_DMA0        .EQU    NULL_RET        ; DMA channel 0
+;   INT_DMA1        .EQU    NULL_RET        ; DMA Channel 1
+;   INT_CSIO        .EQU    NULL_RET        ; Clocked serial I/O
+;   INT_ASCI0       .EQU    ASCI0_INTERRUPT ; Async channel 0
+;   INT_ASCI1       .EQU    NULL_RET        ; Async channel 1
 
 ;==============================================================================
 ;
 ; Z180 Register Mnemonics
 ;
 
-IO_BASE         .EQU    $00     ; Internal I/O Base Address (ICR) <<< SET THIS AS DESIRED >>>
+Z180_IO_BASE    .EQU    $00 ; Internal I/O Base Address (ICR) <<< SET THIS AS DESIRED >>>
 
-CNTLA0          .EQU    IO_BASE+$00     ; ASCI Control Reg A Ch 0
-CNTLA1          .EQU    IO_BASE+$01     ; ASCI Control Reg A Ch 1
-CNTLB0          .EQU    IO_BASE+$02     ; ASCI Control Reg B Ch 0
-CNTLB1          .EQU    IO_BASE+$03     ; ASCI Control Reg B Ch 1
-STAT0           .EQU    IO_BASE+$04     ; ASCI Status  Reg   Ch 0
-STAT1           .EQU    IO_BASE+$05     ; ASCI Status  Reg   Ch 1
-TDR0            .EQU    IO_BASE+$06     ; ASCI Tx Data Reg   Ch 0
-TDR1            .EQU    IO_BASE+$07     ; ASCI Tx Data Reg   Ch 1
-RDR0            .EQU    IO_BASE+$08     ; ASCI Rx Data Reg   Ch 0
-RDR1            .EQU    IO_BASE+$09     ; ASCI Rx Data Reg   Ch 1
+CNTLA0          .EQU    Z180_IO_BASE+$00    ; ASCI Control Reg A Ch 0
+CNTLA1          .EQU    Z180_IO_BASE+$01    ; ASCI Control Reg A Ch 1
+CNTLB0          .EQU    Z180_IO_BASE+$02    ; ASCI Control Reg B Ch 0
+CNTLB1          .EQU    Z180_IO_BASE+$03    ; ASCI Control Reg B Ch 1
+STAT0           .EQU    Z180_IO_BASE+$04    ; ASCI Status  Reg   Ch 0
+STAT1           .EQU    Z180_IO_BASE+$05    ; ASCI Status  Reg   Ch 1
+TDR0            .EQU    Z180_IO_BASE+$06    ; ASCI Tx Data Reg   Ch 0
+TDR1            .EQU    Z180_IO_BASE+$07    ; ASCI Tx Data Reg   Ch 1
+RDR0            .EQU    Z180_IO_BASE+$08    ; ASCI Rx Data Reg   Ch 0
+RDR1            .EQU    Z180_IO_BASE+$09    ; ASCI Rx Data Reg   Ch 1
 
-ASEXT0          .EQU    IO_BASE+$12     ; ASCI Extension Control Reg Ch 0 (Z8S180 & higher Only)
-ASEXT1          .EQU    IO_BASE+$13     ; ASCI Extension Control Reg Ch 1 (Z8S180 & higher Only)
+ASEXT0          .EQU    Z180_IO_BASE+$12    ; ASCI Extension Control Reg Ch 0 (Z8S180 & higher Only)
+ASEXT1          .EQU    Z180_IO_BASE+$13    ; ASCI Extension Control Reg Ch 1 (Z8S180 & higher Only)
 
-ASTC0L          .EQU    IO_BASE+$1A     ; ASCI Time Constant Ch 0 Low (Z8S180 & higher Only)
-ASTC0H          .EQU    IO_BASE+$1B     ; ASCI Time Constant Ch 0 High (Z8S180 & higher Only)
-ASTC1L          .EQU    IO_BASE+$1C     ; ASCI Time Constant Ch 1 Low (Z8S180 & higher Only)
-ASTC1H          .EQU    IO_BASE+$1D     ; ASCI Time Constant Ch 1 High (Z8S180 & higher Only)
+ASTC0L          .EQU    Z180_IO_BASE+$1A    ; ASCI Time Constant Ch 0 Low (Z8S180 & higher Only)
+ASTC0H          .EQU    Z180_IO_BASE+$1B    ; ASCI Time Constant Ch 0 High (Z8S180 & higher Only)
+ASTC1L          .EQU    Z180_IO_BASE+$1C    ; ASCI Time Constant Ch 1 Low (Z8S180 & higher Only)
+ASTC1H          .EQU    Z180_IO_BASE+$1D    ; ASCI Time Constant Ch 1 High (Z8S180 & higher Only)
 
-CNTR            .EQU    IO_BASE+$0A     ; CSI/O Control Reg
-TRDR            .EQU    IO_BASE+$0B     ; CSI/O Tx/Rx Data Reg
+CNTR            .EQU    Z180_IO_BASE+$0A    ; CSI/O Control Reg
+TRDR            .EQU    Z180_IO_BASE+$0B    ; CSI/O Tx/Rx Data Reg
 
-TMDR0L          .EQU    IO_BASE+$0C     ; Timer Data Reg Ch 0 Low
-TMDR0H          .EQU    IO_BASE+$0D     ; Timer Data Reg Ch 0 High
-RLDR0L          .EQU    IO_BASE+$0E     ; Timer Reload Reg Ch 0 Low
-RLDR0H          .EQU    IO_BASE+$0F     ; Timer Reload Reg Ch 0 High
-TCR             .EQU    IO_BASE+$10     ; Timer Control Reg
+TMDR0L          .EQU    Z180_IO_BASE+$0C    ; Timer Data Reg Ch 0 Low
+TMDR0H          .EQU    Z180_IO_BASE+$0D    ; Timer Data Reg Ch 0 High
+RLDR0L          .EQU    Z180_IO_BASE+$0E    ; Timer Reload Reg Ch 0 Low
+RLDR0H          .EQU    Z180_IO_BASE+$0F    ; Timer Reload Reg Ch 0 High
+TCR             .EQU    Z180_IO_BASE+$10    ; Timer Control Reg
 
-TMDR1L          .EQU    IO_BASE+$14     ; Timer Data Reg Ch 1 Low
-TMDR1H          .EQU    IO_BASE+$15     ; Timer Data Reg Ch 1 High
-RLDR1L          .EQU    IO_BASE+$16     ; Timer Reload Reg Ch 1 Low
-RLDR1H          .EQU    IO_BASE+$17     ; Timer Reload Reg Ch 1 High
+TMDR1L          .EQU    Z180_IO_BASE+$14    ; Timer Data Reg Ch 1 Low
+TMDR1H          .EQU    Z180_IO_BASE+$15    ; Timer Data Reg Ch 1 High
+RLDR1L          .EQU    Z180_IO_BASE+$16    ; Timer Reload Reg Ch 1 Low
+RLDR1H          .EQU    Z180_IO_BASE+$17    ; Timer Reload Reg Ch 1 High
 
-FRC             .EQU    IO_BASE+$18     ; Free-Running Counter
+FRC             .EQU    Z180_IO_BASE+$18    ; Free-Running Counter
 
-CMR             .EQU    IO_BASE+$1E     ; CPU Clock Multiplier Reg (Z8S180 & higher Only)
-CCR             .EQU    IO_BASE+$1F     ; CPU Control Reg (Z8S180 & higher Only)
+CMR             .EQU    Z180_IO_BASE+$1E    ; CPU Clock Multiplier Reg (Z8S180 & higher Only)
+CCR             .EQU    Z180_IO_BASE+$1F    ; CPU Control Reg (Z8S180 & higher Only)
 
-SAR0L           .EQU    IO_BASE+$20     ; DMA Source Addr Reg Ch0-Low
-SAR0H           .EQU    IO_BASE+$21     ; DMA Source Addr Reg Ch0-High
-SAR0B           .EQU    IO_BASE+$22     ; DMA Source Addr Reg Ch0-Bank
-DAR0L           .EQU    IO_BASE+$23     ; DMA Dest Addr Reg Ch0-Low
-DAR0H           .EQU    IO_BASE+$24     ; DMA Dest Addr Reg Ch0-High
-DAR0B           .EQU    IO_BASE+$25     ; DMA Dest ADDR REG CH0-Bank
-BCR0L           .EQU    IO_BASE+$26     ; DMA Byte Count Reg Ch0-Low
-BCR0H           .EQU    IO_BASE+$27     ; DMA Byte Count Reg Ch0-High
-MAR1L           .EQU    IO_BASE+$28     ; DMA Memory Addr Reg Ch1-Low
-MAR1H           .EQU    IO_BASE+$29     ; DMA Memory Addr Reg Ch1-High
-MAR1B           .EQU    IO_BASE+$2A     ; DMA Memory Addr Reg Ch1-Bank
-IAR1L           .EQU    IO_BASE+$2B     ; DMA I/O Addr Reg Ch1-Low
-IAR1H           .EQU    IO_BASE+$2C     ; DMA I/O Addr Reg Ch2-High
-BCR1L           .EQU    IO_BASE+$2E     ; DMA Byte Count Reg Ch1-Low
-BCR1H           .EQU    IO_BASE+$2F     ; DMA Byte Count Reg Ch1-High
-DSTAT           .EQU    IO_BASE+$30     ; DMA Status Reg
-DMODE           .EQU    IO_BASE+$31     ; DMA Mode Reg
-DCNTL           .EQU    IO_BASE+$32     ; DMA/Wait Control Reg
+SAR0L           .EQU    Z180_IO_BASE+$20    ; DMA Source Addr Reg Ch0-Low
+SAR0H           .EQU    Z180_IO_BASE+$21    ; DMA Source Addr Reg Ch0-High
+SAR0B           .EQU    Z180_IO_BASE+$22    ; DMA Source Addr Reg Ch0-Bank
+DAR0L           .EQU    Z180_IO_BASE+$23    ; DMA Dest Addr Reg Ch0-Low
+DAR0H           .EQU    Z180_IO_BASE+$24    ; DMA Dest Addr Reg Ch0-High
+DAR0B           .EQU    Z180_IO_BASE+$25    ; DMA Dest ADDR REG CH0-Bank
+BCR0L           .EQU    Z180_IO_BASE+$26    ; DMA Byte Count Reg Ch0-Low
+BCR0H           .EQU    Z180_IO_BASE+$27    ; DMA Byte Count Reg Ch0-High
+MAR1L           .EQU    Z180_IO_BASE+$28    ; DMA Memory Addr Reg Ch1-Low
+MAR1H           .EQU    Z180_IO_BASE+$29    ; DMA Memory Addr Reg Ch1-High
+MAR1B           .EQU    Z180_IO_BASE+$2A    ; DMA Memory Addr Reg Ch1-Bank
+IAR1L           .EQU    Z180_IO_BASE+$2B    ; DMA I/O Addr Reg Ch1-Low
+IAR1H           .EQU    Z180_IO_BASE+$2C    ; DMA I/O Addr Reg Ch2-High
+BCR1L           .EQU    Z180_IO_BASE+$2E    ; DMA Byte Count Reg Ch1-Low
+BCR1H           .EQU    Z180_IO_BASE+$2F    ; DMA Byte Count Reg Ch1-High
+DSTAT           .EQU    Z180_IO_BASE+$30    ; DMA Status Reg
+DMODE           .EQU    Z180_IO_BASE+$31    ; DMA Mode Reg
+DCNTL           .EQU    Z180_IO_BASE+$32    ; DMA/Wait Control Reg
 
-IL              .EQU    IO_BASE+$33     ; INT Vector Low Reg
-ITC             .EQU    IO_BASE+$34     ; INT/TRAP Control Reg
+IL              .EQU    Z180_IO_BASE+$33    ; INT Vector Low Reg
+ITC             .EQU    Z180_IO_BASE+$34    ; INT/TRAP Control Reg
 
-RCR             .EQU    IO_BASE+$36     ; Refresh Control Reg
+RCR             .EQU    Z180_IO_BASE+$36    ; Refresh Control Reg
 
-CBR             .EQU    IO_BASE+$38     ; MMU Common Base Reg
-BBR             .EQU    IO_BASE+$39     ; MMU Bank Base Reg
-CBAR            .EQU    IO_BASE+$3A     ; MMU Common/Bank Area Reg
+CBR             .EQU    Z180_IO_BASE+$38    ; MMU Common Base Reg
+BBR             .EQU    Z180_IO_BASE+$39    ; MMU Bank Base Reg
+CBAR            .EQU    Z180_IO_BASE+$3A    ; MMU Common/Bank Area Reg
 
-OMCR            .EQU    IO_BASE+$3E     ; Operation Mode Control Reg
-ICR             .EQU    IO_BASE+$3F     ; I/O Control Reg
+OMCR            .EQU    Z180_IO_BASE+$3E    ; Operation Mode Control Reg
+ICR             .EQU    Z180_IO_BASE+$3F    ; I/O Control Reg
 
 ;==============================================================================
 ;
@@ -189,38 +179,38 @@ ICR             .EQU    IO_BASE+$3F     ; I/O Control Reg
 
 ; ASCI Control Reg A (CNTLAn)
 
-SER_MPE         .EQU   $80    ; Multi Processor Enable
-SER_RE          .EQU   $40    ; Receive Enable
-SER_TE          .EQU   $20    ; Transmit Enable
-SER_RTS0        .EQU   $10    ; _RTS Request To Send
-SER_EFR         .EQU   $08    ; Error Flag Reset
+SER_MPE         .EQU    $80     ; Multi Processor Enable
+SER_RE          .EQU    $40     ; Receive Enable
+SER_TE          .EQU    $20     ; Transmit Enable
+SER_RTS0        .EQU    $10     ; _RTS Request To Send
+SER_EFR         .EQU    $08     ; Error Flag Reset
 
-SER_8P2         .EQU   $07    ; 8 Bits    Parity 2 Stop Bits
-SER_8P1         .EQU   $06    ; 8 Bits    Parity 1 Stop Bit
-SER_8N2         .EQU   $05    ; 8 Bits No Parity 2 Stop Bits
-SER_8N1         .EQU   $04    ; 8 Bits No Parity 1 Stop Bit
-SER_7P2         .EQU   $03    ; 7 Bits    Parity 2 Stop Bits
-SER_7P1         .EQU   $02    ; 7 Bits    Parity 1 Stop Bit
-SER_7N2         .EQU   $01    ; 7 Bits No Parity 2 Stop Bits
-SER_7N1         .EQU   $00    ; 7 Bits No Parity 1 Stop Bit
+SER_8P2         .EQU    $07     ; 8 Bits    Parity 2 Stop Bits
+SER_8P1         .EQU    $06     ; 8 Bits    Parity 1 Stop Bit
+SER_8N2         .EQU    $05     ; 8 Bits No Parity 2 Stop Bits
+SER_8N1         .EQU    $04     ; 8 Bits No Parity 1 Stop Bit
+SER_7P2         .EQU    $03     ; 7 Bits    Parity 2 Stop Bits
+SER_7P1         .EQU    $02     ; 7 Bits    Parity 1 Stop Bit
+SER_7N2         .EQU    $01     ; 7 Bits No Parity 2 Stop Bits
+SER_7N1         .EQU    $00     ; 7 Bits No Parity 1 Stop Bit
 
 ; ASCI Control Reg B (CNTLBn)
-                              ; BAUD Rate = PHI / PS / SS / DR
+                                ; BAUD Rate = PHI / PS / SS / DR
 
-SER_MPBT        .EQU   $80    ; Multi Processor Bit Transmit
-SER_MP          .EQU   $40    ; Multi Processor
-SER_PS          .EQU   $20    ; Prescale PHI by 10 (PS 0) or 30 (PS 1)
-SER_PEO         .EQU   $10    ; Parity Even or Odd
-SER_DR          .EQU   $08    ; Divide SS by 16 (DR 0) or 64 (DR 1)
+SER_MPBT        .EQU    $80     ; Multi Processor Bit Transmit
+SER_MP          .EQU    $40     ; Multi Processor
+SER_PS          .EQU    $20     ; Prescale PHI by 10 (PS 0) or 30 (PS 1)
+SER_PEO         .EQU    $10     ; Parity Even or Odd
+SER_DR          .EQU    $08     ; Divide SS by 16 (DR 0) or 64 (DR 1)
 
-SER_SS_EXT      .EQU   $07    ; External Clock Source <= PHI / 40
-SER_SS_DIV_64   .EQU   $06    ; Divide PS by 64
-SER_SS_DIV_32   .EQU   $05    ; Divide PS by 32
-SER_SS_DIV_16   .EQU   $04    ; Divide PS by 16
-SER_SS_DIV_8    .EQU   $03    ; Divide PS by  8
-SER_SS_DIV_4    .EQU   $02    ; Divide PS by  4
-SER_SS_DIV_2    .EQU   $01    ; Divide PS by  2
-SER_SS_DIV_1    .EQU   $00    ; Divide PS by  1
+SER_SS_EXT      .EQU    $07     ; External Clock Source <= PHI / 40
+SER_SS_DIV_64   .EQU    $06     ; Divide PS by 64
+SER_SS_DIV_32   .EQU    $05     ; Divide PS by 32
+SER_SS_DIV_16   .EQU    $04     ; Divide PS by 16
+SER_SS_DIV_8    .EQU    $03     ; Divide PS by  8
+SER_SS_DIV_4    .EQU    $02     ; Divide PS by  4
+SER_SS_DIV_2    .EQU    $01     ; Divide PS by  2
+SER_SS_DIV_1    .EQU    $00     ; Divide PS by  1
 
 ; ASCI Status Reg (STATn)
 

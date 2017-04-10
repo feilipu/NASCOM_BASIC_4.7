@@ -28,7 +28,7 @@
 ;------------------------------------------------------------------------------
 ; RESET / TRAP
                 .ORG    0000H
-                DI                  ; Disable interrupts
+                DI
                 JP      INIT        ; Initialize Hardware and go
 
 ;------------------------------------------------------------------------------
@@ -67,14 +67,15 @@
                 .ORG    0038H
                 JP      Z80_VECTOR_BASE-Z80_VECTOR_PROTO+INT_00_LBL
 
-;------------------------------------------------------------------------------
-; Z80 INTERRUPT VECTOR TABLE PROTOTYPE [ Originating at $0040 ]
-
-                .ORG    Z80_VECTOR_PROTO
-
-; WILL BE DUPLICATED DURING INIT TO
+;==============================================================================
+;
+; Z80 INTERRUPT VECTOR TABLE PROTOTYPE
+;
+; WILL BE DUPLICATED DURING INIT TO:
 ;
 ;               .ORG    Z80_VECTOR_BASE
+
+                .ORG    Z80_VECTOR_PROTO
 RST_08_LBL:
                 JP      RST_08
                 NOP
