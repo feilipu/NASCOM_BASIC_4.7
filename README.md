@@ -167,9 +167,9 @@ For convenience, because we can't easily change the ROM code interrupt routines 
 
 By writing the address of your function into the `RST` jump table locations provided in the`RC2014_LABELS.TXT` and `YAZ180_LABELS.TXT` files you can modify the behaviour of any of the `RST` jumps, and set the address of the location for the `INT0` and `NMI` interrupts.
 
-Note the vector locations provided require only an address to be inserted. The `JP` instruction is already provided. For example, you can attach an `INT0` interrupt service routine by writing its origin address to location `0x201A`.
+Note the vector locations provided require only an address to be inserted. The `JP` instruction is already provided. For example, you can attach an `INT0` interrupt service routine by assigning its origin address `INT_00    .EQU     NULL_INT` or `INT_00    .EQU    serialInt`. Follow the example specification provided in `int32k.asm` for further details.
 
-## USR Jump Address & Parameter Access
+## USR Jump Address & Parameter Access 
 
 For the RC2014 with 32k Basic the location for `USR(x)` is `0x8224`. For the YAZ180 with 32k Basic the `USR(x)` jump address is located at `0x8004`. For the YAZ180 with 56k Basic the `USR(x)` jump address is located at `0x2704`. For example, if your arbitrary program is located at `0x3000` then the 32k Basic command to set the `USR(x)` jump address is `DOKE &h8224, &h3000`.
 
