@@ -81,8 +81,8 @@ Z180_VECTOR_TRAP    .EQU    $0070   ; Locate the TRAP management just after NMI
 
 Z180_VECTOR_PROTO   .EQU    $00C0   ; Locate the prototypes just after TRAP code
 
-Z180_VECTOR_BASE    .EQU    (Z80_VECTOR_BASE-(Z80_VECTOR_BASE%$100) + Z180_VECTOR_IL
-Z180_VECTOR_SIZE    .EQU    $20
+Z180_VECTOR_BASE    .EQU    Z80_VECTOR_BASE-(Z80_VECTOR_BASE%$100)+Z180_VECTOR_IL
+Z180_VECTOR_SIZE    .EQU    $12
 
 ;   Prototype Interrupt Service Routines - complete in main program
 ;
