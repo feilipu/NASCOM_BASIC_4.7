@@ -167,7 +167,7 @@ For convenience, because we can't easily change the ROM code interrupt routines 
 
 By writing the address of your function into the `RST` jump table locations provided in the`RC2014_LABELS.TXT` and `YAZ180_LABELS.TXT` files you can modify the behaviour of any of the `RST` jumps, and set the address of the location for the `INT0` and `NMI` interrupts.
 
-Note the vector locations provided require only an address to be inserted. The `JP` instruction is already provided. For example, you can attach an `INT0` interrupt service routine by assigning its origin address `INT_00    .EQU     NULL_INT` or `INT_00    .EQU    serialInt`. Follow the example specification provided in `int32k.asm` for further details.
+Note the vector locations provided require only an address to be inserted. The `JP` instruction is already provided. For example, you can attach an `INT0` interrupt service routine by assigning its origin address `INT_00    .EQU     NULL_INT` or `INT_INT0    .EQU    serialInt`. Follow the example specifications provided in [`rc2014.asm`](https://github.com/feilipu/NASCOM_BASIC_4.7/blob/master/includes/rc2014.h#L57) or [`yaz180.h`](https://github.com/feilipu/NASCOM_BASIC_4.7/blob/master/includes/yaz180.h#L60) for further details.
 
 ## USR Jump Address & Parameter Access 
 
