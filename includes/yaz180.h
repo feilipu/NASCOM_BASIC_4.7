@@ -65,8 +65,18 @@ Z80_VECTOR_SIZE     .EQU    $20
 ;   RST_20          .EQU    NULL_INT
 ;   RST_28          .EQU    NULL_INT
 ;   RST_30          .EQU    NULL_INT
-;   INT_00          .EQU    NULL_INT
+;   INT_INT0        .EQU    NULL_INT
 ;   INT_NMI         .EQU    NULL_NMI
+
+;   Z80 Interrupt Service Routine Addresses - rewrite as needed
+RST_08_ADDR     .EQU    Z80_VECTOR_BASE+$01
+RST_10_ADDR     .EQU    Z80_VECTOR_BASE+$05
+RST_18_ADDR     .EQU    Z80_VECTOR_BASE+$09
+RST_20_ADDR     .EQU    Z80_VECTOR_BASE+$0D
+RST_28_ADDR     .EQU    Z80_VECTOR_BASE+$11
+RST_30_ADDR     .EQU    Z80_VECTOR_BASE+$15
+INT_INT0_ADDR   .EQU    Z80_VECTOR_BASE+$19
+INT_NMI_ADDR    .EQU    Z80_VECTOR_BASE+$1D
 
 ;==============================================================================
 ;
@@ -95,6 +105,17 @@ Z180_VECTOR_SIZE    .EQU    $12
 ;   INT_CSIO        .EQU    NULL_RET        ; Clocked serial I/O
 ;   INT_ASCI0       .EQU    ASCI0_INTERRUPT ; Async channel 0
 ;   INT_ASCI1       .EQU    NULL_RET        ; Async channel 1
+
+;   Z180 Interrupt Service Routine Addresses - rewrite as needed
+INT_INT1_ADDR   .EQU    Z180_VECTOR_BASE+$00
+INT_INT2_ADDR   .EQU    Z180_VECTOR_BASE+$02
+INT_PRT0_ADDR   .EQU    Z180_VECTOR_BASE+$04
+INT_PRT1_ADDR   .EQU    Z180_VECTOR_BASE+$06
+INT_DMA0_ADDR   .EQU    Z180_VECTOR_BASE+$08
+INT_DMA1_ADDR   .EQU    Z180_VECTOR_BASE+$0A
+INT_CSIO_ADDR   .EQU    Z180_VECTOR_BASE+$0C
+INT_ASCI0_ADDR  .EQU    Z180_VECTOR_BASE+$0E
+INT_ASCI1_ADDR  .EQU    Z180_VECTOR_BASE+$10
 
 ;==============================================================================
 ;
