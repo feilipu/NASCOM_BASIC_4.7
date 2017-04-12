@@ -44,7 +44,6 @@ TEMPSTACK   .EQU     WRKSPC+$AB
 
 ;------------------------------------------------------------------------------
 ASCI0_INTERRUPT:
-        di
         push af
         push hl
                                     ; start doing the Rx stuff

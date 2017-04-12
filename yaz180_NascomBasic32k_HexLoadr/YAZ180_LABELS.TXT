@@ -3,6 +3,6 @@ Label        Value      Label        Value      Label        Value
 
     FUNCTIONS
 
-RX0           015F      RX0_CHK       01AF      TX0           0174
-HEXLOADR      01BE      DEINT         0C47      ABPASS        13BD
+RX0           015E      RX0_CHK       01AE      TX0           0173
+HEXLOADR      01BD      DEINT         0C47      ABPASS        13BD
 
