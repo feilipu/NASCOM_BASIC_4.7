@@ -381,7 +381,7 @@ APUPTRInPtr     .EQU    APUCMDOutPtr+2
 APUPTROutPtr    .EQU    APUPTRInPtr+2
 APUCMDBufUsed   .EQU    APUPTROutPtr+2
 APUPTRBufUsed   .EQU    APUCMDBufUsed+1
-APUSTATUS       .EQU    APUPTRBufUsed+1
+APUStatus       .EQU    APUPTRBufUsed+1
 
 serRx0InPtr     .EQU    Z180_VECTOR_BASE+Z180_VECTOR_SIZE+$10
 serRx0OutPtr    .EQU    serRx0InPtr+2
