@@ -371,19 +371,11 @@ DEL             .EQU    7FH     ; Delete
 
 ;==============================================================================
 ;
-; GLOBAL VARIABLES SECTION - CAO
+; DRIVER VARIABLES SECTION - CAO
 ;
 
 ; Starting immediately after the Z180 Vector Table.
-APUCMDInPtr     .EQU    Z180_VECTOR_BASE+Z180_VECTOR_SIZE
-APUCMDOutPtr    .EQU    APUCMDInPtr+2
-APUPTRInPtr     .EQU    APUCMDOutPtr+2
-APUPTROutPtr    .EQU    APUPTRInPtr+2
-APUCMDBufUsed   .EQU    APUPTROutPtr+2
-APUPTRBufUsed   .EQU    APUCMDBufUsed+1
-APUStatus       .EQU    APUPTRBufUsed+1
-
-serRx0InPtr     .EQU    Z180_VECTOR_BASE+Z180_VECTOR_SIZE+$10
+serRx0InPtr     .EQU    Z180_VECTOR_BASE+Z180_VECTOR_SIZE
 serRx0OutPtr    .EQU    serRx0InPtr+2
 serTx0InPtr     .EQU    serRx0OutPtr+2
 serTx0OutPtr    .EQU    serTx0InPtr+2
@@ -392,24 +384,34 @@ serTx0BufUsed   .EQU    serRx0BufUsed+1
 
 basicStarted    .EQU    serTx0BufUsed+1
 
-serRx1InPtr     .EQU    Z180_VECTOR_BASE+Z180_VECTOR_SIZE+$20
+serRx1InPtr     .EQU    Z180_VECTOR_BASE+Z180_VECTOR_SIZE+$10
 serRx1OutPtr    .EQU    serRx1InPtr+2
 serTx1InPtr     .EQU    serRx1OutPtr+2
 serTx1OutPtr    .EQU    serTx1InPtr+2
 serRx1BufUsed   .EQU    serTx1OutPtr+2
 serTx1BufUsed   .EQU    serRx1BufUsed+1
 
+APUCMDInPtr     .EQU    Z180_VECTOR_BASE+Z180_VECTOR_SIZE+$20
+APUCMDOutPtr    .EQU    APUCMDInPtr+2
+APUPTRInPtr     .EQU    APUCMDOutPtr+2
+APUPTROutPtr    .EQU    APUPTRInPtr+2
+APUCMDBufUsed   .EQU    APUPTROutPtr+2
+APUPTRBufUsed   .EQU    APUCMDBufUsed+1
+APUStatus       .EQU    APUPTRBufUsed+1
+
 ; $nn70 -> $nnFF is slack memory.
 
 ; I/O Buffers must start on 0xnn00 because we increment low byte to roll-over
 BUFSTART_IO     .EQU    (Z180_VECTOR_BASE-(Z180_VECTOR_BASE%$100) + $100
 
-APUCMDBuf       .EQU    BUFSTART_IO
-APUPTRBuf       .EQU    APUCMDBuf+APU_CMD_BUFSIZE+1
-serRx0Buf       .EQU    APUPTRBuf+APU_PTR_BUFSIZE+1
+serRx0Buf       .EQU    BUFSTART_IO
 serTx0Buf       .EQU    serRx0Buf+SER_RX0_BUFSIZE+1
+
 serRx1Buf       .EQU    serTx0Buf+SER_TX0_BUFSIZE+1
 serTx1Buf       .EQU    serRx1Buf+SER_RX1_BUFSIZE+1
+
+APUCMDBuf       .EQU    serTx1Buf+SER_TX1_BUFSIZE+1
+APUPTRBuf       .EQU    APUCMDBuf+APU_CMD_BUFSIZE+1
 
 ;==============================================================================
 ;
