@@ -340,7 +340,7 @@ PIOCNTL15       .EQU    $9B     ; ->A, ->B, ->CH, ->CL
 ; Mode 2 - Strobed Bidirectional Bus Input / Output
 ; TBA Later
 
-; Am9511A-1 APU Port Address
+; Am9511A-1 APU Port Definitions
 
 APU             .EQU    $C000   ; Base Address for Am9511A
 APUDATA         .EQU    APU+$00 ; APU Data Port
@@ -353,21 +353,32 @@ APU_OP_ENT32    .EQU    $41
 APU_OP_REM16    .EQU    $50
 APU_OP_REM32    .EQU    $51
 
+APU_CNTL_BUSY   .EQU    $80
+APU_CNTL_SIGN   .EQU    $40
+APU_CNTL_ZERO   .EQU    $20
+APU_CNTL_DIV0   .EQU    $10
+APU_CNTL_NEGRT  .EQU    $08
+APU_CNTL_UNDFL  .EQU    $04
+APU_CNTL_OVRFL  .EQU    $02
+APU_CNTL_CARRY  .EQU    $01
+
+APU_CNTL_ERROR  .EQU    $1E
+
 ; General TTY
 
-CTRLC           .EQU    03H     ; Control "C"
-CTRLG           .EQU    07H     ; Control "G"
-BKSP            .EQU    08H     ; Back space
-LF              .EQU    0AH     ; Line feed
-CS              .EQU    0CH     ; Clear screen
-CR              .EQU    0DH     ; Carriage return
-CTRLO           .EQU    0FH     ; Control "O"
-CTRLQ	        .EQU	11H     ; Control "Q"
-CTRLR           .EQU    12H     ; Control "R"
-CTRLS           .EQU    13H     ; Control "S"
-CTRLU           .EQU    15H     ; Control "U"
-ESC             .EQU    1BH     ; Escape
-DEL             .EQU    7FH     ; Delete
+CTRLC           .EQU    $03     ; Control "C"
+CTRLG           .EQU    $07     ; Control "G"
+BKSP            .EQU    $08     ; Back space
+LF              .EQU    $0A     ; Line feed
+CS              .EQU    $0C     ; Clear screen
+CR              .EQU    $0D     ; Carriage return
+CTRLO           .EQU    $0F     ; Control "O"
+CTRLQ	        .EQU	$11     ; Control "Q"
+CTRLR           .EQU    $12     ; Control "R"
+CTRLS           .EQU    $13     ; Control "S"
+CTRLU           .EQU    $15     ; Control "U"
+ESC             .EQU    $1B     ; Escape
+DEL             .EQU    $7F     ; Delete
 
 ;==============================================================================
 ;
@@ -398,8 +409,9 @@ APUPTROutPtr    .EQU    APUPTRInPtr+2
 APUCMDBufUsed   .EQU    APUPTROutPtr+2
 APUPTRBufUsed   .EQU    APUCMDBufUsed+1
 APUStatus       .EQU    APUPTRBufUsed+1
+APUError        .EQU    APUStatus+1
 
-; $nn70 -> $nnFF is slack memory.
+; $nn60 -> $nnFF is slack memory.
 
 ; I/O Buffers must start on 0xnn00 because we increment low byte to roll-over
 BUFSTART_IO     .EQU    (Z180_VECTOR_BASE-(Z180_VECTOR_BASE%$100) + $100
