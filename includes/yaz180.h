@@ -50,12 +50,12 @@ SER_TX1_BUFSIZE .EQU    $FF     ; FIXED Tx buffer size, 256 Bytes, no range chec
 ; Interrupt vectors (offsets) for Z80 RST, INT0, and NMI interrupts
 ;
 
-Z80_VECTOR_BASE .EQU    RAMSTART_CA0        ; RAM vector address for Z80 RST Table
-                                            ; <<< SET THIS AS DESIRED >>>
-
 ; Squeezed between INT0 0x0038 and NMI 0x0066
 Z80_VECTOR_PROTO    .EQU    $0040
 Z80_VECTOR_SIZE     .EQU    $20
+
+Z80_VECTOR_BASE     .EQU    RAMSTART_CA0    ; RAM vector address for Z80 RST Table
+                                            ; <<< SET THIS AS DESIRED >>>
 
 ;   Prototype Interrupt Service Routines - complete in main program
 ;
@@ -90,9 +90,9 @@ Z180_VECTOR_IL      .EQU    $20     ; Vector Base address (IL)
 Z180_VECTOR_TRAP    .EQU    $0070   ; Locate the TRAP management just after NMI
 
 Z180_VECTOR_PROTO   .EQU    $00C0   ; Locate the prototypes just after TRAP code
+Z180_VECTOR_SIZE    .EQU    $12
 
 Z180_VECTOR_BASE    .EQU    Z80_VECTOR_BASE-(Z80_VECTOR_BASE%$100)+Z180_VECTOR_IL
-Z180_VECTOR_SIZE    .EQU    $12
 
 ;   Prototype Interrupt Service Routines - complete in main program
 ;

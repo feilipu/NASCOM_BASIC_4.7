@@ -408,16 +408,16 @@ WARMSTART:
 ;
 ; STRINGS
 ;
-SIGNON1:        .BYTE   "SBC - Grant Searle",CR,LF
-                .BYTE   "ACIA - feilipu",CR,LF,0
+SIGNON1:    .BYTE   "SBC - Grant Searle",CR,LF
+            .BYTE   "ACIA - feilipu",CR,LF,0
 
-SIGNON2:        .BYTE   CR,LF
-                .BYTE   "Cold or Warm start, "
-                .BYTE   "or HexLoadr (C|W|H) ? ",0
+SIGNON2:    .BYTE   CR,LF
+            .BYTE   "Cold or Warm start, "
+            .BYTE   "or HexLoadr (C|W|H) ? ",0
 
-initString:     .BYTE   CR,LF
-                .BYTE   "HexLoadr: "
-                .BYTE   CR,LF,0
+initString: .BYTE   CR,LF
+            .BYTE   "HexLoadr: "
+            .BYTE   CR,LF,0
 
 invalidTypeStr: .BYTE   "Inval Type",CR,LF,0
 badCheckSumStr: .BYTE   "Chksum Error",CR,LF,0

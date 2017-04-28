@@ -314,12 +314,12 @@ WARMSTART:
 ;
 ; STRINGS
 ;
-SIGNON1:       .BYTE     "SBC - Grant Searle",CR,LF
-               .BYTE     "ACIA - feilipu",CR,LF,0
+SIGNON1:    .BYTE   "SBC - Grant Searle",CR,LF
+            .BYTE   "ACIA - feilipu",CR,LF,0
 
-SIGNON2:       .BYTE     CR,LF
-               .BYTE     "Cold or Warm start"
-               .BYTE     " (C|W) ? ",0
+SIGNON2:    .BYTE   CR,LF
+            .BYTE   "Cold or Warm start"
+            .BYTE   " (C|W) ? ",0
 ;==============================================================================
 ;
 ; Z80 INTERRUPT VECTOR PROTOTYPE ASSIGNMENTS
