@@ -21,18 +21,7 @@
 
 #include    "d:/yaz180.h"
 #include    "d:/z80intr.asm"
-
-;==============================================================================
-;
-; DEFINES SECTION
-;
-
-; Top of BASIC line input buffer (CURPOS WRKSPC+0ABH)
-; so it is "free ram" when BASIC resets
-; set BASIC Work space WRKSPC $8000, in CA1 RAM
-
-WRKSPC          .EQU     RAMSTART_CA1 
-TEMPSTACK       .EQU     WRKSPC+$AB
+#include    "d:/z180intr.asm"
 
 ;==============================================================================
 ;
@@ -40,58 +29,20 @@ TEMPSTACK       .EQU     WRKSPC+$AB
 ;
 
             .ORG    0300H
-INIT:
-                                    ; Set I/O Control Reg (ICR)
-            LD      A,IO_BASE       ; ICR = $00 [xx00 0000] for I/O Registers at $00 - $3F
-            OUT0    (ICR),A         ; Standard I/O Mapping (0 Enabled)
-
-                                    ; Set interrupt vector base (IL)
-            LD      A,VECTOR_BASE   ; IL = $80 [100x xxxx] for Vectors at $80 - $90
-            OUT0    (IL),A          ; Output to the Interrupt Vector Low reg
-
-            IM      1               ; Interrupt mode 1 for INT0 (used for APU)
-
-            XOR     A               ; Zero Accumulator
-
-                                    ; Clear Refresh Control Reg (RCR)
-            OUT0    (RCR),A         ; DRAM Refresh Enable (0 Disabled)
-
-            OUT0    (TCR),A         ; Disable PRT downcounting
-
-                                    ; Set Operation Mode Control Reg (OMCR)
-                                    ; Disable M1, disable 64180 I/O _RD Mode
-            OUT0    (OMCR),A        ; X80 Mode (M1 Disabled, IOC Disabled)
-
-                                    ; Set INT/TRAP Control Register (ITC)             
-            OUT0    (ITC),A         ; Disable all external interrupts. 
-
-                                    ; Set internal clock = crystal x 2 = 36.864MHz
-                                    ; if using ZS8180 or Z80182 at High-Speed
-            LD      A,CMR_X2        ; Set Hi-Speed flag
-            OUT0    (CMR),A         ; CPU Clock Multiplier Reg (CMR)
-
-;                                   ; Bypass PHI = internal clock / 2
-;                                   ; if using ZS8180 or Z80182 at High-Speed
-;           LD      A,CCR_XTAL_X2   ; Set Hi-Speed flag: PHI = internal clock
-;           OUT0    (CCR),A         ; CPU Control Reg (CCR)
-
-                                    ; DMA/Wait Control Reg Set I/O Wait States
-            LD      A,DCNTL_IWI0
-            OUT0    (DCNTL),A       ; 0 Memory Wait & 2 I/O Wait
-
+Z180_INIT:
                                     ; Set Logical Addresses
                                     ; $8000-$FFFF RAM CA1 -> 80H
                                     ; $4000-$7FFF RAM BANK -> 04H
                                     ; $2000-$3FFF RAM CA0
                                     ; $0000-$1FFF Flash CA0
-            LD      A,84H           ; Set New Common / Bank Areas
+            LD      A,$84           ; Set New Common / Bank Areas
             OUT0    (CBAR),A        ; for RAM
 
                                     ; Physical Addresses
-            LD      A,78H           ; Set Common 1 Area Physical $80000 -> 78H
+            LD      A,$78           ; Set Common 1 Area Physical $80000 -> $78
             OUT0    (CBR),A
 
-            LD      A,3CH           ; Set Bank Area Physical $40000 -> 3CH
+            LD      A,$3C           ; Set Bank Area Physical $40000 -> $3C
             OUT0    (BBR),A
 
                                     ; load the default ASCI configuration
@@ -123,7 +74,7 @@ INIT:
             LD      A,$01           ; Set Port B TIL311 XXX
             OUT     (C),A           ; put debug HEX Code onto Port B
 
-            LD      SP,RAMSTOP-1    ; Set up a temporary stack at RAMSTOP
+            LD      SP,RAMSTOP_CA0-1 ; Set up a temporary stack at RAMSTOP
             JP      MEMTEST         ; do a memory test XXX
 
 
@@ -131,8 +82,8 @@ INIT:
 
             .ORG    0400H
 MEMTEST:
-            LD      HL,RAMSTART
-            LD      DE,RAMSTOP-RAMSTART-40H ; make sure the stack has space
+            LD      HL,RAMSTART_CA1
+            LD      DE,RAMSTOP_CA1-RAMSTART_CA1 ; make sure the stack has space
             CALL    RAMTST
             JP      C,MEMTEST_HALT
             JP      MEMTEST         ; repeat if no error
@@ -277,33 +228,32 @@ RAMTST_IO:
 ; Z80 INTERRUPT VECTOR DESTINATION ADDRESS ASSIGNMENTS
 ;
 
-;RST_08      .EQU    TX0             ; TX a byte over ASCI0
-;RST_10      .EQU    RX0             ; RX a byte over ASCI0, loop byte available
-;RST_18      .EQU    RX0_CHK         ; Check ASCI0 status, return # bytes available
 RST_08      .EQU    NULL_RET        ; RET
 RST_10      .EQU    NULL_RET        ; RET
 RST_18      .EQU    NULL_RET        ; RET
 RST_20      .EQU    NULL_RET        ; RET
 RST_28      .EQU    NULL_RET        ; RET
 RST_30      .EQU    NULL_RET        ; RET
-INT_00      .EQU    NULL_INT        ; EI RETI
+INT_INT0    .EQU    NULL_INT        ; EI RETI
 INT_NMI     .EQU    NULL_NMI        ; RETN
 
 ;==============================================================================
 ;
-; Z180 INTERRUPT VECTOR SECTION 
+; Z180 INTERRUPT VECTOR SERVICE ROUTINES
 ;
 
-;------------------------------------------------------------------------------
-; INTERRUPT VECTOR ASCI Channel 0 [ Vector at $8E ]
-
-            .ORG    VECTOR_ASCI0
-            JP      NULL_RET        ; RET
+INT_INT1    .EQU    NULL_RET        ; external /INT1
+INT_INT2    .EQU    NULL_RET        ; external /INT2
+INT_PRT0    .EQU    NULL_RET        ; PRT channel 0
+INT_PRT1    .EQU    NULL_RET        ; PRT channel 1
+INT_DMA0    .EQU    NULL_RET        ; DMA channel 0
+INT_DMA1    .EQU    NULL_RET        ; DMA Channel 1
+INT_CSIO    .EQU    NULL_RET        ; Clocked serial I/O
+INT_ASCI0   .EQU    NULL_RET        ; Async channel 0
+INT_ASCI1   .EQU    NULL_RET        ; Async channel 1
 
 ;==============================================================================
 ;
-            .ORG    $1FFF
-            HALT
             .END
 ;
 ;==============================================================================
