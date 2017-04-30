@@ -50,12 +50,12 @@ SER_TX1_BUFSIZE .EQU    $FF     ; FIXED Tx buffer size, 256 Bytes, no range chec
 ; Interrupt vectors (offsets) for Z80 RST, INT0, and NMI interrupts
 ;
 
-; Squeezed between INT0 0x0038 and NMI 0x0066
+;   Squeezed between INT0 0x0038 and NMI 0x0066
 Z80_VECTOR_PROTO    .EQU    $0040
 Z80_VECTOR_SIZE     .EQU    $20
 
-Z80_VECTOR_BASE     .EQU    RAMSTART_CA0    ; RAM vector address for Z80 RST Table
-                                            ; <<< SET THIS AS DESIRED >>>
+;   RAM vector address for Z80 RST Table
+Z80_VECTOR_BASE     .EQU    RAMSTART_CA0    ; <<< SET THIS AS DESIRED >>>
 
 ;   Prototype Interrupt Service Routines - complete in main program
 ;
@@ -83,18 +83,20 @@ INT_NMI_ADDR    .EQU    Z80_VECTOR_BASE+$1D
 ; Interrupt vectors (offsets) for Z180/HD64180 external and internal interrupts
 ;
 
-; Starting immediately after the Z80 Vector Table.
+;   Locate the TRAP management just after NMI
+Z180_VECTOR_TRAP    .EQU    $0070
+
+;   Locate the prototypes just after TRAP code
+Z180_VECTOR_PROTO   .EQU    $00C0
+Z180_VECTOR_SIZE    .EQU    $12
+
 Z180_VECTOR_IL      .EQU    $20     ; Vector Base address (IL)
                                     ; [001x xxxx] for Vectors at $nn20 - $nn3F
 
-Z180_VECTOR_TRAP    .EQU    $0070   ; Locate the TRAP management just after NMI
-
-Z180_VECTOR_PROTO   .EQU    $00C0   ; Locate the prototypes just after TRAP code
-Z180_VECTOR_SIZE    .EQU    $12
-
+;   Start Z180 Vectors immediately after the Z80 Vector Table.                                    
 Z180_VECTOR_BASE    .EQU    Z80_VECTOR_BASE-(Z80_VECTOR_BASE%$100)+Z180_VECTOR_IL
 
-;   Prototype Interrupt Service Routines - complete in main program
+;   Prototype Interrupt Service Routines - provide these in your main program
 ;
 ;   INT_INT1        .EQU    NULL_RET        ; external /INT1
 ;   INT_INT2        .EQU    NULL_RET        ; external /INT2
@@ -198,7 +200,7 @@ ICR             .EQU    Z180_IO_BASE+$3F    ; I/O Control Reg
 ; Some bit definitions used with the Z-180 on-chip peripherals:
 ;
 
-; ASCI Control Reg A (CNTLAn)
+;   ASCI Control Reg A (CNTLAn)
 
 SER_MPE         .EQU    $80     ; Multi Processor Enable
 SER_RE          .EQU    $40     ; Receive Enable
@@ -215,7 +217,7 @@ SER_7P1         .EQU    $02     ; 7 Bits    Parity 1 Stop Bit
 SER_7N2         .EQU    $01     ; 7 Bits No Parity 2 Stop Bits
 SER_7N1         .EQU    $00     ; 7 Bits No Parity 1 Stop Bit
 
-; ASCI Control Reg B (CNTLBn)
+;   ASCI Control Reg B (CNTLBn)
                                 ; BAUD Rate = PHI / PS / SS / DR
 
 SER_MPBT        .EQU    $80     ; Multi Processor Bit Transmit
@@ -233,7 +235,7 @@ SER_SS_DIV_4    .EQU    $02     ; Divide PS by  4
 SER_SS_DIV_2    .EQU    $01     ; Divide PS by  2
 SER_SS_DIV_1    .EQU    $00     ; Divide PS by  1
 
-; ASCI Status Reg (STATn)
+;   ASCI Status Reg (STATn)
 
 SER_RDRF        .EQU   $80    ; Receive Data Register Full
 SER_OVRN        .EQU   $40    ; Overrun (Received Byte)
@@ -245,12 +247,12 @@ SER_CTS1        .EQU   $04    ; _CTS1 Clear To Send USART1
 SER_TDRE        .EQU   $02    ; Transmit Data Register Empty
 SER_TIE         .EQU   $01    ; Transmit Interrupt Enabled
 
-; CPU Clock Multiplier Reg (CMR) (Z8S180 & higher Only)
+;   CPU Clock Multiplier Reg (CMR) (Z8S180 & higher Only)
 
 CMR_X2          .EQU   $80    ; CPU x2 XTAL Multiplier Mode
 CMR_LN_XTAL     .EQU   $40    ; Low Noise Crystal 
 
-; CPU Control Reg (CCR) (Z8S180 & higher Only)
+;   CPU Control Reg (CCR) (Z8S180 & higher Only)
 
 CCR_XTAL_X2     .EQU   $80    ; PHI = XTAL Mode
 CCR_STANDBY     .EQU   $40    ; STANDBY after SLEEP
@@ -261,7 +263,7 @@ CCR_LNIO        .EQU   $04    ; Low Noise I/O Signals (30% Drive)
 CCR_LNCPUCTL    .EQU   $02    ; Low Noise CPU Control Signals (30% Drive)
 CCR_LNAD        .EQU   $01    ; Low Noise Address and Data Signals (30% Drive)
 
-; DMA/Wait Control Reg (DCNTL)
+;   DMA/Wait Control Reg (DCNTL)
 
 DCNTL_MWI1      .EQU   $80    ; Memory Wait Insertion 1 (1 Default)
 DCNTL_MWI0      .EQU   $40    ; Memory Wait Insertion 0 (1 Default)
@@ -272,7 +274,7 @@ DCNTL_DMS0      .EQU   $04    ; DMA Request Sense 0
 DCNTL_DIM1      .EQU   $02    ; DMA Channel 1 I/O & Memory Mode
 DCNTL_DIM0      .EQU   $01    ; DMA Channel 1 I/O & Memory Mode
 
-; INT/TRAP Control Register (ITC)
+;   INT/TRAP Control Register (ITC)
 
 ITC_TRAP        .EQU   $80    ; TRAP Encountered
 ITC_UFO         .EQU   $40    ; Unidentified Fetch Object
@@ -280,14 +282,14 @@ ITC_ITE2        .EQU   $04    ; Interrupt Enable #2
 ITC_ITE1        .EQU   $02    ; Interrupt Enable #1
 ITC_ITE0        .EQU   $01    ; Interrupt Enable #0 (1 Default)
 
-; Refresh Control Reg (RCR)
+;   Refresh Control Reg (RCR)
 
 RCR_REFE        .EQU   $80    ; DRAM Refresh Enable
 RCR_REFW        .EQU   $40    ; DRAM Refresh 2 or 3 Wait states
 RCR_CYC1        .EQU   $02    ; Cycles x4
 RCR_CYC0        .EQU   $01    ; Cycles x2 on base 10 T states
 
-; Operation Mode Control Reg (OMCR)
+;   Operation Mode Control Reg (OMCR)
 
 OMCR_M1E        .EQU   $80    ; M1 Enable (0 Disabled)
 OMCR_M1TE       .EQU   $40    ; M1 Temporary Enable
@@ -298,11 +300,11 @@ OMCR_IOC        .EQU   $20    ; IO Control (1 64180 Mode)
 ; Some definitions used with the YAZ-180 on-board peripherals:
 ;
 
-; BREAK for Single Step Mode
+;   BREAK for Single Step Mode
 
 BREAK           .EQU    $2000       ; Any value written $2000->$21FF, halts CPU
 
-; 82C55 PIO Port Definitions
+;   82C55 PIO Port Definitions
 
 PIO             .EQU    $4000       ; Base Address for 82C55
 PIOA            .EQU    PIO+$00     ; Address for Port A
@@ -310,9 +312,9 @@ PIOB            .EQU    PIO+$01     ; Address for Port B
 PIOC            .EQU    PIO+$02     ; Address for Port C
 PIOCNTL         .EQU    PIO+$03     ; Address for Control Byte
 
-; PIO Mode Definitions
+;   PIO Mode Definitions
 
-; Mode 0 - Basic Input / Output
+;   Mode 0 - Basic Input / Output
 
 PIOCNTL00       .EQU    $80     ; A->, B->, CH->, CL->
 PIOCNTL01       .EQU    $81     ; A->, B->, CH->, ->CL
@@ -334,13 +336,13 @@ PIOCNTL13       .EQU    $99     ; ->A, B->, ->CH, ->CL
 PIOCNTL14       .EQU    $9A     ; ->A, ->B, ->CH, CL->
 PIOCNTL15       .EQU    $9B     ; ->A, ->B, ->CH, ->CL
 
-; Mode 1 - Strobed Input / Output
-; TBA Later
+;   Mode 1 - Strobed Input / Output
+;   TBA Later
 
-; Mode 2 - Strobed Bidirectional Bus Input / Output
-; TBA Later
+;   Mode 2 - Strobed Bidirectional Bus Input / Output
+;   TBA Later
 
-; Am9511A-1 APU Port Definitions
+;   Am9511A-1 APU Port Definitions
 
 APU             .EQU    $C000   ; Base Address for Am9511A
 APUDATA         .EQU    APU+$00 ; APU Data Port
@@ -364,7 +366,7 @@ APU_CNTL_CARRY  .EQU    $01
 
 APU_CNTL_ERROR  .EQU    $1E
 
-; General TTY
+;   General TTY
 
 CTRLC           .EQU    $03     ; Control "C"
 CTRLG           .EQU    $07     ; Control "G"
@@ -385,7 +387,7 @@ DEL             .EQU    $7F     ; Delete
 ; DRIVER VARIABLES SECTION - CAO
 ;
 
-; Starting immediately after the Z180 Vector Table.
+;   Starting immediately after the Z180 Vector Table.
 serRx0InPtr     .EQU    Z180_VECTOR_BASE+Z180_VECTOR_SIZE
 serRx0OutPtr    .EQU    serRx0InPtr+2
 serTx0InPtr     .EQU    serRx0OutPtr+2
@@ -411,9 +413,9 @@ APUPTRBufUsed   .EQU    APUCMDBufUsed+1
 APUStatus       .EQU    APUPTRBufUsed+1
 APUError        .EQU    APUStatus+1
 
-; $nn60 -> $nnFF is slack memory.
+;   $nn60 -> $nnFF is slack memory.
 
-; I/O Buffers must start on 0xnn00 because we increment low byte to roll-over
+;   I/O Buffers must start on 0xnn00 because we increment low byte to roll-over
 BUFSTART_IO     .EQU    (Z180_VECTOR_BASE-(Z180_VECTOR_BASE%$100) + $100
 
 serRx0Buf       .EQU    BUFSTART_IO
