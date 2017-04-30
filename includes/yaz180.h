@@ -416,7 +416,7 @@ APUError        .EQU    APUStatus+1
 ;   $nn60 -> $nnFF is slack memory.
 
 ;   I/O Buffers must start on 0xnn00 because we increment low byte to roll-over
-BUFSTART_IO     .EQU    (Z180_VECTOR_BASE-(Z180_VECTOR_BASE%$100) + $100
+BUFSTART_IO     .EQU    Z180_VECTOR_BASE-(Z180_VECTOR_BASE%$100) + $100
 
 serRx0Buf       .EQU    BUFSTART_IO
 serTx0Buf       .EQU    serRx0Buf+SER_RX0_BUFSIZE+1
