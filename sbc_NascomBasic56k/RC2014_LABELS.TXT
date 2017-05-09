@@ -3,9 +3,16 @@ Label        Value      Label        Value      Label        Value
 
     FUNCTIONS
 
-RXA           0167      RXA_CHK       01D8      TXA           0193
+RXA           0100      RXA_CHK       00F0      TXA           0130
 DEINT         0C47      ABPASS        13BD
 
+    Z80 VECTOR ADDRESS TABLE
+
+NULL_NMI_ADDR 0060      NULL_INT_ADDR 0062      NULL_RET_ADDR 0065
+
+RST_08_ADDR   2001      RST_10_ADDR   2005      RST_18_ADDR   2009
+RST_20_ADDR   200D      RST_28_ADDR   2011      RST_30_ADDR   2015
+INT_INT0_ADDR 2019      INT_NMI_ADDR  201D
 
     VARIABLES
 
