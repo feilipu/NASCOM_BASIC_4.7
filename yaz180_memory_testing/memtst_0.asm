@@ -74,19 +74,11 @@ Z180_INIT:
             LD      A,$01           ; Set Port B TIL311 XXX
             OUT     (C),A           ; put debug HEX Code onto Port B
 
-            LD      SP,RAMSTOP_CA0-1 ; Set up a temporary stack at RAMSTOP
-            JP      MEMTEST         ; do a memory test XXX
-
+            JP      RAMTST          ; test RAM
 
 ;------------------------------------------------------------------------------
 
             .ORG    0400H
-MEMTEST:
-            LD      HL,RAMSTART_CA1
-            LD      DE,RAMSTOP_CA1-RAMSTART_CA1 ; make sure the stack has space
-            CALL    RAMTST
-            JP      C,MEMTEST_HALT
-            JP      MEMTEST         ; repeat if no error
 
 MEMTEST_HALT:
                                     ; halt if there's an error
@@ -120,7 +112,7 @@ RAMTST:
             ; EXIT WITH NO ERRORS IF AREA SIZE IS 0
             LD      A,D         ; TEST AREA SIZE
             OR      E
-            RET     Z           ; EXIT WITH NO ERRORS IF SIZE IS ZERO
+            HALT           ; EXIT WITH NO ERRORS IF SIZE IS ZERO
             LD      B,D         ; BC = AREA SIZE
             LD      C,E
 
@@ -144,25 +136,6 @@ RAMTST:
             CALL    RAMTST_FC
             RET     C           ; EXIT IF ERROR FOUND
             
-            ; PERFORM WALKING BIT TEST
-RAMTST_WK:
-            CALL    RAMTST_IO   ; WRITE PAGE ADDRESS TO PORT B
-            LD      A,080H      ; MAKE BIT 7 1, ALL OTHER BITS 0
-RAMTST_WK1:
-            LD      (HL),A      ; STORE TEST PATTERN IN MEMORY
-            CP      (HL)        ; TRY TO READ IT BACK
-            SCF                 ; SET CARRY IN CASE OF ERROR
-            RET     NZ          ; RETURN IF ERROR
-            RRCA                ; ROTATE PATTERN TO MOVE THE 1 RIGHT
-            CP      080H        ; CHECK WHETHER WE'RE BACK TO START
-            JR      NZ,RAMTST_WK1 ; CONTINUE UNTIL THE 1 IS BACK IN BIT 7
-            LD      (HL),0      ; CLEAR BYTE JUST CHECKED
-            INC     HL
-            DEC     BC          ; DECREMENT AND TEST 16-BIT COUNTER
-            LD      A,B
-            OR      C
-            JR      NZ,RAMTST_WK ; NO ERRORS (NOTE OR C CLEARS CARRY)
-            RET
 
 RAMTST_FC:
             PUSH    HL          ; SAVE BASE ADDRESS
