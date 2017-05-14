@@ -376,9 +376,9 @@ CORW:
             CP      'C'
             JR      NZ, CHECKWARM
             RST     08H
-            LD      A,$0D
+            LD      A, CR
             RST     08H
-            LD      A,$0A
+            LD      A, LF
             RST     08H
 COLDSTART:
             LD      A,'Y'           ; Set the BASIC STARTED flag
@@ -389,9 +389,9 @@ CHECKWARM:
             CP      'W'
             JR      NZ, CORW
             RST     08H
-            LD      A,$0D
+            LD      A, CR
             RST     08H
-            LD      A,$0A
+            LD      A, LF
             RST     08H
 WARMSTART:
             JP      $0393          ; <<<< Start Basic WARM:
