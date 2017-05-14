@@ -8,19 +8,8 @@
 ;
 ; https://feilipu.me/
 ;
-
-;routines within paulmon2.  To make this code stand-alone, just copy
-;and paste these bits of code from the pmon21.asm file.
-
-;cout    .equ    $0030           ;Send Acc to serial port
-;cin     .equ    $0032           ;Get Acc from serial port
-;phex    .equ    $0034           ;Print Hex value of Acc
-;pstr    .equ    $0038           ;Print string pointed to by DPTR,
-;upper   .equ    $0040           ;Convert Acc to uppercase
-;newline .equ    $0048           ;print CR/LF (13 and 10)
-;pint8u  .equ    $004D           ;print Acc at an integer, 0 to 255
-;pint16u .equ    $0053           ;print DPTR as an integer, 0 to 65535
-;cin_filter  .equ    $0062       ;get a character, but look for esc sequences
+;
+; http://wiki.osdev.org/ATA_PIO_Mode
 
 ;==============================================================================
 ;
@@ -64,13 +53,14 @@ location    .equ    $3000       ; Where this driver will exist
 ;
 ;       $$ Bits in Error Register $1
 ;
-;       Bit 7   = BBLK  Bad Block Detected
+;       Bit 7   = BBK   Bad Block Detected
 ;       Bit 6   = UNC   Uncorrectable Error
-;       Bit 5   = IDNF  Selector Id
-;       Bit 4   = MCR   Media Change requested
-;       Bit 3   = ABRT  Indecent Command - Doh!
-;       Bit 2   = TK0NF Track 0 unavailable -> Trash
-;       Bit 1   = AMNF  Address mark not found
+;       Bit 5   = MC    No media
+;       Bit 4   = IDNF  Selector Id
+;       Bit 3   = MCR   Media Change requested
+;       Bit 2   = ABRT  Indecent Command - Doh!
+;       Bit 1   = TK0NF Track 0 unavailable -> Trash
+;       Bit 0   = AMNF  Address mark not found
 
 ;       ** Bits in LBA 3 Register $6:
 ;
@@ -82,14 +72,14 @@ location    .equ    $3000       ; Where this driver will exist
 ;
 ;       ## Bits in Command / Status Register $7:
 ;
-;       Bit 7   = BUSY	1=busy, 0=not busy
+;       Bit 7   = BSY   1=busy, 0=not busy
 ;       Bit 6   = RDY   1=ready for command, 0=not ready yet
-;       Bit 5   = WFT	1=fault occured inside drive
-;       Bit 4   = SKC	1=seek complete
-;       Bit 3   = DRQ	1=data request ready, 0=not ready to xfer yet
-;       Bit 2   = ECC	1=correctable error occured
-;       Bit 1   = IDX	vendor specific
-;       Bit 0   = ERR	1=error occured
+;       Bit 5   = DWF   1=fault occured inside drive
+;       Bit 4   = DSC   1=seek complete
+;       Bit 3   = DRQ   1=data request ready, 0=not ready to xfer yet
+;       Bit 2   = ECC   1=correctable error occured
+;       Bit 1   = IDX   vendor specific
+;       Bit 0   = ERR   1=error occured
 
 ;------------------------------------------------------------------
 ; Hardware Configuration
@@ -139,7 +129,7 @@ IDE_HEAD        .equ    IDE_CS0_LINE + IDE_A2_LINE + IDE_A1_LINE    ;LBA3
 IDE_COMMAND     .equ    IDE_CS0_LINE + IDE_A2_LINE + IDE_A1_LINE + IDE_A0_LINE
 IDE_STATUS      .equ    IDE_CS0_LINE + IDE_A2_LINE + IDE_A1_LINE + IDE_A0_LINE
 IDE_CONTROL     .equ    IDE_CS1_LINE + IDE_A2_LINE + IDE_A1_LINE
-IDE_ALT_STATUS  .equ    IDE_CS1_LINE + IDE_A2_LINE + IDE_A1_LINE + IDE_A0_LINE
+IDE_ALT_STATUS  .equ    IDE_CS1_LINE + IDE_A2_LINE + IDE_A1_LINE
 
 IDE_LBA0        .equ    IDE_CS0_LINE + IDE_A1_LINE + IDE_A0_LINE    ;SECTOR
 IDE_LBA1        .equ    IDE_CS0_LINE + IDE_A2_LINE                  ;CYL_LSB
@@ -155,6 +145,7 @@ IDE_CMD_ID          .equ    $EC ;identify drive
 IDE_CMD_SPINDOWN    .equ    $E0 ;immediate spindown of disk
 IDE_CMD_SPINUP      .equ    $E1 ;immediate spinup of disk
 IDE_CMD_POWERDOWN   .equ    $E2 ;auto powerdown - sector count 5 sec units
+IDE_CMD_CACHE_FLUSH .equ    $E7 ;flush hardware write cache
 
 ;==============================================================================
 ;
@@ -360,7 +351,11 @@ write_sector:
 	and $01
 	jr nz, get_err
 	ld hl, ide_buffer
-	call ide_write_data         ;give the data to the drive
+	call ide_write_data     ;give the data to the drive
+	call ide_wait_not_busy  ;make sure drive is ready
+	ld a, IDE_COMMAND
+	ld e, IDE_CMD_CACHE_FLUSH
+	call ide_wr_8           ;tell drive to flush its cache
 	call ide_wait_not_busy  ;wait until the write is complete
 	and $01
 	jr nz, get_err
@@ -428,10 +423,10 @@ ide_init:
 	ld a, IDE_HEAD
 	call ide_wr_8		    ;select the master device, LBA mode
 	
-;   ld e, IDE_CMD_INIT
-;   ld a, IDE_COMMAND
-;   call ide_wr_8           ;do init parameters command
-	jp ide_wait_ready
+    ld e, IDE_CMD_INIT      ;needed for old drives
+    ld a, IDE_COMMAND
+    call ide_wr_8           ;do init parameters command
+    jp ide_wait_ready
 
 ;------------------------------------------------------------------------------
 
@@ -442,10 +437,10 @@ ide_soft_reset:
 	ld bc, PIO_IDE_CFG
 	ld a, PIO_IDE_RD
 	out (c), a              ;config 8255 chip, read mode
-	ld e, 00000110b         ;no interrupt, reset drive = 1
+	ld e, 00000110b         ;no interrupt, reset drives
 	ld a, IDE_CONTROL
 	call ide_wr_8
-	ld e, 00000010b	        ;no interrupt, reset drive = 0
+	ld e, 00000010b	        ;no interrupt, clear reset
 	ld a, IDE_CONTROL	
 	call ide_wr_8
 	jp ide_wait_ready
@@ -478,7 +473,7 @@ ide_rst_dly:
     ;then load the IDE error register to provide details.
 ide_test_error:
 	scf			            ;carry set = all OK
-	ld a, IDE_STATUS        ;select status register
+	ld a, IDE_ALT_STATUS    ;select status register
 	call ide_rd_8           ;get status in A
 	bit 0, a                ;test error bit
 	ret z
@@ -571,23 +566,29 @@ ide_master:
 ;------------------------------------------------------------------------------
 ; Low Level Status - Busy Wait
 
+;How to poll (waiting for the drive to be ready to transfer data):
+;Read the Regular Status port until bit 7 (BSY, value = 0x80) clears,
+;and bit 3 (DRQ, value = 8) sets.
+;Or until bit 0 (ERR, value = 1) or bit 5 (DFE, value = 0x20) sets.
+;If neither error bit is set, the device is ready right then.
+
 ide_wait_not_busy:
-	ld a, IDE_STATUS		;get IDE status register
+	ld a, IDE_ALT_STATUS    ;get IDE alt status register
 	call ide_rd_8
 	ld a, e
 	;should probably check for a timeout here
-	and 10000000b		    ;wait for BUSY bit to be clear
+	and 10000000b           ;wait for BuSY bit to be clear
 	jr nz, ide_wait_not_busy
 	ld	a, e
 	ret
 
 ide_wait_ready:
-	ld a, IDE_STATUS		;get IDE status register
+	ld a, IDE_ALT_STATUS    ;get IDE alt status register
 	call ide_rd_8
 	ld a, e
 	;should probably check for a timeout here
-	and 11000000b		    ;mask off BUSY and RDY bits
-	xor 01000000b	        ;wait for RDY to be set and BUSY to be clear 
+	and 11000000b           ;mask off BuSY and RDY bits
+	xor 01000000b           ;wait for RDY to be set and BuSY to be clear 
 	jr nz, ide_wait_ready
 	ld	a, e
 	ret
@@ -595,12 +596,12 @@ ide_wait_ready:
 	;Wait for the drive to be ready to transfer data.
 	;Returns the drive's status in A
 ide_wait_drq:
-	ld a, IDE_STATUS		;get IDE status register
+	ld a, IDE_ALT_STATUS    ;get IDE alt status register
 	call ide_rd_8
 	ld a, e
 	;should probably check for a timeout here
-	and 10001000b		    ;mask off BUSY and DRQ bits
-	xor 00001000b	        ;wait for DRQ to be set and BUSY to be clear
+	and 10001000b           ;mask off BuSY and DRQ bits
+	xor 00001000b           ;wait for DRQ to be set and BuSY to be clear
 	jr nz, ide_wait_drq
 	ld	a, e
 	ret
@@ -616,26 +617,42 @@ ide_wait_drq:
 	;bc is changed
 ide_rd_16:
 	ld bc, PIO_IDE_CTL
-	out (c), a              ;drive address onto control lines,
+	out (c), a              ;drive address onto control lines
+	ld r, a                 ;copy address to r
 	or IDE_RD_LINE	
 	out (c), a              ;and assert read pin
+	nop
+	nop
+	nop
+	nop
+	nop
 	ld bc, PIO_IDE_MSB
 	in d, (c)	            ;read the upper byte
 	ld bc, PIO_IDE_LSB
 	in e, (c)	            ;read the lower byte
 	ld bc, PIO_IDE_CTL
+	ld	a, r
+	out (c), a              ;deassert read pin
 	xor	a
 	out (c), a		        ;deassert all control pins
 	ret
 
 ide_rd_8:
 	ld bc, PIO_IDE_CTL
-	out (c), a              ;drive address onto control lines,
+	out (c), a              ;drive address onto control lines
+	ld r, a                 ;copy address to r
 	or IDE_RD_LINE	
 	out (c), a              ;and assert read pin
+	nop
+	nop
+	nop
+	nop
+	nop
 	ld bc, PIO_IDE_LSB
 	in e, (c)	            ;read the lower byte
 	ld bc, PIO_IDE_CTL
+	ld	a, r
+	out (c), a              ;deassert read pin
 	xor	a
 	out (c), a		        ;deassert all control pins
 	ret
@@ -650,21 +667,24 @@ ide_wr_16:
 	ld bc, PIO_IDE_CFG
 	ld a, PIO_IDE_WR
 	out (c), a              ;config 8255 chip, write mode
+	ld bc, PIO_IDE_CTL
+	ld a, r
+	out (c), a              ;drive address onto control lines
+	or IDE_WR_LINE	
+	out (c), a              ;and assert write pin	
 	ld bc, PIO_IDE_LSB
 	out (c), e	            ;drive lower lines with lsb
 	ld bc, PIO_IDE_MSB
 	out (c), d	            ;drive upper lines with msb
-	ld bc, PIO_IDE_CTL
-	ld a, r
-	out (c), a              ;drive address onto control lines,
-	or IDE_WR_LINE	
-	out (c), a              ;and assert write pin
+	nop
+	nop
+	nop
 	nop
 	nop
 	ld	a, r
 	out (c), a              ;deassert write pin
-;	xor	a
-;	out (c), a		        ;deassert all control pins
+	xor	a
+	out (c), a		        ;deassert all control pins
 	ld bc, PIO_IDE_CFG
 	ld a, PIO_IDE_RD
 	out (c), a              ;config 8255 chip, read mode
@@ -675,19 +695,22 @@ ide_wr_8:
 	ld bc, PIO_IDE_CFG
 	ld a, PIO_IDE_WR
 	out (c), a              ;config 8255 chip, write mode
-	ld bc, PIO_IDE_LSB
-	out (c), e	            ;drive lower lines with lsb
 	ld bc, PIO_IDE_CTL
 	ld a, r
-	out (c), a              ;drive address onto control lines,
+	out (c), a              ;drive address onto control lines
 	or IDE_WR_LINE	
 	out (c), a              ;and assert write pin
+	ld bc, PIO_IDE_LSB
+	out (c), e	            ;drive lower lines with lsb
+	nop
+	nop
+	nop
 	nop
 	nop
 	ld	a, r
 	out (c), a              ;deassert write pin
-;	xor	a
-;	out (c), a		        ;deassert all control pins
+	xor	a
+	out (c), a		        ;deassert all control pins
 	ld bc, PIO_IDE_CFG
 	ld a, PIO_IDE_RD
 	out (c), a              ;config 8255 chip, read mode
