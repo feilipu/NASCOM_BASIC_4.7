@@ -81,7 +81,7 @@ location    .equ    $3000       ; Where this driver will exist
 ;       Bit 1   = IDX   vendor specific
 ;       Bit 0   = ERR   1=error occured
 
-;------------------------------------------------------------------
+;------------------------------------------------------------------------------
 ; Hardware Configuration
 
 ; 8255 PIO chip.  Change these to specify where the PIO is addressed,
@@ -128,6 +128,7 @@ IDE_CYL_MSB     .equ    IDE_CS0_LINE + IDE_A2_LINE + IDE_A0_LINE    ;LBA2
 IDE_HEAD        .equ    IDE_CS0_LINE + IDE_A2_LINE + IDE_A1_LINE    ;LBA3
 IDE_COMMAND     .equ    IDE_CS0_LINE + IDE_A2_LINE + IDE_A1_LINE + IDE_A0_LINE
 IDE_STATUS      .equ    IDE_CS0_LINE + IDE_A2_LINE + IDE_A1_LINE + IDE_A0_LINE
+
 IDE_CONTROL     .equ    IDE_CS1_LINE + IDE_A2_LINE + IDE_A1_LINE
 IDE_ALT_STATUS  .equ    IDE_CS1_LINE + IDE_A2_LINE + IDE_A1_LINE
 
@@ -141,11 +142,12 @@ IDE_CMD_RECAL       .equ    $10 ;recalibrate the disk, wait for ready status
 IDE_CMD_READ        .equ    $20 ;read with retry - $21 read no retry
 IDE_CMD_WRITE       .equ    $30 ;write with retry - $31 write no retry
 IDE_CMD_INIT        .equ    $91 ;initialize drive parameters
-IDE_CMD_ID          .equ    $EC ;identify drive
-IDE_CMD_SPINDOWN    .equ    $E0 ;immediate spindown of disk
-IDE_CMD_SPINUP      .equ    $E1 ;immediate spinup of disk
+
+IDE_CMD_SPINDOWN    .equ    $E0 ;immediate ide_spindown of disk
+IDE_CMD_SPINUP      .equ    $E1 ;immediate ide_spinup of disk
 IDE_CMD_POWERDOWN   .equ    $E2 ;auto powerdown - sector count 5 sec units
 IDE_CMD_CACHE_FLUSH .equ    $E7 ;flush hardware write cache
+IDE_CMD_ID          .equ    $EC ;identify drive
 
 ;==============================================================================
 ;
@@ -158,7 +160,7 @@ idelba1    .equ    idelba0+1
 idelba2    .equ    idelba1+1
 idelba3    .equ    idelba2+1    ;LBA of desired sector MSB
 
-idestatus  .equ    idelba3+1   ;set bit 0 : User selects master (0) or slave (1) drive
+idestatus  .equ    idelba3+1    ;set bit 0 : User selects master (0) or slave (1) drive
                                 ;bit 1 : Flag 0 = master not previously accessed 
                                 ;bit 2 : Flag 0 = slave not previously accessed
 
@@ -170,8 +172,8 @@ ide_buffer  .equ    APUPTRBuf+APU_PTR_BUFSIZE+1
 ; CODE SECTION
 ;
 
-;------------------------------------------------------------------
-; Main Program, a simple menu driven interface.
+;------------------------------------------------------------------------------
+; Main Program, a simple test.
 
     .org	program
 
@@ -189,7 +191,7 @@ begin:
 	call ide_init
 
 	;get the drive id info.  If there is no drive, this may hang
-	call drive_id
+	call ide_drive_id
 
 	;print the drive's model number
 	ld hl, msg_mdl
@@ -221,25 +223,25 @@ begin:
 	ld hl, ide_buffer + 2
 	call phex16
 	ld hl, msg_hd
-	call	pstr
+	call pstr
 	ld hl, ide_buffer + 6
 	call phex16
 	ld hl, msg_sc
 	call pstr
 	ld hl, ide_buffer + 12
 	call phex16
-	call	newline
-	call	newline
+	call newline
+	call newline
 
 	;default position will be first block (master boot record)
 	xor	a
-	ld	(idelba0), a
-	ld	(idelba1), a
-	ld	(idelba2), a
-	ld	(idelba3), a
+	ld (idelba0), a
+	ld (idelba1), a
+	ld (idelba2), a
+	ld (idelba3), a
 
 	;cause the drive to spin down
-	call	spindown
+	call ide_spindown
     ret
 
 
@@ -252,33 +254,32 @@ msg_cy:	.db	"Cylinders: ", 0
 msg_hd:	.db	", Heads: ", 0
 msg_sc:	.db	", Sectors: ", 0
 
-;------------------------------------------------------------------
+;------------------------------------------------------------------------------
 ; Extra routines
 
 
 print_name:
-    ld      A,(HL)          ; Get a byte
-    or      A               ; Is it null $00 ?
-    ret     Z               ; Then RETurn on terminator
-    rst     08              ; Print it
-    inc     HL              ; Next byte
-	djnz	print_name      ; Continue until $00
+    ld A,(HL)           ; Get a byte
+    or A                ; Is it null $00 ?
+    ret Z               ; Then RETurn on terminator
+    rst 08              ; Print it
+    inc HL              ; Next byte
+	djnz print_name     ; Continue until b = 00
     ret
 
 pstr:
-    ld      A,(HL)          ; Get a byte
-    or      A               ; Is it null $00 ?
-    ret     Z               ; Then RETurn on terminator
-    rst     08              ; Print it
-    inc     HL              ; Next byte
-    jr      pstr
+    ld A,(HL)           ; Get a byte
+    or A                ; Is it null $00 ?
+    ret Z               ; Then RETurn on terminator
+    rst 08              ; Print it
+    inc HL              ; Next byte
+    jr pstr
 
 newline:
-    rst     08
-    ld      A, CR
-    rst     08
-    ld      A, LF
-    rst     08
+    ld A, CR
+    rst 08
+    ld A, LF
+    rst 08
     ret
 
 phex16:
@@ -314,70 +315,65 @@ phex_c:
     rst 08              ;print low nibble
     ret
 
-;------------------------------------------------------------------
+;------------------------------------------------------------------------------
 ; Routines that talk with the IDE drive, these should be called by
 ; the main program.
 
     .org	location
 
 	;read a sector, specified by the 4 bytes in "lba",
-	;return zero on success, non-zero for an error
+	;return carry on success, no carry for an error
 	;call should be modifed to have the LBA & buffer to fill in IX or IY - FIXME
-read_sector:
-	call ide_wait_not_busy  ;make sure drive is ready
+ide_read_sector:
+	call ide_wait_ready     ;make sure drive is ready
+	ret nc
 	call ide_setup_lba      ;tell it which sector we want
 	ld a, IDE_COMMAND
 	ld e, IDE_CMD_READ
 	call ide_wr_8           ;ask the drive to read it
+    call ide_wait_ready	    ;make sure drive is ready to proceed
+	ret nc
+	call ide_test_error		;ensure no error was reported
+	ret nc
 	call ide_wait_drq       ;wait until it's got the data
-	and $01
-	jr nz, get_err
-	ld hl, ide_buffer       ;put the data in the 
+	ret nc
+	ld hl, ide_buffer       ;put the data in the buffer
 	call ide_read_data		;grab the data
 	xor	a
+	scf			            ;carry = 1 on return = operation ok
 	ret
 
 	;write a sector, specified by the 4 bytes in "lba",
 	;whatever is in the ide_buffer gets written to the drive!
-	;Return, acc is zero on success, non-zero for an error
+	;return carry on success, no carry for an error
 	;call should be modifed to have the LBA & buffer to fill in IX or IY - FIXME
-write_sector:
-	call ide_wait_not_busy  ;make sure drive is ready
+ide_write_sector:
+	call ide_wait_ready     ;make sure drive is ready
+	ret nc
 	call ide_setup_lba      ;tell it which sector we want
 	ld a, IDE_COMMAND
 	ld e, IDE_CMD_WRITE
 	call ide_wr_8           ;tell drive to write a sector
+    call ide_wait_ready	    ;make sure drive is ready to proceed
+	ret nc
+	call ide_test_error		;ensure no error was reported
+	ret nc
 	call ide_wait_drq       ;wait unit it wants the data
-	and $01
-	jr nz, get_err
+	ret nc
 	ld hl, ide_buffer
 	call ide_write_data     ;give the data to the drive
-	call ide_wait_not_busy  ;make sure drive is ready
+	call ide_wait_ready
+	ret nc
+	call ide_test_error		;ensure no error was reported
+	ret nc
 	ld a, IDE_COMMAND
 	ld e, IDE_CMD_CACHE_FLUSH
 	call ide_wr_8           ;tell drive to flush its cache
-	call ide_wait_not_busy  ;wait until the write is complete
-	and $01
-	jr nz, get_err
+	call ide_wait_ready     ;wait until the write is complete
+    ret nc
+	call ide_test_error		;ensure no error was reported
 	xor	a
-	ret
-
-	;when an error occurs, we get acc.0 set from a call to ide_drq
-	;or ide_wait_not_busy (which read the drive's status register).  If
-	;that error bit is set, we should jump here to read the drive's
-	;explaination of the error, to be returned to the user.  If for
-	;some reason the error code is zero (shouldn't happen), we'll
-	;return 255, so that the main program can always depend on a
-	;return of zero to indicate success, non-zero for an error
-get_err:
-    ld a, IDE_ERROR
-	call ide_rd_8
-	xor a
-	or e
-	jr z, gerr2
-	ret
-gerr2:
-    ld a, $FF
+	scf			            ;carry = 1 on return = operation ok
 	ret
 
 ;------------------------------------------------------------------------------
@@ -385,44 +381,58 @@ gerr2:
 	;do the identify drive command, and return with the ide_buffer
 	;filled with info about the drive.
 	;call should be modifed to have the buffer to fill in HL - FIXME
-drive_id:
-	call ide_wait_not_busy
+ide_drive_id:
+	call ide_wait_ready
+	ret nc
 	ld e, 11100000b
 	ld a, IDE_HEAD
     call ide_wr_8		    ;select the master device, LBA mode
 	call ide_wait_ready
+	ret nc
 	ld e, IDE_CMD_ID	
 	ld a, IDE_COMMAND
 	call ide_wr_8		    ;issue the command
-	call ide_wait_drq
-	ld hl, ide_buffer
-	jp ide_read_data      ;store the data in ide_buffer
+    call ide_wait_ready	    ;make sure drive is ready to proceed
+	ret nc
+	call ide_test_error		;ensure no error was reported
+	ret nc
+	call ide_wait_drq       ;wait until it's got the data
+	ret nc
+	ld hl, ide_buffer       ;put the data in the buffer
+	call ide_read_data		;grab the data
+	xor	a
+	scf			            ;carry = 1 on return = operation ok
 
 ;------------------------------------------------------------------------------
 
 	;tell the drive to spin down
-spindown:
-	call ide_wait_not_busy
+ide_spindown:
+	call ide_wait_ready
+	ret nc
 	ld e, IDE_CMD_SPINDOWN
-	jr spup2
+	jr ide_spin2
 
 	;tell the drive to spin up
-spinup:
-	call ide_wait_not_busy
+ide_spinup:
+	call ide_wait_ready
+	ret nc
 	ld e, IDE_CMD_SPINUP
-spup2:
+ide_spin2:
     ld	a, IDE_COMMAND
 	call ide_wr_8
-	jp ide_wait_not_busy
+	jp ide_wait_ready
 
 ;------------------------------------------------------------------------------
 
 	;initialize the ide drive
 ide_init:
+	xor a
+	ld (idestatus), a       ;set master device
 	ld e, 11100000b
 	ld a, IDE_HEAD
 	call ide_wr_8		    ;select the master device, LBA mode
-	
+	call ide_wait_ready
+	ret nc
     ld e, IDE_CMD_INIT      ;needed for old drives
     ld a, IDE_COMMAND
     call ide_wr_8           ;do init parameters command
@@ -437,10 +447,10 @@ ide_soft_reset:
 	ld bc, PIO_IDE_CFG
 	ld a, PIO_IDE_RD
 	out (c), a              ;config 8255 chip, read mode
-	ld e, 00000110b         ;no interrupt, reset drives
+	ld e, 00000110b         ;no interrupt, set drives reset
 	ld a, IDE_CONTROL
 	call ide_wr_8
-	ld e, 00000010b	        ;no interrupt, clear reset
+	ld e, 00000010b	        ;no interrupt, clear drives reset
 	ld a, IDE_CONTROL	
 	call ide_wr_8
 	jp ide_wait_ready
@@ -467,30 +477,13 @@ ide_rst_dly:
 	out (c),a               ;no ide control lines asserted
 	ret
 
-;----------------------------------------------------------------------------
-
-    ;load the IDE status register and if there is an error noted,
-    ;then load the IDE error register to provide details.
-ide_test_error:
-	scf			            ;carry set = all OK
-	ld a, IDE_ALT_STATUS    ;select status register
-	call ide_rd_8           ;get status in A
-	bit 0, a                ;test error bit
-	ret z
-	
-	bit 5, a
-	jr nz, ide_err          ;test write error bit
-	
-	ld a, IDE_ERROR         ;select error register
-	call ide_rd_8           ;get error register in A
-ide_err:
-	or a                    ;make carry flag zero = error!
-	ret                     ;if a = 0, ide busy timed out
-
-;------------------------------------------------------------------
-; Mid level I/O.  These routines talk to the drive,
-; using the low level I/O.
+;------------------------------------------------------------------------------
+; IDE internal subroutines 
+;
+; These routines talk to the drive, using the low level I/O.
 ; Normally a program should not call these directly.
+
+;------------------------------------------------------------------------------
 
 	;Read a block of 512 bytes (one sector) from the drive
 	;and store it in memory at (HL)
@@ -524,6 +517,62 @@ ide_wrblk2:
 	djnz ide_wrblk2
 	ret
 
+;------------------------------------------------------------------------------
+    ;How to poll (waiting for the drive to be ready to transfer data):
+    ;Read the Regular Status port until bit 7 (BSY, value = 0x80) clears,
+    ;and bit 3 (DRQ, value = 0x08) sets.
+    ;Or until bit 0 (ERR, value = 0x01) or bit 5 (DFE, value = 0x20) sets.
+    ;If neither error bit is set, the device is ready right then.
+
+    ;Carry is set on wait success.
+ide_wait_ready:
+	ld a, IDE_ALT_STATUS    ;get IDE alt status register
+	call ide_rd_8
+	ld a, e
+	or a			        ;carry 0
+	tst 00100001b           ;test for ERR or DFE
+	ret nz
+	and 11000000b           ;mask off BuSY and RDY bits
+	xor 01000000b           ;wait for RDY to be set and BuSY to be clear 
+	jr nz, ide_wait_ready
+	scf                     ;set carry flag on success
+	ret
+
+	;Wait for the drive to be ready to transfer data.
+	;Returns the drive's status in A
+	;Carry is set on waitsuccess.
+ide_wait_drq:
+	ld a, IDE_ALT_STATUS    ;get IDE alt status register
+	call ide_rd_8
+	ld a, e
+    or a			        ;carry 0
+	tst 00100001b           ;test for ERR or DFE
+	ret nz
+	and 10001000b           ;mask off BuSY and DRQ bits
+	xor 00001000b           ;wait for DRQ to be set and BuSY to be clear
+	jr nz, ide_wait_drq
+	scf                     ;set carry flag on success
+	ret
+
+    ;load the IDE status register and if there is an error noted,
+    ;then load the IDE error register to provide details.
+    ;Carry is set on no error.
+ide_test_error:
+	scf			            ;carry set = all OK
+	ld a, IDE_ALT_STATUS    ;select status register
+	call ide_rd_8           ;get status in A
+	bit 0, a                ;test ERR bit
+	ret z
+	
+	bit 5, a
+	jr nz, ide_err          ;test write error bit
+	
+	ld a, IDE_ERROR         ;select error register
+	call ide_rd_8           ;get error register in A
+ide_err:
+	or a                    ;make carry flag zero = error!
+	ret                     ;if a = 0, ide busy timed out
+
 ;-----------------------------------------------------------------------------
 
 ide_setup_lba:
@@ -551,59 +600,14 @@ ide_setup_lba:
 	ld a, IDE_LBA3
 	jp ide_wr_8	            ;set LBA3 24:27 + bits 5:7=111
 
-;------------------------------------------------------------------------------
-
 ide_drive_select:
 	push hl
 	ld hl, idestatus
 	bit 0,(hl)
 	jr z, ide_master
-	or $10
+	or $10                  ;if its is a slave, set that bit
 ide_master:
 	pop hl
-	ret
-
-;------------------------------------------------------------------------------
-; Low Level Status - Busy Wait
-
-;How to poll (waiting for the drive to be ready to transfer data):
-;Read the Regular Status port until bit 7 (BSY, value = 0x80) clears,
-;and bit 3 (DRQ, value = 8) sets.
-;Or until bit 0 (ERR, value = 1) or bit 5 (DFE, value = 0x20) sets.
-;If neither error bit is set, the device is ready right then.
-
-ide_wait_not_busy:
-	ld a, IDE_ALT_STATUS    ;get IDE alt status register
-	call ide_rd_8
-	ld a, e
-	;should probably check for a timeout here
-	and 10000000b           ;wait for BuSY bit to be clear
-	jr nz, ide_wait_not_busy
-	ld	a, e
-	ret
-
-ide_wait_ready:
-	ld a, IDE_ALT_STATUS    ;get IDE alt status register
-	call ide_rd_8
-	ld a, e
-	;should probably check for a timeout here
-	and 11000000b           ;mask off BuSY and RDY bits
-	xor 01000000b           ;wait for RDY to be set and BuSY to be clear 
-	jr nz, ide_wait_ready
-	ld	a, e
-	ret
-
-	;Wait for the drive to be ready to transfer data.
-	;Returns the drive's status in A
-ide_wait_drq:
-	ld a, IDE_ALT_STATUS    ;get IDE alt status register
-	call ide_rd_8
-	ld a, e
-	;should probably check for a timeout here
-	and 10001000b           ;mask off BuSY and DRQ bits
-	xor 00001000b           ;wait for DRQ to be set and BuSY to be clear
-	jr nz, ide_wait_drq
-	ld	a, e
 	ret
 
 ;------------------------------------------------------------------------------
@@ -680,7 +684,7 @@ ide_wr_16:
 	nop
 	nop
 	nop
-	nop
+	ld bc, PIO_IDE_CTL
 	ld	a, r
 	out (c), a              ;deassert write pin
 	xor	a
@@ -706,7 +710,7 @@ ide_wr_8:
 	nop
 	nop
 	nop
-	nop
+	ld bc, PIO_IDE_CTL
 	ld	a, r
 	out (c), a              ;deassert write pin
 	xor	a
