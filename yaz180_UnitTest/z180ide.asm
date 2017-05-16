@@ -92,18 +92,18 @@ location    .equ    $3000       ; Where this driver will exist
 ; the first three lines define which ports are connected.
 PIO_IDE_LSB     .equ    PIOA        ;IDE lower 8 bits
 PIO_IDE_MSB     .equ    PIOB        ;IDE upper 8 bits
-PIO_IDE_CTL     .equ    PIOC        ;IDE control lines
-PIO_IDE_CFG     .equ    PIOCNTL     ;PIO configuration
-PIO_IDE_RD      .equ    PIOCNTL10   ;PIO_IDE_CTL out, PIO_IDE_LSB/MSB input
+PIO_IDE_C       .equ    PIOC        ;IDE control lines
+PIO_IDE_CNTL    .equ    PIOCNTL     ;PIO configuration
+PIO_IDE_RD      .equ    PIOCNTL10   ;PIO_IDE_C out, PIO_IDE_LSB/MSB input
 PIO_IDE_WR      .equ    PIOCNTL00   ;all PIO ports output
 
-; IDE control lines for use with PIO_IDE_CTL. Change these 8
+; IDE control lines for use with PIO_IDE_C. Change these 8
 ; constants to reflect where each signal of the 8255 each of the
 ; IDE control signals is connected.  All the control signals must
 ; be on the same port, but these 8 lines let you connect them to
 ; whichever pins on that port.
-IDE_A0_LINE     .equ    $04	    ;direct from 8255 to ide interface
-IDE_A1_LINE     .equ    $10	    ;direct from 8255 to ide interface
+IDE_A0_LINE     .equ    $10	    ;direct from 8255 to ide interface
+IDE_A1_LINE     .equ    $04	    ;direct from 8255 to ide interface
 IDE_A2_LINE     .equ    $40	    ;direct from 8255 to ide interface
 IDE_CS0_LINE    .equ    $08	    ;inverter between 8255 and ide interface
 IDE_CS1_LINE    .equ    $20	    ;inverter between 8255 and ide interface
@@ -116,7 +116,7 @@ IDE_RST_LINE    .equ    $80	    ;inverter between 8255 and ide interface
 ; IDE I/O Register Addressing
 ;
 
-; IDE control lines for use with PIO_IDE_CTL. Symbolic constants
+; IDE control lines for use with PIO_IDE_C. Symbolic constants
 ; for the IDE registers, which makes the code more readable than
 ; always specifying the address pins
 IDE_DATA        .equ    IDE_CS0_LINE
@@ -189,6 +189,9 @@ begin:
 
 	;initialize the drive.  If there is no drive, this may hang
 	call ide_init
+	
+	;cause the drive to spin up
+	call ide_spinup
 
 	;get the drive id info.  If there is no drive, this may hang
 	call ide_drive_id
@@ -242,6 +245,8 @@ begin:
 
 	;cause the drive to spin down
 	call ide_spindown
+
+	ld sp, (STACKTOP)
     ret
 
 
@@ -257,28 +262,32 @@ msg_sc:	.db	", Sectors: ", 0
 ;------------------------------------------------------------------------------
 ; Extra routines
 
-
+	;print a string, no more than B words long
+	;the IDE string are byte swapped.  Fetch each
+	;word and swap so the names print correctly
 print_name:
-    ld A,(HL)           ; Get a byte
-    or A                ; Is it null $00 ?
-    ret Z               ; Then RETurn on terminator
+    ld c, (hl)          ; Get a byte
+    inc hl              ; Next byte
+    ld a, (hl)          ; Get a byte
+    inc hl              ; Next byte
     rst 08              ; Print it
-    inc HL              ; Next byte
-	djnz print_name     ; Continue until b = 00
+    ld a, c
+    rst 08              ; Print it reversed
+	djnz print_name     ; Continue until B = 00
     ret
 
 pstr:
-    ld A,(HL)           ; Get a byte
-    or A                ; Is it null $00 ?
-    ret Z               ; Then RETurn on terminator
+    ld a, (hl)          ; Get a byte
+    or a                ; Is it null $00 ?
+    ret z               ; Then RETurn on terminator
     rst 08              ; Print it
-    inc HL              ; Next byte
+    inc hl              ; Next byte
     jr pstr
 
 newline:
-    ld A, CR
+    ld a, CR
     rst 08
-    ld A, LF
+    ld a, LF
     rst 08
     ret
 
@@ -444,9 +453,6 @@ ide_init:
     ;can be initiated.
     ;this should be followed with a call to "ide_init".
 ide_soft_reset:
-	ld bc, PIO_IDE_CFG
-	ld a, PIO_IDE_RD
-	out (c), a              ;config 8255 chip, read mode
 	ld e, 00000110b         ;no interrupt, set drives reset
 	ld a, IDE_CONTROL
 	call ide_wr_8
@@ -461,18 +467,16 @@ ide_soft_reset:
 	;do this first, and if a soft reset doesn't work.
 	;this should be followed with a call to "ide_init".
 ide_hard_reset:
-	ld bc, PIO_IDE_CFG
+	ld bc, PIO_IDE_CNTL
 	ld a, PIO_IDE_RD
 	out (c), a              ;config 8255 chip, read mode
-	ld bc, PIO_IDE_CTL
+	ld bc, PIO_IDE_C
 	ld a, IDE_RST_LINE
 	out (c),a               ;hard reset the disk drive
-	ld bc, $0
+	ld b, $0
 ide_rst_dly:
-    djnz ide_rst_dly
-    dec c
-	jr nz, ide_rst_dly      ;delay 256x256 nop (reset pulse width)
-    ld bc, PIO_IDE_CTL
+    djnz ide_rst_dly        ;delay 256 nop 150us (reset minimum 25us)
+    ld bc, PIO_IDE_C
 	xor a
 	out (c),a               ;no ide control lines asserted
 	ret
@@ -482,7 +486,6 @@ ide_rst_dly:
 ;
 ; These routines talk to the drive, using the low level I/O.
 ; Normally a program should not call these directly.
-
 ;------------------------------------------------------------------------------
 
 	;Read a block of 512 bytes (one sector) from the drive
@@ -490,10 +493,8 @@ ide_rst_dly:
 ide_read_data:
 	ld b, $0
 ide_rdblk2:
-    push bc
 	ld a, IDE_DATA
 	call ide_rd_16
-	pop	bc
 	ld (hl), e
 	inc hl
 	ld (hl), d
@@ -510,10 +511,8 @@ ide_wrblk2:
 	inc	hl
 	ld d, (hl)
 	inc hl
-	push bc
 	ld a, IDE_DATA
 	call ide_wr_16
-	pop	bc
 	djnz ide_wrblk2
 	ret
 
@@ -594,7 +593,7 @@ ide_setup_lba:
 	inc hl
 	ld a,(hl)
 	and 00001111b           ;lowest 4 bits used only
-	or 11100000b            ;to enable LBA address mode
+	or  11100000b           ;to enable LBA address mode
 	call ide_drive_select	;set bit 4 accordingly
 	ld e, a
 	ld a, IDE_LBA3
@@ -613,6 +612,7 @@ ide_master:
 ;------------------------------------------------------------------------------
 ; Low Level I/O
 ; These routines talk directly to the drive, via the 8255 chip.
+;------------------------------------------------------------------------------
 
 	;Do a read bus cycle to the drive, using the 8255.
 	;input a = ide register address
@@ -620,45 +620,41 @@ ide_master:
 	;output d = upper byte read from IDE drive
 	;bc is changed
 ide_rd_16:
-	ld bc, PIO_IDE_CTL
+    push bc
+    push hl
+	ld bc, PIO_IDE_C
 	out (c), a              ;drive address onto control lines
-	ld r, a                 ;copy address to r
+	ld l, a                 ;copy address to l
 	or IDE_RD_LINE	
 	out (c), a              ;and assert read pin
-	nop
-	nop
-	nop
-	nop
-	nop
 	ld bc, PIO_IDE_MSB
 	in d, (c)	            ;read the upper byte
 	ld bc, PIO_IDE_LSB
 	in e, (c)	            ;read the lower byte
-	ld bc, PIO_IDE_CTL
-	ld	a, r
-	out (c), a              ;deassert read pin
+	ld bc, PIO_IDE_C
+	out (c), l              ;deassert read pin
 	xor	a
 	out (c), a		        ;deassert all control pins
+	pop hl
+	pop	bc
 	ret
 
 ide_rd_8:
-	ld bc, PIO_IDE_CTL
+    push bc
+    push hl
+	ld bc, PIO_IDE_C
 	out (c), a              ;drive address onto control lines
-	ld r, a                 ;copy address to r
+	ld l, a                 ;copy address to l
 	or IDE_RD_LINE	
 	out (c), a              ;and assert read pin
-	nop
-	nop
-	nop
-	nop
-	nop
 	ld bc, PIO_IDE_LSB
 	in e, (c)	            ;read the lower byte
-	ld bc, PIO_IDE_CTL
-	ld	a, r
-	out (c), a              ;deassert read pin
+	ld bc, PIO_IDE_C
+	out (c), l              ;deassert read pin
 	xor	a
 	out (c), a		        ;deassert all control pins
+	pop hl
+	pop	bc
 	ret
 
 	;Do a write bus cycle to the drive, via the 8255
@@ -667,12 +663,14 @@ ide_rd_8:
 	;input d = msb to write to IDE drive
 	;bc is changed
 ide_wr_16:
-	ld r, a                 ;copy address to r
-	ld bc, PIO_IDE_CFG
+    push bc
+    push hl
+	ld l, a                 ;copy address to l
+	ld bc, PIO_IDE_CNTL
 	ld a, PIO_IDE_WR
 	out (c), a              ;config 8255 chip, write mode
-	ld bc, PIO_IDE_CTL
-	ld a, r
+	ld bc, PIO_IDE_C
+	ld a, l	
 	out (c), a              ;drive address onto control lines
 	or IDE_WR_LINE	
 	out (c), a              ;and assert write pin	
@@ -680,44 +678,40 @@ ide_wr_16:
 	out (c), e	            ;drive lower lines with lsb
 	ld bc, PIO_IDE_MSB
 	out (c), d	            ;drive upper lines with msb
-	nop
-	nop
-	nop
-	nop
-	ld bc, PIO_IDE_CTL
-	ld	a, r
-	out (c), a              ;deassert write pin
+	ld bc, PIO_IDE_C
+	out (c), l              ;deassert write pin
 	xor	a
 	out (c), a		        ;deassert all control pins
-	ld bc, PIO_IDE_CFG
+	ld bc, PIO_IDE_CNTL
 	ld a, PIO_IDE_RD
 	out (c), a              ;config 8255 chip, read mode
+	pop hl
+	pop	bc
 	ret
 
 ide_wr_8:
-	ld r, a                 ;copy address to r
-	ld bc, PIO_IDE_CFG
+    push bc
+    push hl
+	ld l, a                 ;copy address to l
+	ld bc, PIO_IDE_CNTL
 	ld a, PIO_IDE_WR
 	out (c), a              ;config 8255 chip, write mode
-	ld bc, PIO_IDE_CTL
-	ld a, r
+	ld bc, PIO_IDE_C
+	ld a, l	
 	out (c), a              ;drive address onto control lines
 	or IDE_WR_LINE	
 	out (c), a              ;and assert write pin
 	ld bc, PIO_IDE_LSB
 	out (c), e	            ;drive lower lines with lsb
-	nop
-	nop
-	nop
-	nop
-	ld bc, PIO_IDE_CTL
-	ld	a, r
-	out (c), a              ;deassert write pin
+	ld bc, PIO_IDE_C
+	out (c), l              ;deassert write pin
 	xor	a
 	out (c), a		        ;deassert all control pins
-	ld bc, PIO_IDE_CFG
+	ld bc, PIO_IDE_CNTL
 	ld a, PIO_IDE_RD
 	out (c), a              ;config 8255 chip, read mode
+	pop hl
+	pop	bc
 	ret
 
     .end
