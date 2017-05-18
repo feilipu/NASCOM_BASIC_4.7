@@ -92,12 +92,12 @@ location    .equ    $3000       ; Where this driver will exist
 ; the first three lines define which ports are connected.
 PIO_IDE_LSB     .equ    PIOA        ;IDE lower 8 bits
 PIO_IDE_MSB     .equ    PIOB        ;IDE upper 8 bits
-PIO_IDE_C       .equ    PIOC        ;IDE control lines
-PIO_IDE_CNTL    .equ    PIOCNTL     ;PIO configuration
-PIO_IDE_RD      .equ    PIOCNTL10   ;PIO_IDE_C out, PIO_IDE_LSB/MSB input
+PIO_IDE_CTL     .equ    PIOC        ;IDE control lines
+PIO_IDE_CONFIG  .equ    PIOCNTL     ;PIO configuration
+PIO_IDE_RD      .equ    PIOCNTL10   ;PIO_IDE_CTL out, PIO_IDE_LSB/MSB input
 PIO_IDE_WR      .equ    PIOCNTL00   ;all PIO ports output
 
-; IDE control lines for use with PIO_IDE_C. Change these 8
+; IDE control lines for use with PIO_IDE_CTL. Change these 8
 ; constants to reflect where each signal of the 8255 each of the
 ; IDE control signals is connected.  All the control signals must
 ; be on the same port, but these 8 lines let you connect them to
@@ -116,7 +116,7 @@ IDE_RST_LINE    .equ    $80	    ;inverter between 8255 and ide interface
 ; IDE I/O Register Addressing
 ;
 
-; IDE control lines for use with PIO_IDE_C. Symbolic constants
+; IDE control lines for use with PIO_IDE_CTL. Symbolic constants
 ; for the IDE registers, which makes the code more readable than
 ; always specifying the address pins
 IDE_DATA        .equ    IDE_CS0_LINE
@@ -154,17 +154,14 @@ IDE_CMD_ID          .equ    $EC ;identify drive
 ; VARIABLES SECTION
 ;
 
-;LBA of desired sector LSB
-idelba0    .equ    Z180_VECTOR_BASE+Z180_VECTOR_SIZE+$30
-idelba1    .equ    idelba0+1
-idelba2    .equ    idelba1+1
-idelba3    .equ    idelba2+1    ;LBA of desired sector MSB
+;IDE Status byte
+    ;set bit 0 : User selects master (0) or slave (1) drive
+    ;bit 1 : Flag 0 = master not previously accessed 
+    ;bit 2 : Flag 0 = slave not previously accessed
+idestatus  .equ    Z180_VECTOR_BASE+Z180_VECTOR_SIZE+$30    
 
-idestatus  .equ    idelba3+1    ;set bit 0 : User selects master (0) or slave (1) drive
-                                ;bit 1 : Flag 0 = master not previously accessed 
-                                ;bit 2 : Flag 0 = slave not previously accessed
 
-;a 512 byte sector buffer origin
+;IDE 512 byte sector buffer origin
 ide_buffer  .equ    APUPTRBuf+APU_PTR_BUFSIZE+1
 
 ;==============================================================================
@@ -187,6 +184,9 @@ begin:
 	;reset the drive
 	call ide_hard_reset
 
+	;reset the drive
+	call ide_soft_reset
+
 	;initialize the drive.  If there is no drive, this may hang
 	call ide_init
 	
@@ -194,31 +194,32 @@ begin:
 	call ide_spinup
 
 	;get the drive id info.  If there is no drive, this may hang
+	ld hl, ide_buffer       ;put the data into this buffer
 	call ide_drive_id
 
 	;print the drive's model number
 	ld hl, msg_mdl
 	call pstr
 	ld hl, ide_buffer + 54
-	ld b, 20
+	ld b, 40
 	call print_name
-	call newline
+	call pnewline
 
 	;print the drive's serial number
 	ld hl, msg_sn
 	call pstr
 	ld hl, ide_buffer + 20
-	ld b, 10
+	ld b, 20
 	call print_name
-	call newline
+	call pnewline
 
 	;print the drive's firmware revision string
 	ld hl, msg_rev
 	call pstr
 	ld hl, ide_buffer + 46
-	ld b, 4
+	ld b, 8
 	call print_name
-	call newline
+	call pnewline
 
 	;print the drive's cylinder, head, and sector specs
 	ld hl, msg_cy
@@ -233,15 +234,21 @@ begin:
 	call pstr
 	ld hl, ide_buffer + 12
 	call phex16
-	call newline
-	call newline
+	call pnewline
+	call pnewline
 
-	;default position will be first block (master boot record)
-	xor	a
-	ld (idelba0), a
-	ld (idelba1), a
-	ld (idelba2), a
-	ld (idelba3), a
+	;dump the ID information
+	ld hl, ide_buffer
+	call phexdump
+	
+	;read sector $00000000
+	ld bc, $0000
+	ld de, $0000
+	ld hl, ide_buffer
+	call ide_read_sector
+	;dump the $00000000 sector information
+	ld hl, ide_buffer
+	call phexdump
 
 	;cause the drive to spin down
 	call ide_spindown
@@ -260,22 +267,17 @@ msg_hd:	.db	", Heads: ", 0
 msg_sc:	.db	", Sectors: ", 0
 
 ;------------------------------------------------------------------------------
-; Extra routines
+; Extra print routines during testing
 
-	;print a string, no more than B words long
-	;the IDE string are byte swapped.  Fetch each
-	;word and swap so the names print correctly
-print_name:
-    ld c, (hl)          ; Get a byte
-    inc hl              ; Next byte
-    ld a, (hl)          ; Get a byte
-    inc hl              ; Next byte
-    rst 08              ; Print it
-    ld a, c
-    rst 08              ; Print it reversed
-	djnz print_name     ; Continue until B = 00
+    ;print CR/LF
+pnewline:
+    ld a, CR
+    rst 08
+    ld a, LF
+    rst 08
     ret
 
+    ;print a string pointed to by HL, null terminated
 pstr:
     ld a, (hl)          ; Get a byte
     or a                ; Is it null $00 ?
@@ -284,13 +286,17 @@ pstr:
     inc hl              ; Next byte
     jr pstr
 
-newline:
-    ld a, CR
-    rst 08
-    ld a, LF
-    rst 08
+	;print a string pointed to by HL, no more than B byte long
+print_name:
+    ld a, (hl)          ; Get a byte
+    or a                ; Is it null $00 ?
+    ret z               ; Then RETurn on terminator
+    rst 08              ; Print it      
+    inc hl              ; Next byte
+	djnz print_name     ; Continue until B = 00
     ret
 
+    ;print contents of HL as 16 bit number in ASCII HEX
 phex16:
 	push af
 	ld a, h
@@ -300,6 +306,7 @@ phex16:
 	pop	af
 	ret
 
+    ;print contents of A as 8 bit number in ASCII HEX
 phex:
     push af             ;store the binary value
     rlca                ;shift accumulator left by 4 bits
@@ -324,64 +331,128 @@ phex_c:
     rst 08              ;print low nibble
     ret
 
+
+	;print a hexdump of the data in the 512 byte buffer HL
+phexdump:
+    push af
+    push bc
+    push hl
+	call pnewline
+	ld c, 32		    ;print 32 lines
+phd1:
+	xor a               ;print address, starting at zero
+	ld h, a
+    call phex16
+	ld a, ':'
+	rst 08
+    ld	a, ' '
+    rst 08
+
+	ld b, 16		    ;print 16 hex bytes per line
+    pop hl
+    push hl	
+phd2:
+    ld	a, (hl)
+	inc	hl
+	call	phex		;print each byte in hex
+    ld	a, ' '
+    rst 08
+	djnz phd2
+
+    ld	a, ' '
+    rst 08
+    ld	a, ' '
+    rst 08
+    ld	a, ' '
+    rst 08
+
+    pop hl
+	ld b, 16		    ;print 16 ascii bytes per line
+phd3:
+	ld a, (hl)
+	inc	hl
+	and	$7f      	    ;only 7 bits for ascii
+	tst	$7F
+	jr nz, phd3b
+	xor	a		        ;avoid 127/255 (delete/rubout) char
+phd3b:
+	cp $20
+	jr nc, phd3c
+	xor	a		        ;avoid control characters
+phd3c:
+	rst 08
+	djnz phd3
+	
+	call	pnewline
+	push hl	
+	dec c
+	jr nz, phd1
+	
+	call	pnewline
+	pop hl
+	pop bc
+	pop af
+	ret
+
 ;------------------------------------------------------------------------------
 ; Routines that talk with the IDE drive, these should be called by
 ; the main program.
 
     .org	location
 
-	;read a sector, specified by the 4 bytes in "lba",
+	;read a sector
+	;LBA specified by the 4 bytes in BCDE
+	;the address of the buffer to fill is in HL
 	;return carry on success, no carry for an error
-	;call should be modifed to have the LBA & buffer to fill in IX or IY - FIXME
 ide_read_sector:
+    push af
 	call ide_wait_ready     ;make sure drive is ready
 	ret nc
-	call ide_setup_lba      ;tell it which sector we want
+	call ide_setup_lba      ;tell it which sector we want in BCDE
 	ld a, IDE_COMMAND
 	ld e, IDE_CMD_READ
-	call ide_wr_8           ;ask the drive to read it
+	call ide_write_byte     ;ask the drive to read it
     call ide_wait_ready	    ;make sure drive is ready to proceed
 	ret nc
 	call ide_test_error		;ensure no error was reported
 	ret nc
 	call ide_wait_drq       ;wait until it's got the data
 	ret nc
-	ld hl, ide_buffer       ;put the data in the buffer
-	call ide_read_data		;grab the data
-	xor	a
+	call ide_read_block		;grab the data into (HL++)
+	pop af
 	scf			            ;carry = 1 on return = operation ok
 	ret
 
-	;write a sector, specified by the 4 bytes in "lba",
-	;whatever is in the ide_buffer gets written to the drive!
+	;write a sector
+	;specified by the 4 bytes in BCDE
+	;the address of the origin buffer is in HL
 	;return carry on success, no carry for an error
-	;call should be modifed to have the LBA & buffer to fill in IX or IY - FIXME
 ide_write_sector:
+    push af
 	call ide_wait_ready     ;make sure drive is ready
 	ret nc
-	call ide_setup_lba      ;tell it which sector we want
+	call ide_setup_lba      ;tell it which sector we want in BCDE
 	ld a, IDE_COMMAND
 	ld e, IDE_CMD_WRITE
-	call ide_wr_8           ;tell drive to write a sector
+	call ide_write_byte     ;instruct drive to write a sector
     call ide_wait_ready	    ;make sure drive is ready to proceed
 	ret nc
 	call ide_test_error		;ensure no error was reported
 	ret nc
 	call ide_wait_drq       ;wait unit it wants the data
 	ret nc
-	ld hl, ide_buffer
-	call ide_write_data     ;give the data to the drive
+	call ide_write_block    ;send the data to the drive from (HL++)
 	call ide_wait_ready
 	ret nc
 	call ide_test_error		;ensure no error was reported
 	ret nc
 	ld a, IDE_COMMAND
 	ld e, IDE_CMD_CACHE_FLUSH
-	call ide_wr_8           ;tell drive to flush its cache
+	call ide_write_byte     ;tell drive to flush its hardware cache
 	call ide_wait_ready     ;wait until the write is complete
     ret nc
 	call ide_test_error		;ensure no error was reported
-	xor	a
+	pop af
 	scf			            ;carry = 1 on return = operation ok
 	ret
 
@@ -389,33 +460,38 @@ ide_write_sector:
 
 	;do the identify drive command, and return with the ide_buffer
 	;filled with info about the drive.
-	;call should be modifed to have the buffer to fill in HL - FIXME
+	;the buffer to fill is in HL
 ide_drive_id:
+    push af
+    push de
 	call ide_wait_ready
 	ret nc
 	ld e, 11100000b
 	ld a, IDE_HEAD
-    call ide_wr_8		    ;select the master device, LBA mode
+    call ide_write_byte	    ;select the master device, LBA mode
 	call ide_wait_ready
 	ret nc
 	ld e, IDE_CMD_ID	
 	ld a, IDE_COMMAND
-	call ide_wr_8		    ;issue the command
+	call ide_write_byte	    ;issue the command
     call ide_wait_ready	    ;make sure drive is ready to proceed
 	ret nc
 	call ide_test_error		;ensure no error was reported
 	ret nc
 	call ide_wait_drq       ;wait until it's got the data
 	ret nc
-	ld hl, ide_buffer       ;put the data in the buffer
-	call ide_read_data		;grab the data
-	xor	a
+	call ide_read_block		;grab the data buffer in (HL++)
+	pop de
+	pop af
 	scf			            ;carry = 1 on return = operation ok
+	ret
 
 ;------------------------------------------------------------------------------
 
 	;tell the drive to spin down
 ide_spindown:
+    push af
+    push de
 	call ide_wait_ready
 	ret nc
 	ld e, IDE_CMD_SPINDOWN
@@ -423,28 +499,39 @@ ide_spindown:
 
 	;tell the drive to spin up
 ide_spinup:
+    push af
+    push de
 	call ide_wait_ready
 	ret nc
 	ld e, IDE_CMD_SPINUP
+
 ide_spin2:
     ld	a, IDE_COMMAND
-	call ide_wr_8
-	jp ide_wait_ready
+	call ide_write_byte
+	call ide_wait_ready
+	ret nc
+	pop de 
+	pop af
+	ret
 
 ;------------------------------------------------------------------------------
 
 	;initialize the ide drive
 ide_init:
+    push af
+    push de
 	xor a
 	ld (idestatus), a       ;set master device
 	ld e, 11100000b
 	ld a, IDE_HEAD
-	call ide_wr_8		    ;select the master device, LBA mode
+	call ide_write_byte		;select the master device, LBA mode
 	call ide_wait_ready
 	ret nc
     ld e, IDE_CMD_INIT      ;needed for old drives
     ld a, IDE_COMMAND
-    call ide_wr_8           ;do init parameters command
+    call ide_write_byte     ;do init parameters command
+    pop de
+    pop af
     jp ide_wait_ready
 
 ;------------------------------------------------------------------------------
@@ -453,12 +540,16 @@ ide_init:
     ;can be initiated.
     ;this should be followed with a call to "ide_init".
 ide_soft_reset:
+	push af
+	push de
 	ld e, 00000110b         ;no interrupt, set drives reset
 	ld a, IDE_CONTROL
-	call ide_wr_8
+	call ide_write_byte
 	ld e, 00000010b	        ;no interrupt, clear drives reset
 	ld a, IDE_CONTROL	
-	call ide_wr_8
+	call ide_write_byte
+	pop de
+	pop af
 	jp ide_wait_ready
 
 ;------------------------------------------------------------------------------
@@ -467,18 +558,22 @@ ide_soft_reset:
 	;do this first, and if a soft reset doesn't work.
 	;this should be followed with a call to "ide_init".
 ide_hard_reset:
-	ld bc, PIO_IDE_CNTL
+    push af
+    push bc
+	ld bc, PIO_IDE_CONFIG
 	ld a, PIO_IDE_RD
 	out (c), a              ;config 8255 chip, read mode
-	ld bc, PIO_IDE_C
+	ld bc, PIO_IDE_CTL
 	ld a, IDE_RST_LINE
 	out (c),a               ;hard reset the disk drive
 	ld b, $0
 ide_rst_dly:
     djnz ide_rst_dly        ;delay 256 nop 150us (reset minimum 25us)
-    ld bc, PIO_IDE_C
+    ld bc, PIO_IDE_CTL
 	xor a
 	out (c),a               ;no ide control lines asserted
+    pop bc
+    pop af
 	ret
 
 ;------------------------------------------------------------------------------
@@ -488,35 +583,6 @@ ide_rst_dly:
 ; Normally a program should not call these directly.
 ;------------------------------------------------------------------------------
 
-	;Read a block of 512 bytes (one sector) from the drive
-	;and store it in memory at (HL)
-ide_read_data:
-	ld b, $0
-ide_rdblk2:
-	ld a, IDE_DATA
-	call ide_rd_16
-	ld (hl), e
-	inc hl
-	ld (hl), d
-	inc	hl
-	djnz ide_rdblk2
-	ret
-
-
-	;Write a block of 512 bytes from (HL) to the drive
-ide_write_data:
-	ld b, $0
-ide_wrblk2: 
-	ld e, (hl)
-	inc	hl
-	ld d, (hl)
-	inc hl
-	ld a, IDE_DATA
-	call ide_wr_16
-	djnz ide_wrblk2
-	ret
-
-;------------------------------------------------------------------------------
     ;How to poll (waiting for the drive to be ready to transfer data):
     ;Read the Regular Status port until bit 7 (BSY, value = 0x80) clears,
     ;and bit 3 (DRQ, value = 0x08) sets.
@@ -525,88 +591,94 @@ ide_wrblk2:
 
     ;Carry is set on wait success.
 ide_wait_ready:
+    push af
+ide_wait_ready2:
 	ld a, IDE_ALT_STATUS    ;get IDE alt status register
-	call ide_rd_8
-	ld a, e
+	call ide_read_byte
 	or a			        ;carry 0
 	tst 00100001b           ;test for ERR or DFE
-	ret nz
+	jr nz, ide_wait_error
 	and 11000000b           ;mask off BuSY and RDY bits
-	xor 01000000b           ;wait for RDY to be set and BuSY to be clear 
-	jr nz, ide_wait_ready
+	xor 01000000b           ;wait for RDY to be set and BuSY to be clear
+	jr nz, ide_wait_ready2
+    pop af
 	scf                     ;set carry flag on success
 	ret
 
 	;Wait for the drive to be ready to transfer data.
 	;Returns the drive's status in A
-	;Carry is set on waitsuccess.
+	;Carry is set on wait success.
 ide_wait_drq:
+    push af
+ide_wait_drq2:
 	ld a, IDE_ALT_STATUS    ;get IDE alt status register
-	call ide_rd_8
-	ld a, e
+	call ide_read_byte
     or a			        ;carry 0
 	tst 00100001b           ;test for ERR or DFE
-	ret nz
+	jr nz, ide_wait_error
 	and 10001000b           ;mask off BuSY and DRQ bits
 	xor 00001000b           ;wait for DRQ to be set and BuSY to be clear
-	jr nz, ide_wait_drq
+	jr nz, ide_wait_drq2
+ide_test_success:
+    pop af
 	scf                     ;set carry flag on success
+	ret
+
+ide_wait_error:
+    pop af
+    or a                    ;clear carry flag on failure
 	ret
 
     ;load the IDE status register and if there is an error noted,
     ;then load the IDE error register to provide details.
     ;Carry is set on no error.
 ide_test_error:
-	scf			            ;carry set = all OK
+	push af
 	ld a, IDE_ALT_STATUS    ;select status register
-	call ide_rd_8           ;get status in A
+	call ide_read_byte      ;get status in A
 	bit 0, a                ;test ERR bit
-	ret z
-	
+	jr z, ide_test_success
 	bit 5, a
-	jr nz, ide_err          ;test write error bit
+	jr nz, ide_test2        ;test write error bit
 	
 	ld a, IDE_ERROR         ;select error register
-	call ide_rd_8           ;get error register in A
-ide_err:
-	or a                    ;make carry flag zero = error!
-	ret                     ;if a = 0, ide busy timed out
+	call ide_read_byte      ;get error register in A
+ide_test2:
+	or a                    ;make carry flag zero = error!	
+    inc sp                  ;pop old af
+    inc sp
+	ret                     ;if a = 0, ide write busy timed out
 
 ;-----------------------------------------------------------------------------
-
+    ;set up the drive LBA registers
+    ;LBA is contained in BCDE registers
 ide_setup_lba:
-	ld e,1
-    ld a, IDE_SEC_CNT	
-	call ide_wr_8	        ;set sector count to 1
-	ld hl, idelba0
-	ld e, (hl)
+    push af
+    push hl
 	ld a, IDE_LBA0
-	call ide_wr_8	        ;set LBA0 0:7
-	inc hl
-	ld e, (hl)
+	call ide_write_byte     ;set LBA0 0:7
+	ld e, d
 	ld a, IDE_LBA1
-	call ide_wr_8	        ;set LBA1 8:15
-	inc hl
-	ld e, (hl)
+	call ide_write_byte     ;set LBA1 8:15
+	ld e, c
 	ld a, IDE_LBA2
-	call ide_wr_8	        ;set LBA2 16:23
-	inc hl
-	ld a,(hl)
+	call ide_write_byte     ;set LBA2 16:23
+	ld a, b
 	and 00001111b           ;lowest 4 bits used only
 	or  11100000b           ;to enable LBA address mode
-	call ide_drive_select	;set bit 4 accordingly
+	ld hl, idestatus        ;set bit 4 accordingly
+	bit 0, (hl)
+	jr z, ide_setup_master
+	or $10                  ;if it is a slave, set that bit
+ide_setup_master:
 	ld e, a
 	ld a, IDE_LBA3
-	jp ide_wr_8	            ;set LBA3 24:27 + bits 5:7=111
-
-ide_drive_select:
-	push hl
-	ld hl, idestatus
-	bit 0,(hl)
-	jr z, ide_master
-	or $10                  ;if its is a slave, set that bit
-ide_master:
+	call ide_write_byte     ;set LBA3 24:27 + bits 5:7=111
+	ld e, $1
+    ld a, IDE_SEC_CNT	
+	call ide_write_byte     ;set sector count to 1
 	pop hl
+	pop af
 	ret
 
 ;------------------------------------------------------------------------------
@@ -614,103 +686,115 @@ ide_master:
 ; These routines talk directly to the drive, via the 8255 chip.
 ;------------------------------------------------------------------------------
 
-	;Do a read bus cycle to the drive, using the 8255.
-	;input a = ide register address
-	;output e = lower byte read from IDE drive
-	;output d = upper byte read from IDE drive
-	;bc is changed
-ide_rd_16:
+	;Read a block of 512 bytes (one sector) from the drive
+	;16 bit data register and store it in memory at (HL++)
+ide_read_block:
     push bc
-    push hl
-	ld bc, PIO_IDE_C
-	out (c), a              ;drive address onto control lines
-	ld l, a                 ;copy address to l
-	or IDE_RD_LINE	
-	out (c), a              ;and assert read pin
+    push de
+	ld bc, PIO_IDE_CTL
+	ld d, IDE_DATA	
+	out (c), d              ;drive address onto control lines    
+	ld e, $0                ;keep iterative count in e
+ide_rdblk2:
+	ld d, IDE_DATA|IDE_RD_LINE	
+	out (c), d              ;and assert read pin
 	ld bc, PIO_IDE_MSB
-	in d, (c)	            ;read the upper byte
+	ini                     ;read the upper byte (HL++)
 	ld bc, PIO_IDE_LSB
-	in e, (c)	            ;read the lower byte
-	ld bc, PIO_IDE_C
-	out (c), l              ;deassert read pin
-	xor	a
-	out (c), a		        ;deassert all control pins
-	pop hl
+	ini                     ;read the lower byte (HL++)
+	ld bc, PIO_IDE_CTL
+	ld d, IDE_DATA
+	out (c), d              ;deassert read pin
+	dec e                   ;keep iterative count in e
+	jr nz, ide_rdblk2
+   ;ld bc, PIO_IDE_CTL      ;just for info
+	ld d, $0
+	out (c), d		        ;deassert all control pins
+	pop de
+	pop bc
+	ret
+
+
+	;Write a block of 512 bytes (one sector) from (HL++) to
+	; the drive 16 bit data register
+ide_write_block:
+    push bc
+    push de
+	ld bc, PIO_IDE_CONFIG
+	ld d, PIO_IDE_WR
+	out (c), d              ;config 8255 chip, write mode
+	ld bc, PIO_IDE_CTL
+	ld d, IDE_DATA
+	out (c), d              ;drive address onto control lines
+	ld e, $0                ;keep iterative count in e
+ide_wrblk2: 
+	ld bc, PIO_IDE_CTL|IDE_WR_LINE	
+	out (c), d              ;and assert write pin	
+	ld bc, PIO_IDE_LSB      ;drive lower lines with lsb
+	outi                    ;write the lower byte (HL++)
+	ld bc, PIO_IDE_MSB      ;drive upper lines with msb
+	outi                    ;write the upper byte (HL++)
+	ld bc, PIO_IDE_CTL
+	ld d, IDE_DATA
+	out (c), d              ;deassert write pin
+	dec e                   ;keep iterative count in e
+	jr nz, ide_wrblk2
+   ;ld bc, PIO_IDE_CTL      ;just for info
+	ld d, $0
+	out (c), d		        ;deassert all control pins
+	ld bc, PIO_IDE_CONFIG
+	ld d, PIO_IDE_RD
+	out (c), d              ;config 8255 chip, read mode
+    pop de
 	pop	bc
 	ret
 
-ide_rd_8:
+	;Do a read bus cycle to the drive, using the 8255.
+	;input A = ide register address
+	;output A = lower byte read from IDE drive
+ide_read_byte:
     push bc
-    push hl
-	ld bc, PIO_IDE_C
+    push de
+	ld d, a                 ;copy address to D
+	ld bc, PIO_IDE_CTL
 	out (c), a              ;drive address onto control lines
-	ld l, a                 ;copy address to l
 	or IDE_RD_LINE	
 	out (c), a              ;and assert read pin
 	ld bc, PIO_IDE_LSB
 	in e, (c)	            ;read the lower byte
-	ld bc, PIO_IDE_C
-	out (c), l              ;deassert read pin
+	ld bc, PIO_IDE_CTL
+	out (c), d              ;deassert read pin
 	xor	a
 	out (c), a		        ;deassert all control pins
-	pop hl
+	ld a, e
+	pop de
 	pop	bc
 	ret
 
 	;Do a write bus cycle to the drive, via the 8255
-	;input a = ide register address
-	;input e = lsb to write to IDE drive
-	;input d = msb to write to IDE drive
-	;bc is changed
-ide_wr_16:
+	;input A = ide register address
+	;input E = lsb to write to IDE drive
+	;uses DE
+ide_write_byte:
     push bc
-    push hl
-	ld l, a                 ;copy address to l
-	ld bc, PIO_IDE_CNTL
+	ld d, a                 ;copy address to D (unused MSB)
+	ld bc, PIO_IDE_CONFIG
 	ld a, PIO_IDE_WR
 	out (c), a              ;config 8255 chip, write mode
-	ld bc, PIO_IDE_C
-	ld a, l	
-	out (c), a              ;drive address onto control lines
-	or IDE_WR_LINE	
-	out (c), a              ;and assert write pin	
-	ld bc, PIO_IDE_LSB
-	out (c), e	            ;drive lower lines with lsb
-	ld bc, PIO_IDE_MSB
-	out (c), d	            ;drive upper lines with msb
-	ld bc, PIO_IDE_C
-	out (c), l              ;deassert write pin
-	xor	a
-	out (c), a		        ;deassert all control pins
-	ld bc, PIO_IDE_CNTL
-	ld a, PIO_IDE_RD
-	out (c), a              ;config 8255 chip, read mode
-	pop hl
-	pop	bc
-	ret
-
-ide_wr_8:
-    push bc
-    push hl
-	ld l, a                 ;copy address to l
-	ld bc, PIO_IDE_CNTL
-	ld a, PIO_IDE_WR
-	out (c), a              ;config 8255 chip, write mode
-	ld bc, PIO_IDE_C
-	ld a, l	
+	ld bc, PIO_IDE_CTL
+	ld a, d	
 	out (c), a              ;drive address onto control lines
 	or IDE_WR_LINE	
 	out (c), a              ;and assert write pin
 	ld bc, PIO_IDE_LSB
 	out (c), e	            ;drive lower lines with lsb
-	ld bc, PIO_IDE_C
-	out (c), l              ;deassert write pin
+	ld bc, PIO_IDE_CTL
+	out (c), d              ;deassert write pin
 	xor	a
 	out (c), a		        ;deassert all control pins
-	ld bc, PIO_IDE_CNTL
+	ld bc, PIO_IDE_CONFIG
 	ld a, PIO_IDE_RD
 	out (c), a              ;config 8255 chip, read mode
-	pop hl
 	pop	bc
 	ret
 
