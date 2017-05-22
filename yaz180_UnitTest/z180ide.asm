@@ -201,7 +201,7 @@ begin:
     ld hl, msg_mdl
     call pstr
     ld hl, ide_buffer + 54
-    ld b, 40
+    ld b, 20
     call print_name
     call pnewline
 
@@ -209,7 +209,7 @@ begin:
     ld hl, msg_sn
     call pstr
     ld hl, ide_buffer + 20
-    ld b, 20
+    ld b, 10
     call print_name
     call pnewline
 
@@ -217,7 +217,7 @@ begin:
     ld hl, msg_rev
     call pstr
     ld hl, ide_buffer + 46
-    ld b, 8
+    ld b, 4
     call print_name
     call pnewline
 
@@ -240,16 +240,21 @@ begin:
     ;dump the ID information
     ld hl, ide_buffer
     call phexdump
-    
-    ;read sector $00000000
+
+    xor a
+dump_sector:
+    ;read sector $00000000 to $000000FF
     ld bc, $0000
     ld de, $0000
+    ld e, a
     ld hl, ide_buffer
     call ide_read_sector
     ;dump the $00000000 sector information
     ld hl, ide_buffer
     call phexdump
-
+    inc a               ;print first 256 sectors, for fun
+    jr nz, dump_sector
+    
     ;cause the drive to spin down
     call ide_spindown
 
@@ -286,13 +291,22 @@ pstr:
     inc hl              ; Next byte
     jr pstr
 
-    ;print a string pointed to by HL, no more than B byte long
+    ;print a string pointed to by HL, no more than B words long
+    ;the IDE string are byte swapped.  Fetch each
+    ;word and swap so the names print correctly
 print_name:
-    ld a, (hl)          ; Get a byte
+    inc hl
+    ld a, (hl)          ; Get LSB byte
+    or a                ; Is it null $00 ?
+    ret z               ; Then RETurn on terminator
+    rst 08              ; Print it
+    dec hl
+    ld a, (hl)          ; Get MSB byte
     or a                ; Is it null $00 ?
     ret z               ; Then RETurn on terminator
     rst 08              ; Print it
     inc hl              ; Next byte
+    inc hl
     djnz print_name     ; Continue until B = 00
     ret
 
@@ -367,7 +381,7 @@ phd2:
     rst 08
 
     pop hl
-    ld b, 16            ;print 16 ascii bytes per line
+    ld b, 16            ;print 16 ascii words per line
 phd3:
     ld a, (hl)
     inc hl
@@ -698,10 +712,10 @@ ide_read_block:
 ide_rdblk2:
     ld d, IDE_DATA|IDE_RD_LINE
     out (c), d              ;and assert read pin
-    ld bc, PIO_IDE_MSB
-    ini                     ;read the upper byte (HL++)
     ld bc, PIO_IDE_LSB
     ini                     ;read the lower byte (HL++)
+    ld bc, PIO_IDE_MSB
+    ini                     ;read the upper byte (HL++)
     ld bc, PIO_IDE_CTL
     ld d, IDE_DATA
     out (c), d              ;deassert read pin
