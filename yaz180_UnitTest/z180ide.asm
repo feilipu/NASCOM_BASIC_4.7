@@ -466,6 +466,7 @@ ide_write_sector:
     call ide_wait_ready     ;wait until the write is complete
     ret nc
     call ide_test_error     ;ensure no error was reported
+    ret nc
     pop af
     scf                     ;carry = 1 on return = operation ok
     ret
