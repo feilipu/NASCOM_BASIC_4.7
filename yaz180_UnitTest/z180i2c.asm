@@ -24,11 +24,11 @@
 ;
 
 ;   from Nascom Basic Symbol Tables .ORIG $0390
-DEINT       .EQU    $0C47       ; Function DEINT to get USR(x) into DE registers
-ABPASS      .EQU    $13BD       ; Function ABPASS to put output into AB register
+DEINT       .EQU    $0C47   ;Function DEINT to get USR(x) into DE registers
+ABPASS      .EQU    $13BD   ;Function ABPASS to put output into AB register
 
-location    .equ    $3000       ; Where this driver will exist
-program     .equ    $4000       ; Where this program will exist
+location    .equ    $3000   ;Where this driver will exist
+program     .equ    $4000   ;Where this program will exist
 
 ;------------------------------------------------------------------
 ;
@@ -78,8 +78,8 @@ program     .equ    $4000       ; Where this program will exist
 ;
 ;   Bits in I2CSTA
 ;
-;   Bit 7:2 = ST[5:0]   status code corresponding I2 states
-;   Bit 1:0             always zero
+;   Bit 7:2 = ST[5:0]   status code corresponding I2C states
+;   Bit 1:0             always reads zero
 ;
 ;   Bits in INDPTR
 ;
@@ -185,8 +185,8 @@ I2C_STA_SLAVE_GC                .EQU    $D0
 I2C_STA_SLAVE_GC_AL             .EQU    $D8
 I2C_STA_SLAVE_GC_DATA_RX_ACK    .EQU    $E0
 I2C_STA_SLAVE_GC_DATA_RX_NAK    .EQU    $E8
-I2C_STA_IDLE                    .EQU    $F8
-I2C_STA_ILLEGAL_ICOUNT          .EQU    $FC
+I2C_STA_IDLE                    .EQU    $F8 ;_IDLE is unused, so
+I2C_STA_ILLEGAL_ICOUNT          .EQU    $FC ;_ILLEGAL_ICOUNT can be $F8 case
 
 ;   Bits in PCA_CON
 
@@ -240,52 +240,175 @@ I2C2_buffer     .equ    I2C1_buffer+I2C_BUFFER_SIZE+1
     .org location
 
 ;------------------------------------------------------------------------------
+; API routines - functions for the user
+
+    ;Initialise a PCA9665 device
+    ;input A  =  device address, PCA_1_ADDR or PCA_2_ADDR
+pca_initialise:
+    tst PCA_1_ADDR|PCA_2_ADDR
+    ret z                   ;no device address match, so exit
+    and PCA_1_ADDR|PCA_2_ADDR
+    or PCA_CON              ;prepare device and register address
+    ld c, a
+    ld a, I2C_CON_ENSIO     ;enable the PCA9665 device
+    jp i2c_write_direct
+
+    ;Reset a PCA9665 device
+    ;input A  =  device address, PCA_1_ADDR or PCA_2_ADDR
+    ;write a $A5 followed by $5A to the IPRESET register
+
+pca_software_reset:
+    tst PCA_1_ADDR|PCA_2_ADDR
+    ret z                   ;no device address match, so exit
+    and PCA_1_ADDR|PCA_2_ADDR
+    or PCA_IPRESET          ;prepare device and register address
+    ld c, a
+    ld a, $A5               ;reset the PCA9665 device
+    call i2c_write_indirect
+    ld a, $5A               ;reset the PCA9665 device
+    jp i2c_write_indirect
+
+    ;attach an interrupt relevant for the specific device
+    ;input HL = address of the interrupt service routine
+    ;input A  = device address, PCA_1_ADDR or PCA_2_ADDR
+
+i2c_interrupt_attach:
+    tst PCA_1_ADDR|PCA_2_ADDR
+    ret z                   ;no device address match, so exit
+    and PCA_2_ADDR
+    jr nz, i2c_int_at2    
+    ld (INT_INT1_ADDR), hl  ;load the address of the APU INT1 routine
+    ret
+    
+i2c_int_at2:
+    ld (INT_INT2_ADDR), hl  ;load the address of the APU INT2 routine
+    ret
+
+;------------------------------------------------------------------------------
 ; low level routines - direct to hardware
 
+    ;Enable the I2C interrupt for each PCA9665 device
+    ;Configuring the interrupt is done in the i2c_interrupt_attach function
+    ;input A  =  device address, PCA_1_ADDR or PCA_2_ADDR
 
+i2c_interrupt_enable:
+;    tst PCA_1_ADDR|PCA_2_ADDR
+;    ret z               ;no device address match, so exit
+    push bc
+    in0 c, (ITC)        ;get INT/TRAP Control Register (ITC)
+    and PCA_2_ADDR
+    ld a, c
+    jr nz, i2c_int_en2    
+    or ITC_ITE1         ;mask in INT1
+    jr i2c_int_en1
+i2c_int_en2:
+    or ITC_ITE2         ;mask in INT2
+i2c_int_en1:
+    out0 (ITC), a       ;enable external interrupt
+    pop bc
+    ret
 
-    ;Do a read from the indirect registers
-    ;input C  =  device && indirect register address (DR)
-    ;output A =  byte read
-    ;uses BC
+    ;Disable the I2C interrupt for each PCA9665 device
+    ;Configuring the interrupt is done in the i2c_interrupt_attach function
+    ;input A  =  device address, PCA_1_ADDR or PCA_2_ADDR
+
+i2c_interrupt_disable:
+;    tst PCA_1_ADDR|PCA_2_ADDR
+;    ret z               ;no device address match, so exit
+    push bc
+    in0 c, (ITC)        ;get INT/TRAP Control Register (ITC)
+    and PCA_2_ADDR
+    ld a, c
+    jr nz, i2c_int_de2
+    and ~ITC_ITE1       ;mask out INT1
+    jr i2c_int_de1
+i2c_int_de2:
+    and  ~ITC_ITE2      ;mask out INT2
+i2c_int_de1:
+    out0 (ITC), a       ;disable external interrupt
+    pop bc   
+    ret
+
+    ;Do a burst read from the direct registers
+    ;input B  =  number of bytes to read < $FF
+    ;input C  =  device && direct register address ($DR)
+    ;input HL =  base adddress of buffer
+    ;FIXME do this with DMA
     
-i2c_read_indirect:
+i2c_read_burst:
+    push af
+    ld a, b             ;keep iterative count in A
+i2c_rd_bst:
     ld b, c             ;prepare device and register address
                         ;lower address bits (0x1F) of B irrelevant
                         ;upper address bits (0xFC) of C irrelevant
+    ini                 ;read the byte (HL++)
+    dec a               ;keep iterative count in A
+    jr nz, i2c_rd_bst
+    pop af
+    ret
+
+    ;Do a burst write to the direct registers
+    ;input B  =  number of bytes to write < $FF
+    ;input C  =  device && direct register address ($DR)
+    ;input HL =  base adddress of buffer
+    ;FIXME do this with DMA
+    
+i2c_write_burst:
+    push af
+    ld a, b             ;keep iterative count in A
+i2c_wr_bst:
+    ld b, c             ;prepare device and register address
+                        ;lower address bits (0x1F) of B irrelevant
+                        ;upper address bits (0xFC) of C irrelevant
+    outi                ;write the byte (HL++)
+    dec a               ;keep iterative count in A
+    jr nz, i2c_wr_bst
+    pop af
+    ret
+
+    ;Do a read from the indirect registers
+    ;input C  =  device & indirect register address ($DR)
+    ;output A =  byte read
+    ;preserves device and register address in BC
+    
+i2c_read_indirect:
+    push bc             ;preserve the device and register address
+    ld b, c             ;prepare device and register address
+                        ;lower address bits (0x1F) of B irrelevant
     ld a, c             ;prepare indirect address in A
     and $07             ;ensure upper bits are zero
     ld c, PCA_INDPTR
-    out (c), a          ;write the address to the PCA_INDPTR
-
+    out (c), a          ;write the indirect address to the PCA_INDPTR
     ld c, PCA_IND       ;prepare device and indirect register address
                         ;lower address bits (0x1F) of B irrelevant
-                        ;upper address bits (0xFC) of C irrelevant
-    in a, (c)           ;get the data from the indirect register
+    in a, (c)           ;get the byte from the indirect register
+    pop bc
     ret
 
     ;Do a write to the indirect registers
-    ;input C  =  device && direct register address (DR)
+    ;input C  =  device & direct register address ($DR)
     ;input A  =  byte to write
-    ;uses BC
+    ;preserves device and register address in BC
 
 i2c_write_indirect:
+    push bc             ;preserve the device and register address
+    push af             ;preserve the byte to write
     ld b, c             ;prepare device and register address
                         ;lower address bits (0x1F) of B irrelevant
-                        ;upper address bits (0xFC) of C irrelevant
     ld a, c             ;prepare indirect address in A
     and $07             ;ensure upper bits are zero
     ld c, PCA_INDPTR
-    out (c), a          ;write the address to the PCA_INDPTR
-
+    out (c), a          ;write the indirect address to the PCA_INDPTR
     ld c, PCA_IND       ;prepare device and indirect register address
                         ;lower address bits (0x1F) of B irrelevant
-                        ;upper address bits (0xFC) of C irrelevant
-    out (c), a          ;write the data to the indirect register
+    pop af              ;recover the byte to write
+    out (c), a          ;write the byte to the indirect register
+    pop bc
     ret
 
     ;Do a read from the direct registers
-    ;input C  =  device && direct register address (DR)
+    ;input  C =  device & direct register address ($DR)
     ;output A =  byte read
     ;uses BC
     
@@ -297,7 +420,7 @@ i2c_read_direct:
     ret
 
     ;Do a write to the direct registers
-    ;input C  =  device && direct register address (DR)
+    ;input C  =  device & direct register address ($DR)
     ;input A  =  byte to write
     ;uses BC
 

@@ -731,7 +731,7 @@ ide_rdblk2:
 
 
     ;Write a block of 512 bytes (one sector) from (HL++) to
-    ; the drive 16 bit data register
+    ;the drive 16 bit data register
 ide_write_block:
     push bc
     push de
