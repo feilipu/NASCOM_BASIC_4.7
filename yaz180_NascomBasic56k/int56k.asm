@@ -57,18 +57,18 @@ ASCI0_RX_GET:
         and SER_OVRN|SER_PE|SER_FE  ; test whether we have error on ASCI0
         jr nz, ASCI0_RX_ERROR       ; drop this byte, clear error, and get the next byte
 
-        ld a, (serRx0BufUsed)       ; get the number of bytes in the Rx buffer      
+        ld a, (ser0RxBufUsed)       ; get the number of bytes in the Rx buffer      
         cp SER_RX0_BUFSIZE          ; check whether there is space in the buffer
         jr nc, ASCI0_RX_CHECK       ; buffer full, check whether we need to drain H/W FIFO
 
         ld a, l                     ; get Rx byte from l
-        ld hl, (serRx0InPtr)        ; get the pointer to where we poke
-        ld (hl), a                  ; write the Rx byte to the serRx0InPtr target
+        ld hl, (ser0RxInPtr)        ; get the pointer to where we poke
+        ld (hl), a                  ; write the Rx byte to the ser0RxInPtr target
 
         inc l                       ; move the Rx pointer low byte along, 0xFF rollover
-        ld (serRx0InPtr), hl        ; write where the next byte should be poked
+        ld (ser0RxInPtr), hl        ; write where the next byte should be poked
 
-        ld hl, serRx0BufUsed
+        ld hl, ser0RxBufUsed
         inc (hl)                    ; atomically increment Rx buffer count
         jr ASCI0_RX_CHECK           ; check for additional bytes
 
@@ -86,18 +86,18 @@ ASCI0_TX_CHECK:                     ; now start doing the Tx stuff
         and SER_TDRE                ; test whether we can transmit on ASCI0
         jr z, ASCI0_TX_END          ; if not, then end
 
-        ld a, (serTx0BufUsed)       ; get the number of bytes in the Tx buffer
+        ld a, (ser0TxBufUsed)       ; get the number of bytes in the Tx buffer
         or a                        ; check whether it is zero
         jr z, ASCI0_TX_TIE0_CLEAR   ; if the count is zero, then disable the Tx Interrupt
 
-        ld hl, (serTx0OutPtr)       ; get the pointer to place where we pop the Tx byte
+        ld hl, (ser0TxOutPtr)       ; get the pointer to place where we pop the Tx byte
         ld a, (hl)                  ; get the Tx byte
         out0 (TDR0), a              ; output the Tx byte to the ASCI0
 
         inc l                       ; move the Tx pointer low byte along, 0xFF rollover
-        ld (serTx0OutPtr), hl       ; write where the next byte should be popped
+        ld (ser0TxOutPtr), hl       ; write where the next byte should be popped
 
-        ld hl, serTx0BufUsed
+        ld hl, ser0TxBufUsed
         dec (hl)                    ; atomically decrement current Tx count
 
         jr nz, ASCI0_TX_END         ; if we've more Tx bytes to send, we're done for now
@@ -116,19 +116,19 @@ ASCI0_TX_END:
 
 ;------------------------------------------------------------------------------
 RX0:
-        ld a, (serRx0BufUsed)       ; get the number of bytes in the Rx buffer
+        ld a, (ser0RxBufUsed)       ; get the number of bytes in the Rx buffer
         or a                        ; see if there are zero bytes available
         jr z, RX0                   ; wait, if there are no bytes available
 
         push hl                     ; Store HL so we don't clobber it
 
-        ld hl, (serRx0OutPtr)       ; get the pointer to place where we pop the Rx byte
+        ld hl, (ser0RxOutPtr)       ; get the pointer to place where we pop the Rx byte
         ld a, (hl)                  ; get the Rx byte
 
         inc l                       ; move the Rx pointer low byte along, 0xFF rollover
-        ld (serRx0OutPtr), hl       ; write where the next byte should be popped
+        ld (ser0RxOutPtr), hl       ; write where the next byte should be popped
 
-        ld hl, serRx0BufUsed
+        ld hl, ser0RxBufUsed
         dec (hl)                    ; atomically decrement Rx count
 
         pop hl                      ; recover HL
@@ -139,7 +139,7 @@ TX0:
         push hl                     ; store HL so we don't clobber it        
         ld l, a                     ; store Tx character 
 
-        ld a, (serTx0BufUsed)       ; get the number of bytes in the Tx buffer
+        ld a, (ser0TxBufUsed)       ; get the number of bytes in the Tx buffer
         or a                        ; check whether the buffer is empty
         jr nz, TX0_BUFFER_OUT       ; buffer not empty, so abandon immediate Tx
 
@@ -154,18 +154,18 @@ TX0:
         ret                         ; and just complete
 
 TX0_BUFFER_OUT:
-        ld a, (serTx0BufUsed)       ; Get the number of bytes in the Tx buffer
+        ld a, (ser0TxBufUsed)       ; Get the number of bytes in the Tx buffer
         cp SER_TX0_BUFSIZE          ; check whether there is space in the buffer
         jr nc, TX0_BUFFER_OUT       ; buffer full, so wait for free buffer for Tx
 
         ld a, l                     ; retrieve Tx character
-        ld hl, (serTx0InPtr)        ; get the pointer to where we poke
-        ld (hl), a                  ; write the Tx byte to the serTx0InPtr   
+        ld hl, (ser0TxInPtr)        ; get the pointer to where we poke
+        ld (hl), a                  ; write the Tx byte to the ser0TxInPtr   
 
         inc l                       ; move the Tx pointer low byte along, 0xFF rollover
-        ld (serTx0InPtr), hl        ; write where the next byte should be poked
+        ld (ser0TxInPtr), hl        ; write where the next byte should be poked
 
-        ld hl, serTx0BufUsed
+        ld hl, ser0TxBufUsed
         inc (hl)                    ; atomic increment of Tx count
 
         pop hl                      ; recover HL
@@ -183,7 +183,7 @@ TX0_BUFFER_OUT:
 
 ;------------------------------------------------------------------------------
 RX0_CHK:
-        LD      A,(serRx0BufUsed)
+        LD      A,(ser0RxBufUsed)
         CP      $0
         RET
 
@@ -346,17 +346,17 @@ Z180_INIT:
 
             LD      SP,TEMPSTACK    ; Set up a temporary stack
 
-            LD      HL,serRx0Buf    ; Initialise Rx0 Buffer
-            LD      (serRx0InPtr),HL
-            LD      (serRx0OutPtr),HL
+            LD      HL,ser0RxBuf    ; Initialise 0Rx Buffer
+            LD      (ser0RxInPtr),HL
+            LD      (ser0RxOutPtr),HL
 
-            LD      HL,serTx0Buf    ; Initialise Tx0 Buffer
-            LD      (serTx0InPtr),HL
-            LD      (serTx0OutPtr),HL              
+            LD      HL,ser0TxBuf    ; Initialise 0Tx Buffer
+            LD      (ser0TxInPtr),HL
+            LD      (ser0TxOutPtr),HL              
 
-            XOR     A               ; 0 the Tx0 & Rx0 Buffer Counts
-            LD      (serRx0BufUsed),A
-            LD      (serTx0BufUsed),A
+            XOR     A               ; 0 the 0Tx & 0Rx Buffer Counts
+            LD      (ser0RxBufUsed),A
+            LD      (ser0TxBufUsed),A
 
             EI                      ; enable interrupts
 

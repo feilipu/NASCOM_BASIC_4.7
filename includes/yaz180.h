@@ -388,21 +388,21 @@ DEL             .EQU    $7F     ; Delete
 ;
 
 ;   Starting immediately after the Z180 Vector Table.
-serRx0InPtr     .EQU    Z180_VECTOR_BASE+Z180_VECTOR_SIZE
-serRx0OutPtr    .EQU    serRx0InPtr+2
-serTx0InPtr     .EQU    serRx0OutPtr+2
-serTx0OutPtr    .EQU    serTx0InPtr+2
-serRx0BufUsed   .EQU    serTx0OutPtr+2
-serTx0BufUsed   .EQU    serRx0BufUsed+1
+ser0RxInPtr     .EQU    Z180_VECTOR_BASE+Z180_VECTOR_SIZE
+ser0RxOutPtr    .EQU    ser0RxInPtr+2
+ser0TxInPtr     .EQU    ser0RxOutPtr+2
+ser0TxOutPtr    .EQU    ser0TxInPtr+2
+ser0RxBufUsed   .EQU    ser0TxOutPtr+2
+ser0TxBufUsed   .EQU    ser0RxBufUsed+1
 
-basicStarted    .EQU    serTx0BufUsed+1
+basicStarted    .EQU    ser0TxBufUsed+1
 
-serRx1InPtr     .EQU    Z180_VECTOR_BASE+Z180_VECTOR_SIZE+$10
-serRx1OutPtr    .EQU    serRx1InPtr+2
-serTx1InPtr     .EQU    serRx1OutPtr+2
-serTx1OutPtr    .EQU    serTx1InPtr+2
-serRx1BufUsed   .EQU    serTx1OutPtr+2
-serTx1BufUsed   .EQU    serRx1BufUsed+1
+ser1RxInPtr     .EQU    Z180_VECTOR_BASE+Z180_VECTOR_SIZE+$10
+ser1RxOutPtr    .EQU    ser1RxInPtr+2
+ser1TxInPtr     .EQU    ser1RxOutPtr+2
+ser1TxOutPtr    .EQU    ser1TxInPtr+2
+ser1RxBufUsed   .EQU    ser1TxOutPtr+2
+ser1TxBufUsed   .EQU    ser1RxBufUsed+1
 
 APUCMDInPtr     .EQU    Z180_VECTOR_BASE+Z180_VECTOR_SIZE+$20
 APUCMDOutPtr    .EQU    APUCMDInPtr+2
@@ -418,13 +418,13 @@ APUError        .EQU    APUStatus+1
 ;   I/O Buffers must start on 0xnn00 because we increment low byte to roll-over
 BUFSTART_IO     .EQU    Z180_VECTOR_BASE-(Z180_VECTOR_BASE%$100) + $100
 
-serRx0Buf       .EQU    BUFSTART_IO
-serTx0Buf       .EQU    serRx0Buf+SER_RX0_BUFSIZE+1
+ser0RxBuf       .EQU    BUFSTART_IO
+ser0TxBuf       .EQU    ser0RxBuf+SER_RX0_BUFSIZE+1
 
-serRx1Buf       .EQU    serTx0Buf+SER_TX0_BUFSIZE+1
-serTx1Buf       .EQU    serRx1Buf+SER_RX1_BUFSIZE+1
+ser1RxBuf       .EQU    ser0TxBuf+SER_TX0_BUFSIZE+1
+ser1TxBuf       .EQU    ser1RxBuf+SER_RX1_BUFSIZE+1
 
-APUCMDBuf       .EQU    serTx1Buf+SER_TX1_BUFSIZE+1
+APUCMDBuf       .EQU    ser1TxBuf+SER_TX1_BUFSIZE+1
 APUPTRBuf       .EQU    APUCMDBuf+APU_CMD_BUFSIZE+1
 
 ;==============================================================================
