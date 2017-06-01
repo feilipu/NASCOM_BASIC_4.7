@@ -31,8 +31,8 @@
 ; so it is "free ram" when BASIC resets
 ; set BASIC Work space WRKSPC $8000, in CA1 RAM
 
-WRKSPC          .EQU     RAMSTART_CA1 
-TEMPSTACK       .EQU     WRKSPC+$AB
+WRKSPC      .EQU     RAMSTART_CA1 
+TEMPSTACK   .EQU     WRKSPC+$AB
 
 ;==============================================================================
 ;
@@ -46,57 +46,64 @@ ASCI0_INTERRUPT:
         push af
         push hl
                                     ; start doing the Rx stuff
-
         in0 a, (STAT0)              ; load the ASCI0 status register
-        and SER_RDRF                ; test whether we have received on ASCI0
+        tst ASCI_RDRF               ; test whether we have received on ASCI0
         jr z, ASCI0_TX_CHECK        ; if not, go check for bytes to transmit
 
 ASCI0_RX_GET:
-        in0 l, (RDR0)               ; move Rx byte from the ASCI0 to l
+        in0 l, (RDR0)               ; move Rx byte from the ASCI0 RDR to l
+        
+        and ASCI_OVRN|ASCI_PE|ASCI_FE   ; test whether we have error on ASCI0
+        jr nz, ASCI0_RX_ERROR       ; drop this byte, clear error, and get the next byte
 
-        ld a, (serRx0BufUsed)       ; get the number of bytes in the Rx buffer      
-        cp SER_RX0_BUFSIZE          ; check whether there is space in the buffer
+        ld a, (ASCI0RxBufUsed)      ; get the number of bytes in the Rx buffer      
+        cp ASCI0_RX_BUFSIZE         ; check whether there is space in the buffer
         jr nc, ASCI0_RX_CHECK       ; buffer full, check whether we need to drain H/W FIFO
 
         ld a, l                     ; get Rx byte from l
-        ld hl, (serRx0InPtr)        ; get the pointer to where we poke
-        ld (hl), a                  ; write the Rx byte to the serRx0InPtr target
+        ld hl, (ASCI0RxInPtr)       ; get the pointer to where we poke
+        ld (hl), a                  ; write the Rx byte to the ASCI0RxInPtr target
 
         inc l                       ; move the Rx pointer low byte along, 0xFF rollover
-        ld (serRx0InPtr), hl        ; write where the next byte should be poked
+        ld (ASCI0RxInPtr), hl       ; write where the next byte should be poked
 
-        ld hl, serRx0BufUsed
+        ld hl, ASCI0RxBufUsed
         inc (hl)                    ; atomically increment Rx buffer count
+        jr ASCI0_RX_CHECK           ; check for additional bytes
+
+ASCI0_RX_ERROR:
+        in0 a, (CNTLA0)             ; get the CNTRLA0 register
+        and ~ASCI_EFR               ; to clear the error flag, EFR, to 0 
+        out0 (CNTLA0), a            ; and write it back
 
 ASCI0_RX_CHECK:                     ; Z8S180 has 4 byte Rx H/W FIFO
         in0 a, (STAT0)              ; load the ASCI0 status register
-        and SER_RDRF                ; test whether we have received on ASCI0
+        tst ASCI_RDRF               ; test whether we have received on ASCI0
         jr nz, ASCI0_RX_GET         ; if still more bytes in H/W FIFO, get them
 
 ASCI0_TX_CHECK:                     ; now start doing the Tx stuff
-        in0 a, (STAT0)              ; load the ASCI0 status register
-        and SER_TDRE                ; test whether we can transmit on ASCI0
+        and ASCI_TDRE               ; test whether we can transmit on ASCI0
         jr z, ASCI0_TX_END          ; if not, then end
 
-        ld a, (serTx0BufUsed)       ; get the number of bytes in the Tx buffer
+        ld a, (ASCI0TxBufUsed)      ; get the number of bytes in the Tx buffer
         or a                        ; check whether it is zero
         jr z, ASCI0_TX_TIE0_CLEAR   ; if the count is zero, then disable the Tx Interrupt
 
-        ld hl, (serTx0OutPtr)       ; get the pointer to place where we pop the Tx byte
+        ld hl, (ASCI0TxOutPtr)      ; get the pointer to place where we pop the Tx byte
         ld a, (hl)                  ; get the Tx byte
         out0 (TDR0), a              ; output the Tx byte to the ASCI0
 
         inc l                       ; move the Tx pointer low byte along, 0xFF rollover
-        ld (serTx0OutPtr), hl       ; write where the next byte should be popped
+        ld (ASCI0TxOutPtr), hl      ; write where the next byte should be popped
 
-        ld hl, serTx0BufUsed
+        ld hl, ASCI0TxBufUsed
         dec (hl)                    ; atomically decrement current Tx count
 
         jr nz, ASCI0_TX_END         ; if we've more Tx bytes to send, we're done for now
 
 ASCI0_TX_TIE0_CLEAR:
         in0 a, (STAT0)              ; get the ASCI0 status register
-        and ~SER_TIE                ; mask out (disable) the Tx Interrupt
+        and ~ASCI_TIE               ; mask out (disable) the Tx Interrupt
         out0 (STAT0), a             ; set the ASCI0 status register
 
 ASCI0_TX_END:
@@ -110,12 +117,16 @@ ASCI0_TX_END:
             .ORG    0300H
 INIT:
                                     ; Set I/O Control Reg (ICR)
-            LD      A,IO_BASE       ; ICR = $00 [xx00 0000] for I/O Registers at $00 - $3F
+            LD      A,Z180_IO_BASE  ; ICR = $00 [xx00 0000] for I/O Registers at $00 - $3F
             OUT0    (ICR),A         ; Standard I/O Mapping (0 Enabled)
 
-                                    ; Set interrupt vector base (IL)
-            LD      A,VECTOR_BASE   ; IL = $80 [100x xxxx] for Vectors at $80 - $90
-            OUT0    (IL),A          ; Output to the Interrupt Vector Low reg
+                                    ; Set interrupt vector address high byte (I)
+            LD      A,Z180_VECTOR_BASE/$100
+            LD      I,A
+                                    ; Set interrupt vector address low byte (IL)
+                                    ; IL = $20 [001x xxxx] for Vectors at $nn20 - $nn2F
+            LD      A,Z180_VECTOR_BASE%$100
+            OUT0    (IL),A          ; Set the interrupt vector low byte
 
             IM      1               ; Interrupt mode 1 for INT0 (used for APU)
 
@@ -153,18 +164,17 @@ INIT:
                                     ; Physical Addresses
             LD      A,78H           ; Set Common 1 Area Physical $80000 -> 78H
             OUT0    (CBR),A
-
             LD      A,3CH           ; Set Bank Area Physical $40000 -> 3CH
             OUT0    (BBR),A
 
                                     ; load the default ASCI configuration
-                                    ; 
                                     ; BAUD = 115200 8n1
                                     ; receive enabled
                                     ; transmit enabled
                                     ; receive interrupt enabled
                                     ; transmit interrupt disabled
-            LD      A,SER_RE|SER_TE|SER_8N1
+
+            LD      A,ASCI_RE|ASCI_TE|ASCI_8N1
             OUT0    (CNTLA0),A      ; output to the ASCI0 control A reg
 
                                     ; PHI / PS / SS / DR = BAUD Rate
@@ -174,7 +184,7 @@ INIT:
             XOR     A               ; BAUD = 115200
             OUT0    (CNTLB0),A      ; output to the ASCI0 control B reg
 
-            LD      A,SER_RIE       ; receive interrupt enabled
+            LD      A,ASCI_RIE      ; receive interrupt enabled
             OUT0    (STAT0),A       ; output to the ASCI0 status reg
 
                                     ; Set up 82C55 PIO in Mode 0 #12
@@ -193,22 +203,22 @@ INIT:
 INITIALISE:
             LD      SP,TEMPSTACK    ; Set up a temporary stack
 
-            LD      HL,VECTOR_PROTO ; Establish Z80 RST Vector Table
-            LD      DE,Z80_VECTOR_TABLE
-            LD      BC,VECTOR_PROTO_SIZE
+            LD      HL,Z80_VECTOR_PROTO ; Establish Z80 RST Vector Table
+            LD      DE,Z80_VECTOR_BASE
+            LD      BC,Z80_VECTOR_SIZE
             LDIR
 
-            LD      HL,serRx0Buf    ; Initialise Rx0 Buffer
-            LD      (serRx0InPtr),HL
-            LD      (serRx0OutPtr),HL
+            LD      HL,ASCI0RxBuf   ; Initialise 0Rx Buffer
+            LD      (ASCI0RxInPtr),HL
+            LD      (ASCI0RxOutPtr),HL
 
-            LD      HL,serTx0Buf    ; Initialise Tx0 Buffer
-            LD      (serTx0InPtr),HL
-            LD      (serTx0OutPtr),HL              
+            LD      HL,ASCI0TxBuf   ; Initialise 0Tx Buffer
+            LD      (ASCI0TxInPtr),HL
+            LD      (ASCI0TxOutPtr),HL              
 
-            XOR     A               ; 0 the Tx0 & Rx0 Buffer Counts
-            LD      (serRx0BufUsed),A
-            LD      (serTx0BufUsed),A
+            XOR     A               ; 0 the ASCI0 Tx & Rx Buffer Counts
+            LD      (ASCI0RxBufUsed),A
+            LD      (ASCI0TxBufUsed),A
 
             EI                      ; enable interrupts
 
@@ -389,7 +399,7 @@ LoadOKStr:      .BYTE "Done",CR,LF,0
 
 ;==============================================================================
 ;
-; Z80 INTERRUPT VECTOR DESTINATION ADDRESS ASSIGNMENTS
+; Z80 INTERRUPT VECTOR SERVICE ROUTINES
 ;
 
 ;RST_08      .EQU    TX0             ; TX a byte over ASCI0
@@ -401,24 +411,26 @@ RST_18      .EQU    NULL_RET        ; RET
 RST_20      .EQU    NULL_RET        ; RET
 RST_28      .EQU    NULL_RET        ; RET
 RST_30      .EQU    NULL_RET        ; RET
-INT_00      .EQU    NULL_INT        ; EI RETI
+INT_INT0    .EQU    NULL_INT        ; EI RETI
 INT_NMI     .EQU    NULL_NMI        ; RETN
 
 ;==============================================================================
 ;
-; Z180 INTERRUPT VECTOR SECTION 
+; Z180 INTERRUPT VECTOR SERVICE ROUTINES
 ;
 
-;------------------------------------------------------------------------------
-; INTERRUPT VECTOR ASCI Channel 0 [ Vector at $8E ]
-
-            .ORG    VECTOR_ASCI0
-            JP      ASCI0_INTERRUPT
+INT_INT1    .EQU    NULL_RET        ; external /INT1
+INT_INT2    .EQU    NULL_RET        ; external /INT2
+INT_PRT0    .EQU    NULL_RET        ; PRT channel 0
+INT_PRT1    .EQU    NULL_RET        ; PRT channel 1
+INT_DMA0    .EQU    NULL_RET        ; DMA channel 0
+INT_DMA1    .EQU    NULL_RET        ; DMA Channel 1
+INT_CSIO    .EQU    NULL_RET        ; Clocked serial I/O
+INT_ASCI0   .EQU    NULL_RET        ; Async channel 0
+INT_ASCI1   .EQU    NULL_RET        ; Async channel 1
 
 ;==============================================================================
 ;
-            .ORG    $1FFF
-            HALT
             .END
 ;
 ;==============================================================================

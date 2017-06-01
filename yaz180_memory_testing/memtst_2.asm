@@ -42,12 +42,16 @@ TEMPSTACK       .EQU     WRKSPC+$AB
             .ORG    0300H
 INIT:
                                     ; Set I/O Control Reg (ICR)
-            LD      A,IO_BASE       ; ICR = $00 [xx00 0000] for I/O Registers at $00 - $3F
+            LD      A,Z180_IO_BASE  ; ICR = $00 [xx00 0000] for I/O Registers at $00 - $3F
             OUT0    (ICR),A         ; Standard I/O Mapping (0 Enabled)
 
-                                    ; Set interrupt vector base (IL)
-            LD      A,VECTOR_BASE   ; IL = $80 [100x xxxx] for Vectors at $80 - $90
-            OUT0    (IL),A          ; Output to the Interrupt Vector Low reg
+                                    ; Set interrupt vector address high byte (I)
+            LD      A,Z180_VECTOR_BASE/$100
+            LD      I,A
+                                    ; Set interrupt vector address low byte (IL)
+                                    ; IL = $20 [001x xxxx] for Vectors at $nn20 - $nn2F
+            LD      A,Z180_VECTOR_BASE%$100
+            OUT0    (IL),A          ; Set the interrupt vector low byte
 
             IM      1               ; Interrupt mode 1 for INT0 (used for APU)
 
@@ -96,7 +100,7 @@ INIT:
                                     ; transmit enabled
                                     ; receive interrupt enabled
                                     ; transmit interrupt disabled
-            LD      A,SER_RE|SER_TE|SER_8N1
+            LD      A,ASCI_RE|ASCI_TE|ASCI_8N1
             OUT0    (CNTLA0),A      ; output to the ASCI0 control A reg
 
                                     ; PHI / PS / SS / DR = BAUD Rate
@@ -106,7 +110,7 @@ INIT:
             XOR     A               ; BAUD = 115200
             OUT0    (CNTLB0),A      ; output to the ASCI0 control B reg
 
-;            LD      A,SER_RIE       ; receive interrupt enabled
+;            LD      A,ASCI_RIE      ; receive interrupt enabled
 ;            OUT0    (STAT0),A       ; output to the ASCI0 status reg
 
                                     ; Set up 82C55 PIO in Mode 0 #12
@@ -125,32 +129,26 @@ INIT:
 INITIALISE:
             LD      SP,TEMPSTACK    ; Set up a temporary stack
 
-            LD      HL,VECTOR_PROTO ; Establish Z80 RST Vector Table
-            LD      DE,Z80_VECTOR_TABLE
-            LD      BC,VECTOR_PROTO_SIZE
+            LD      HL,Z80_VECTOR_PROTO ; Establish Z80 RST Vector Table
+            LD      DE,Z80_VECTOR_BASE
+            LD      BC,Z80_VECTOR_SIZE
             LDIR
 
-            LD      HL,serRx0Buf    ; Initialise Rx0 Buffer
-            LD      (serRx0InPtr),HL
-            LD      (serRx0OutPtr),HL
+            LD      HL,ASCI0RxBuf   ; Initialise 0Rx Buffer
+            LD      (ASCI0RxInPtr),HL
+            LD      (ASCI0RxOutPtr),HL
 
-            LD      HL,serTx0Buf    ; Initialise Tx0 Buffer
-            LD      (serTx0InPtr),HL
-            LD      (serTx0OutPtr),HL              
+            LD      HL,ASCI0TxBuf   ; Initialise 0Tx Buffer
+            LD      (ASCI0TxInPtr),HL
+            LD      (ASCI0TxOutPtr),HL              
 
-            XOR     A               ; 0 the Tx0 & Rx0 Buffer Counts
-            LD      (serRx0BufUsed),A
-            LD      (serTx0BufUsed),A
+            XOR     A               ; 0 the ASCI0 Tx & Rx Buffer Counts
+            LD      (ASCI0RxBufUsed),A
+            LD      (ASCI0TxBufUsed),A
 
             EI                      ; enable interrupts
 
 START:
-            RST     08H
-            RST     10H
-            RST     18H
-            RST     20H
-            RST     28H
-            RST     30H
             LD      BC,PIOB         ; 82C55 IO PORT B address in BC
             LD      A,$01           ; Set Port B TIL311 XXX
             OUT     (C),A           ; put debug HEX Code onto Port B
@@ -338,24 +336,26 @@ RST_18      .EQU    NULL_RET        ; RET
 RST_20      .EQU    NULL_RET        ; RET
 RST_28      .EQU    NULL_RET        ; RET
 RST_30      .EQU    NULL_RET        ; RET
-INT_00      .EQU    NULL_INT        ; EI RETI
+INT_INT0    .EQU    NULL_INT        ; EI RETI
 INT_NMI     .EQU    NULL_NMI        ; RETN
 
 ;==============================================================================
 ;
-; Z180 INTERRUPT VECTOR SECTION 
+; Z180 INTERRUPT VECTOR SERVICE ROUTINES
 ;
 
-;------------------------------------------------------------------------------
-; INTERRUPT VECTOR ASCI Channel 0 [ Vector at $8E ]
-
-            .ORG    VECTOR_ASCI0
-            JP      NULL_RET        ; RET
+INT_INT1    .EQU    NULL_RET        ; external /INT1
+INT_INT2    .EQU    NULL_RET        ; external /INT2
+INT_PRT0    .EQU    NULL_RET        ; PRT channel 0
+INT_PRT1    .EQU    NULL_RET        ; PRT channel 1
+INT_DMA0    .EQU    NULL_RET        ; DMA channel 0
+INT_DMA1    .EQU    NULL_RET        ; DMA Channel 1
+INT_CSIO    .EQU    NULL_RET        ; Clocked serial I/O
+INT_ASCI0   .EQU    NULL_RET        ; Async channel 0
+INT_ASCI1   .EQU    NULL_RET        ; Async channel 1
 
 ;==============================================================================
 ;
-            .ORG    $1FFF
-            HALT
             .END
 ;
 ;==============================================================================

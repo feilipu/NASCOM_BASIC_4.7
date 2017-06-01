@@ -335,7 +335,7 @@ Z180_INIT:
                                     ; PS 0, SS_DIV_1 0, DR 0           
             XOR     A               ; BAUD = 115200
             OUT0    (CNTLB0),A      ; output to the ASCI0 control B reg
-                          
+
             LD      A,ASCI_RIE      ; receive interrupt enabled
             OUT0    (STAT0),A       ; output to the ASCI0 status reg
 

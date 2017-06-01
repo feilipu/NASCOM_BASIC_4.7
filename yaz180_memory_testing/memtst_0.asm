@@ -52,7 +52,7 @@ Z180_INIT:
                                     ; transmit enabled
                                     ; receive interrupt enabled
                                     ; transmit interrupt disabled
-            LD      A,SER_RE|SER_TE|SER_8N1
+            LD      A,ASCI_RE|ASCI_TE|ASCI_8N1
             OUT0    (CNTLA0),A      ; output to the ASCI0 control A reg
 
                                     ; PHI / PS / SS / DR = BAUD Rate
@@ -62,7 +62,7 @@ Z180_INIT:
             XOR     A               ; BAUD = 115200
             OUT0    (CNTLB0),A      ; output to the ASCI0 control B reg
 
-;            LD      A,SER_RIE       ; receive interrupt enabled
+;            LD      A,ASCI_RIE       ; receive interrupt enabled
 ;            OUT0    (STAT0),A       ; output to the ASCI0 status reg
 
                                     ; Set up 82C55 PIO in Mode 0 #12

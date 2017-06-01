@@ -57,7 +57,7 @@ INIT:
 
                                     ; Set Operation Mode Control Reg (OMCR)
             LD      A,OMCR_M1E      ; Enable M1 for single step, disable 64180 I/O _RD Mode
-            OUT0    (OMCR),A        ; X80 Mode (M1 Disabled, IOC Disabled) 
+            OUT0    (OMCR),A        ; X80 Mode (M1 Disabled, IOC Disabled)
 
                                     ; Set internal clock = crystal x 2 = 36.864MHz
                                     ; if using ZS8180 or Z80182 at High-Speed
