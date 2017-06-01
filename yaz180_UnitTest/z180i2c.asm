@@ -123,13 +123,13 @@ program     .equ    $4000   ;Where this program will exist
 
 ; PCA9665 I2C Port Definitions
 
-PCA_1       .EQU    $A000   ; Base Address for PCA9665 1 I/O
-PCA_2       .EQU    $8000   ; Base Address for PCA9665 2 I/O
+PCA1        .EQU    $A000   ; Base Address for PCA9665 1 I/O
+PCA2        .EQU    $8000   ; Base Address for PCA9665 2 I/O
 
 ; PCA9665 device addressing
 
-PCA_1_ADDR  .EQU    $A0     ; distinguish the device address, with MSB
-PCA_2_ADDR  .EQU    $80     ; only 3 MSB bits are H/W decoded %111xxxxx
+PCA1_ADDR   .EQU    $A0     ; distinguish the device address, with MSB
+PCA2_ADDR   .EQU    $80     ; only 3 MSB bits are H/W decoded %111xxxxx
 
 ;------------------------------------------------------------------------------
 ; I2C I/O Register Addressing
@@ -253,8 +253,8 @@ I2C_BUFFER_SIZE .EQU    $FF     ; PCA9665 has 68 Byte Tx/Rx hardware buffer
 
 ;I2C 256 byte sector buffer origin
 
-i2c1Buffer     .equ    APUPTRBuf+APU_PTR_BUFSIZE+1
-I2C2Buffer     .equ    i2c1Buffer+I2C_BUFFER_SIZE+1
+i2c1Buffer     .EQU    APUPTRBuf+APU_PTR_BUFSIZE+1
+i2c2Buffer     .EQU    i2c1Buffer+I2C_BUFFER_SIZE+1
 
 ;==============================================================================
 ;
@@ -315,24 +315,24 @@ I2C2Buffer     .equ    i2c1Buffer+I2C_BUFFER_SIZE+1
 ; API routines - functions for the user
 
     ;Initialise a PCA9665 device
-    ;input A  =  device address, PCA_1_ADDR or PCA_2_ADDR
+    ;input A  =  device address, PCA1_ADDR or PCA2_ADDR
 pca_initialise:
-    tst PCA_1_ADDR|PCA_2_ADDR
+    tst PCA1_ADDR|PCA2_ADDR
     ret z                   ;no device address match, so exit
-    and PCA_1_ADDR|PCA_2_ADDR
+    and PCA1_ADDR|PCA2_ADDR
     or PCA_CON              ;prepare device and register address
     ld c, a
     ld a, I2C_CON_ENSIO     ;enable the PCA9665 device
     jp i2c_write_direct
 
     ;Reset a PCA9665 device
-    ;input A  =  device address, PCA_1_ADDR or PCA_2_ADDR
+    ;input A  =  device address, PCA1_ADDR or PCA2_ADDR
     ;write a $A5 followed by $5A to the IPRESET register
 
 pca_software_reset:
-    tst PCA_1_ADDR|PCA_2_ADDR
+    tst PCA1_ADDR|PCA2_ADDR
     ret z                   ;no device address match, so exit
-    and PCA_1_ADDR|PCA_2_ADDR
+    and PCA1_ADDR|PCA2_ADDR
     or PCA_IPRESET          ;prepare device and register address
     ld c, a
     ld a, $A5               ;reset the PCA9665 device
@@ -342,12 +342,12 @@ pca_software_reset:
 
     ;attach an interrupt relevant for the specific device
     ;input HL = address of the interrupt service routine
-    ;input A  = device address, PCA_1_ADDR or PCA_2_ADDR
+    ;input A  = device address, PCA1_ADDR or PCA2_ADDR
 
 i2c_interrupt_attach:
-    tst PCA_1_ADDR|PCA_2_ADDR
+    tst PCA1_ADDR|PCA2_ADDR
     ret z                   ;no device address match, so exit
-    cp PCA_2_ADDR
+    cp PCA2_ADDR
     jr z, i2c_int_at2    
     ld (INT_INT1_ADDR), hl  ;load the address of the APU INT1 routine
     ret
@@ -367,7 +367,7 @@ i2c_int1_read_buffer:
     push de
     push hl
 
-    ld b, PCA_1_ADDR        ;for the PCA9665 1, we need the status
+    ld b, PCA1_ADDR        ;for the PCA9665 1, we need the status
     ld c, PCA_STA
     in l, (c)               ;get the status from status register for switch
     srl l                   ;shift right to make word offset case addresses
@@ -397,24 +397,27 @@ _MSTR_RESRT_TX_AD:
     ld hl, i2c1SlaveAddr                    ; get address of slave we're reading
     ld a, (hl)
     or $01
-    i2c_write_direct_m(PCA_1_ADDR,PCA_DAT)
+    i2c_write_direct_m(PCA1_ADDR,PCA_DAT)
     ld hl, i2c1SentenceLgth
     ld a, (hl)
-    or $80
-    i2c_write_indirect_m(PCA_1_ADDR,PCA_ICOUNT)
+    or I2C_ICOUNT_LB
+    i2c_write_indirect_m(PCA1_ADDR,PCA_ICOUNT)
     ld a, I2C_CON_ENSIO|I2C_CON_MODE
-    i2c_write_direct_m(PCA_1_ADDR,PCA_CON)
+    i2c_write_direct_m(PCA1_ADDR,PCA_CON)
     ret
 
+_MSTR_DATA_R_ACK_AD:                        ;data received
 _MSTR_SLA_R_ACK_AD:                         ;SLA+R transmitted
     ld hl, i2c1Status
     ld (hl), I2C_STATUS_BUS_STOP            ;sentence complete, we're done
     ret
+
 _MSTR_DATA_R_NAK_AD:
     ld hl, i2c1Status
     ld (hl), I2C_STATUS_BUS_STOP            ;then fall through
-_MSTR_DATA_R_ACK_AD:                        ;data received
-    i2c_read_direct_m(PCA_1_ADDR,PCA_DAT)   ;get the byte
+    
+
+    i2c_read_direct_m(PCA1_ADDR,PCA_DAT)   ;get the byte
     ld hl, (i2c1RxInPtr)                    ;get the pointer to where we poke                
     ld (hl), a                              ;write the Rx byte to the i2c1RxInPtr target
     inc l                                   ;move the Rx pointer low byte along, 0xFF rollover
@@ -426,19 +429,19 @@ _MSTR_DATA_R_ACK_AD:                        ;data received
     ld hl, i2c1SentenceLgth                 ;decrement the remaining sentence length
     dec (hl)
     
-
-    
-_MSTR_SLA_R_ACK_AD3:
-    ld a, I2C_CON_ENSIO|I2C_CON_AA
-    i2c_write_direct_m(PCA_1_ADDR,PCA_CON)
     ret
-        
+
 _MSTR_SLA_R_NAK_AD:
     ld hl, i2c1Status
     ld (hl), I2C_STATUS_BUS_STOP
     ret
 
 _ILGL_START_STOP_AD:
+_ILGL_ICOUNT_AD:
+_SCL_STUCK_AD:
+    jp pca_software_reset
+    
+
 _MSTR_SLA_W_ACK_AD:
 _MSTR_SLA_W_NAK_AD:
 _MSTR_DATA_W_ACK_AD:
@@ -447,7 +450,6 @@ _MSTR_ARB_LOST_AD:
 _SLVE_AD_W_AD:
 _SLVE_AL_AD_W_AD:
 _SDA_STUCK_AD:
-_SCL_STUCK_AD:
 _SLVE_DATA_RX_ACK_AD:
 _SLVE_DATA_RX_NAK_AD:
 _SLVE_STOP_RESRT_AD:
@@ -460,7 +462,6 @@ _SLVE_GC_AD:
 _SLVE_GC_AL_AD:                             ;bus should be released for other master
 _SLVE_GC_RX_ACK_AD:
 _SLVE_GC_RX_NAK_AD:
-_ILGL_ICOUNT_AD:
     ld hl, i2c1Status
     ld (hl), I2C_STATUS_BUS_RELEASE         ;unexpected bus status or error
     ret
@@ -508,7 +509,7 @@ i2c_int1_write_buffer:
     push de
     push hl
 
-    ld b, PCA_1_ADDR        ;for the PCA9665 1, we need the status
+    ld b, PCA1_ADDR        ;for the PCA9665 1, we need the status
     ld c, PCA_STA
     in l, (c)               ;get the status from status register for switch
     srl l                   ;shift right to make word offset case addresses
@@ -538,14 +539,14 @@ _MSTR_RESRT_TX_AD:
     ld hl, i2c1SlaveAddr                    ; get address of slave we're reading
     ld a, (hl)
     and $FE
-    i2c_write_direct_m(PCA_1_ADDR,PCA_DAT)
+    i2c_write_direct_m(PCA1_ADDR,PCA_DAT)
     ld hl, i2c1SentenceLgth
     ld a, (hl)
     inc a
-    i2c_write_indirect_m(PCA_1_ADDR,PCA_ICOUNT)
+    i2c_write_indirect_m(PCA1_ADDR,PCA_ICOUNT)
     ld hl, i2c1SentenceLgth
     ld b, (hl)
-    ld c, PCA_1_ADDR|PCA_DAT
+    ld c, PCA1_ADDR|PCA_DAT
     ld hl, (i2c1TxOutPtr)
     call i2c_write_burst
     ld (i2c1TxOutPtr), hl
@@ -553,10 +554,10 @@ _MSTR_RESRT_TX_AD:
     ld b, (hl)
     ld hl, i2c1TxBufUsed
     ld a, (hl)
-    add b
+    add a, b
     ld (hl), a
     ld a, I2C_CON_ENSIO|I2C_CON_MODE
-    i2c_write_direct_m(PCA_1_ADDR,PCA_CON)
+    i2c_write_direct_m(PCA1_ADDR,PCA_CON)
     ret
 
 _MSTR_DATA_W_ACK_AD:                        ;data transmitted
@@ -565,8 +566,8 @@ _MSTR_SLA_W_ACK_AD:                         ;SLA+W transmitted
     ld (hl), I2C_STATUS_BUS_STOP
     ret
 
-_MSTR_SLA_W_NAK_AD:
 _MSTR_DATA_W_NAK_AD:
+_MSTR_SLA_W_NAK_AD:
     ld hl, i2c1Status
     ld (hl), I2C_STATUS_BUS_STOP
     ret
@@ -643,7 +644,7 @@ i2c_int1_read_byte:
     push de
     push hl
 
-    ld b, PCA_1_ADDR        ;for the PCA9665 1, we need the status
+    ld b, PCA1_ADDR        ;for the PCA9665 1, we need the status
     ld c, PCA_STA
     in l, (c)               ;get the status from status register for switch
     srl l                   ;shift right to make word offset case addresses
@@ -673,16 +674,16 @@ _MSTR_RESRT_TX_AD:
     ld hl, i2c1SlaveAddr                    ; get address of slave we're reading
     ld a, (hl)
     or $01
-    i2c_write_direct_m(PCA_1_ADDR,PCA_DAT)
+    i2c_write_direct_m(PCA1_ADDR,PCA_DAT)
     ld a, I2C_CON_ENSIO
-    i2c_write_direct_m(PCA_1_ADDR,PCA_CON)
+    i2c_write_direct_m(PCA1_ADDR,PCA_CON)
     ret
     
 _MSTR_DATA_R_NAK_AD:
     ld hl, i2c1Status
     ld (hl), I2C_STATUS_BUS_STOP            ;then fall through
 _MSTR_DATA_R_ACK_AD:                        ;data received
-    i2c_read_direct_m(PCA_1_ADDR,PCA_DAT)   ;get the byte
+    i2c_read_direct_m(PCA1_ADDR,PCA_DAT)   ;get the byte
     ld hl, (i2c1RxInPtr)                    ;get the pointer to where we poke                
     ld (hl), a                              ;write the Rx byte to the i2c1RxInPtr target
     inc l                                   ;move the Rx pointer low byte along, 0xFF rollover
@@ -711,12 +712,12 @@ _MSTR_SLA_R_ACK_AD2:
     cp 1
     jr nz, _MSTR_SLA_R_ACK_AD3              ;sentence remaining is greater than 1 byte
     ld a, I2C_CON_ENSIO
-    i2c_write_direct_m(PCA_1_ADDR,PCA_CON)
+    i2c_write_direct_m(PCA1_ADDR,PCA_CON)
     ret
     
 _MSTR_SLA_R_ACK_AD3:
     ld a, I2C_CON_ENSIO|I2C_CON_AA
-    i2c_write_direct_m(PCA_1_ADDR,PCA_CON)
+    i2c_write_direct_m(PCA1_ADDR,PCA_CON)
     ret
         
 _MSTR_SLA_R_NAK_AD:
@@ -793,7 +794,7 @@ i2c_int1_write_byte:
     push de
     push hl
 
-    ld b, PCA_1_ADDR        ;for the PCA9665 1, we need the status
+    ld b, PCA1_ADDR        ;for the PCA9665 1, we need the status
     ld c, PCA_STA
     in l, (c)               ;get the status from status register for switch
     srl l                   ;shift right to make word offset case addresses
@@ -823,9 +824,9 @@ _MSTR_RESRT_TX_AD:
     ld hl, i2c1SlaveAddr                    ; get address of slave we're reading
     ld a, (hl)
     and $FE
-    i2c_write_direct_m(PCA_1_ADDR,PCA_DAT)
+    i2c_write_direct_m(PCA1_ADDR,PCA_DAT)
     ld a, I2C_CON_ENSIO
-    i2c_write_direct_m(PCA_1_ADDR,PCA_CON)
+    i2c_write_direct_m(PCA1_ADDR,PCA_CON)
     ret
 
 _MSTR_DATA_W_ACK_AD:                        ;data transmitted
@@ -843,13 +844,13 @@ _MSTR_SLA_W_ACK_AD:                         ;SLA+W transmitted
 _MSTR_SLA_W_ACK_AD2:
     ld hl, (i2c1TxOutPtr)
     ld a, (hl)
-    i2c_write_direct_m(PCA_1_ADDR,PCA_DAT)  ;write the byte
+    i2c_write_direct_m(PCA1_ADDR,PCA_DAT)  ;write the byte
     inc l
     ld (i2c1TxOutPtr), hl
     ld hl, i2c1TxBufUsed
     dec (hl)
     ld a, I2C_CON_ENSIO
-    i2c_write_direct_m(PCA_1_ADDR,PCA_CON)
+    i2c_write_direct_m(PCA1_ADDR,PCA_CON)
     ret
 
 _MSTR_SLA_W_NAK_AD:
@@ -923,14 +924,14 @@ i2c_int1_write_byte_switch:
 
     ;Enable the I2C interrupt for each PCA9665 device
     ;Configuring the interrupt is done in the i2c_interrupt_attach function
-    ;input A  =  device address, PCA_1_ADDR or PCA_2_ADDR
+    ;input A  =  device address, PCA1_ADDR or PCA2_ADDR
 
 i2c_interrupt_enable:
-;    tst PCA_1_ADDR|PCA_2_ADDR
+;    tst PCA1_ADDR|PCA2_ADDR
 ;    ret z               ;no device address match, so exit
     push bc
     in0 c, (ITC)        ;get INT/TRAP Control Register (ITC)
-    cp PCA_2_ADDR
+    cp PCA2_ADDR
     ld a, c
     jr z, i2c_int_en2    
     or ITC_ITE1         ;mask in INT1
@@ -944,14 +945,14 @@ i2c_int_en1:
 
     ;Disable the I2C interrupt for each PCA9665 device
     ;Configuring the interrupt is done in the i2c_interrupt_attach function
-    ;input A  =  device address, PCA_1_ADDR or PCA_2_ADDR
+    ;input A  =  device address, PCA1_ADDR or PCA2_ADDR
 
 i2c_interrupt_disable:
-;    tst PCA_1_ADDR|PCA_2_ADDR
+;    tst PCA1_ADDR|PCA2_ADDR
 ;    ret z               ;no device address match, so exit
     push bc
     in0 c, (ITC)        ;get INT/TRAP Control Register (ITC)
-    cp PCA_2_ADDR
+    cp PCA2_ADDR
     ld a, c
     jr z, i2c_int_de2
     and ~ITC_ITE1       ;mask out INT1
@@ -973,7 +974,7 @@ i2c_int_de1:
 i2c_read_burst:
     push af
     push de
-    ld de, hl
+    ld d, h
     ld a, b             ;keep iterative count in A
 i2c_rd_bst:
     ld b, c             ;prepare device and register address
@@ -997,7 +998,7 @@ i2c_rd_bst:
 i2c_write_burst:
     push af
     push de
-    ld de, hl
+    ld d, h
     ld a, b             ;keep iterative count in A
 i2c_wr_bst:
     ld b, c             ;prepare device and register address
