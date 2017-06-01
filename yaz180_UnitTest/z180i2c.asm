@@ -200,6 +200,7 @@ I2C_CON_MODE    .EQU    $01 ; Mode, 1 = byte, 0 = buffered
 ;   Bits in PCA_ICOUNT
      
 I2C_ICOUNT_LB   .EQU    $80 ; Last Byte control bit
+                            ; LB bit is only used for Receiver Buffered modes
 
 ;   BITS in PCA_ITO
 
@@ -231,9 +232,9 @@ i2c1TxOutPtr    .EQU    i2c1TxInPtr+2
 i2c1RxBufUsed   .EQU    i2c1TxOutPtr+2
 i2c1TxBufUsed   .EQU    i2c1RxBufUsed+1
 
-i2c1Status          .EQU    i2c1TxBufUsed+1
-i2c1SlaveAddr       .EQU    i2c1Status+1
-i2c1SentenceLgth    .EQU    i2c1SlaveAddr+1
+i2c1Status      .EQU    i2c1TxBufUsed+1
+i2c1SlaveAddr   .EQU    i2c1Status+1
+i2c1SentenceLgth  .EQU  i2c1SlaveAddr+1
 
 i2c2RxInPtr     .EQU    Z180_VECTOR_BASE+Z180_VECTOR_SIZE+$40
 i2c2RxOutPtr    .EQU    i2c2RxInPtr+2
@@ -242,14 +243,14 @@ i2c2TxOutPtr    .EQU    i2c2TxInPtr+2
 i2c2RxBufUsed   .EQU    i2c2TxOutPtr+2
 i2c2TxBufUsed   .EQU    i2c2RxBufUsed+1
 
-i2c2Status          .EQU    i2c2TxBufUsed+1
-i2c2SlaveAddr       .EQU    i2c2Status+1
-i2c2SentenceLgth    .EQU    i2c2SlaveAddr+1
+i2c2Status      .EQU    i2c2TxBufUsed+1
+i2c2SlaveAddr   .EQU    i2c2Status+1
+i2c2SentenceLgth  .EQU  i2c2SlaveAddr+1
 
 
-I2C_BUFFER_SIZE .EQU    $FF     ; PCA9665 has 68 Byte Tx/Rx hardware buffer
-                                ; sentences greater than 68 bytes must be
-                                ; done 64 bytes at a time (max 256 bytes)
+I2C_BUFFER_SIZE .EQU    $FF ; PCA9665 has 68 Byte Tx/Rx hardware buffer
+                            ; sentences greater than 68 bytes must be
+                            ; done 64 bytes at a time (max 256 bytes)
 
 ;I2C 256 byte sector buffer origin
 
@@ -367,7 +368,7 @@ i2c_int1_read_buffer:
     push de
     push hl
 
-    ld b, PCA1_ADDR        ;for the PCA9665 1, we need the status
+    ld b, PCA1_ADDR         ;for the PCA9665 1, we need the status
     ld c, PCA_STA
     in l, (c)               ;get the status from status register for switch
     srl l                   ;shift right to make word offset case addresses
@@ -392,9 +393,9 @@ i2c_int1_read_buffer_end:
     pop af
     ret
 
-_MSTR_START_TX_AD:
-_MSTR_RESRT_TX_AD:
-    ld hl, i2c1SlaveAddr                    ; get address of slave we're reading
+_MASTER_START_TX:
+_MASTER_RESTART_TX:
+    ld hl, i2c1SlaveAddr    ; get address of slave we're reading
     ld a, (hl)
     or $01
     i2c_write_direct_m(PCA1_ADDR,PCA_DAT)
@@ -406,96 +407,94 @@ _MSTR_RESRT_TX_AD:
     i2c_write_direct_m(PCA1_ADDR,PCA_CON)
     ret
 
-_MSTR_DATA_R_ACK_AD:                        ;data received
-_MSTR_SLA_R_ACK_AD:                         ;SLA+R transmitted
+_MASTER_DATA_R_ACK:                         ;data received
+_MASTER_SLA_R_ACK:                          ;SLA+R transmitted
     ld hl, i2c1Status
     ld (hl), I2C_STATUS_BUS_STOP            ;sentence complete, we're done
     ret
 
-_MSTR_DATA_R_NAK_AD:
-    ld hl, i2c1Status
-    ld (hl), I2C_STATUS_BUS_STOP            ;then fall through
-    
-
-    i2c_read_direct_m(PCA1_ADDR,PCA_DAT)   ;get the byte
-    ld hl, (i2c1RxInPtr)                    ;get the pointer to where we poke                
-    ld (hl), a                              ;write the Rx byte to the i2c1RxInPtr target
-    inc l                                   ;move the Rx pointer low byte along, 0xFF rollover
-    ld (i2c1RxInPtr), hl                    ;write where the next byte should be poked
-
+_MASTER_DATA_R_NAK:
+    i2c_read_indirect_m(PCA1_ADDR,PCA_ICOUNT)
+    and ~I2C_ICOUNT_LB
+    ld b, a
     ld hl, i2c1RxBufUsed
-    inc (hl)                                ;atomically increment Rx buffer count
-    
-    ld hl, i2c1SentenceLgth                 ;decrement the remaining sentence length
-    dec (hl)
-    
-    ret
+    ld a, (hl)
+    add a, b
+    ld (hl), a    
+    ld c, PCA1_ADDR|PCA_DAT
+    ld hl, (i2c1RxInPtr)
+    call i2c_read_burst
+    ld (i2c1RxInPtr), hl
 
-_MSTR_SLA_R_NAK_AD:
     ld hl, i2c1Status
     ld (hl), I2C_STATUS_BUS_STOP
     ret
 
-_ILGL_START_STOP_AD:
-_ILGL_ICOUNT_AD:
-_SCL_STUCK_AD:
+_MASTER_SLA_R_NAK:
+    ld hl, i2c1Status
+    ld (hl), I2C_STATUS_BUS_STOP
+    ret
+
+_ILGL_START_STOP:
+_ILGL_ICOUNT:
+_SCL_STUCK:
     jp pca_software_reset
     
 
-_MSTR_SLA_W_ACK_AD:
-_MSTR_SLA_W_NAK_AD:
-_MSTR_DATA_W_ACK_AD:
-_MSTR_DATA_W_NAK_AD:
-_MSTR_ARB_LOST_AD:
-_SLVE_AD_W_AD:
-_SLVE_AL_AD_W_AD:
-_SDA_STUCK_AD:
-_SLVE_DATA_RX_ACK_AD:
-_SLVE_DATA_RX_NAK_AD:
-_SLVE_STOP_RESRT_AD:
-_SLVE_AD_R_AD:
-_SLVE_AL_AD_R_AD:
-_SLVE_DATA_TX_ACK_AD:
-_SLVE_DATA_TX_NAK_AD:
-_SLVE_LST_TX_ACK_AD:
-_SLVE_GC_AD:
-_SLVE_GC_AL_AD:                             ;bus should be released for other master
-_SLVE_GC_RX_ACK_AD:
-_SLVE_GC_RX_NAK_AD:
+_MASTER_SLA_W_ACK:
+_MASTER_SLA_W_NAK:
+_MASTER_DATA_W_ACK:
+_MASTER_DATA_W_NAK:
+_MASTER_ARB_LOST:
+_SLAVE_AD_W:
+_SLAVE_AL_AD_W:
+_SDA_STUCK:
+_SLAVE_DATA_RX_ACK:
+_SLAVE_DATA_RX_NAK:
+_SLAVE_STOP_RESRT:
+_SLAVE_AD_R:
+_SLAVE_AL_AD_R:
+_SLAVE_DATA_TX_ACK:
+_SLAVE_DATA_TX_NAK:
+_SLAVE_LST_TX_ACK:
+_SLAVE_GC:
+_SLAVE_GC_AL:                       ;bus should be released for other master
+_SLAVE_GC_RX_ACK:
+_SLAVE_GC_RX_NAK:
     ld hl, i2c1Status
-    ld (hl), I2C_STATUS_BUS_RELEASE         ;unexpected bus status or error
+    ld (hl), I2C_STATUS_BUS_RELEASE ;unexpected bus status or error
     ret
 
 i2c_int1_read_buffer_switch:
-    .dw _ILGL_START_STOP_AD
-    .dw _MSTR_START_TX_AD
-    .dw _MSTR_RESRT_TX_AD
-    .dw _MSTR_SLA_W_ACK_AD
-    .dw _MSTR_SLA_W_NAK_AD
-    .dw _MSTR_DATA_W_ACK_AD
-    .dw _MSTR_DATA_W_NAK_AD
-    .dw _MSTR_ARB_LOST_AD
-    .dw _MSTR_SLA_R_ACK_AD
-    .dw _MSTR_SLA_R_NAK_AD
-    .dw _MSTR_DATA_R_ACK_AD
-    .dw _MSTR_DATA_R_NAK_AD
-    .dw _SLVE_AD_W_AD
-    .dw _SLVE_AL_AD_W_AD
-    .dw _SDA_STUCK_AD
-    .dw _SCL_STUCK_AD
-    .dw _SLVE_DATA_RX_ACK_AD
-    .dw _SLVE_DATA_RX_NAK_AD
-    .dw _SLVE_STOP_RESRT_AD
-    .dw _SLVE_AD_R_AD
-    .dw _SLVE_AL_AD_R_AD
-    .dw _SLVE_DATA_TX_ACK_AD
-    .dw _SLVE_DATA_TX_NAK_AD
-    .dw _SLVE_LST_TX_ACK_AD
-    .dw _SLVE_GC_AD
-    .dw _SLVE_GC_AL_AD
-    .dw _SLVE_GC_RX_ACK_AD
-    .dw _SLVE_GC_RX_NAK_AD
-    .dw _ILGL_ICOUNT_AD                  ;_ILGL_ICOUNT can be $F8 _IDLE case
+    .dw _ILGL_START_STOP
+    .dw _MASTER_START_TX
+    .dw _MASTER_RESTART_TX
+    .dw _MASTER_SLA_W_ACK
+    .dw _MASTER_SLA_W_NAK
+    .dw _MASTER_DATA_W_ACK
+    .dw _MASTER_DATA_W_NAK
+    .dw _MASTER_ARB_LOST
+    .dw _MASTER_SLA_R_ACK
+    .dw _MASTER_SLA_R_NAK
+    .dw _MASTER_DATA_R_ACK
+    .dw _MASTER_DATA_R_NAK
+    .dw _SLAVE_AD_W
+    .dw _SLAVE_AL_AD_W
+    .dw _SDA_STUCK
+    .dw _SCL_STUCK
+    .dw _SLAVE_DATA_RX_ACK
+    .dw _SLAVE_DATA_RX_NAK
+    .dw _SLAVE_STOP_RESRT
+    .dw _SLAVE_AD_R
+    .dw _SLAVE_AL_AD_R
+    .dw _SLAVE_DATA_TX_ACK
+    .dw _SLAVE_DATA_TX_NAK
+    .dw _SLAVE_LST_TX_ACK
+    .dw _SLAVE_GC
+    .dw _SLAVE_GC_AL
+    .dw _SLAVE_GC_RX_ACK
+    .dw _SLAVE_GC_RX_NAK
+    .dw _ILGL_ICOUNT                ;_ILGL_ICOUNT can be $F8 _IDLE case
 
 
 ;------------------------------------------------------------------------------
@@ -509,7 +508,7 @@ i2c_int1_write_buffer:
     push de
     push hl
 
-    ld b, PCA1_ADDR        ;for the PCA9665 1, we need the status
+    ld b, PCA1_ADDR         ;for the PCA9665 1, we need the status
     ld c, PCA_STA
     in l, (c)               ;get the status from status register for switch
     srl l                   ;shift right to make word offset case addresses
@@ -534,9 +533,9 @@ i2c_int1_write_buffer_end:
     pop af
     ret
 
-_MSTR_START_TX_AD:
-_MSTR_RESRT_TX_AD:
-    ld hl, i2c1SlaveAddr                    ; get address of slave we're reading
+_MASTER_START_TX:
+_MASTER_RESTART_TX:
+    ld hl, i2c1SlaveAddr    ; get address of slave we're writing
     ld a, (hl)
     and $FE
     i2c_write_direct_m(PCA1_ADDR,PCA_DAT)
@@ -554,84 +553,84 @@ _MSTR_RESRT_TX_AD:
     ld b, (hl)
     ld hl, i2c1TxBufUsed
     ld a, (hl)
-    add a, b
+    sub b
     ld (hl), a
     ld a, I2C_CON_ENSIO|I2C_CON_MODE
     i2c_write_direct_m(PCA1_ADDR,PCA_CON)
     ret
 
-_MSTR_DATA_W_ACK_AD:                        ;data transmitted
-_MSTR_SLA_W_ACK_AD:                         ;SLA+W transmitted
+_MASTER_DATA_W_ACK:           ;data transmitted
+_MASTER_SLA_W_ACK:            ;SLA+W transmitted
     ld hl, i2c1Status
     ld (hl), I2C_STATUS_BUS_STOP
     ret
 
-_MSTR_DATA_W_NAK_AD:
-_MSTR_SLA_W_NAK_AD:
+_MASTER_DATA_W_NAK:
+_MASTER_SLA_W_NAK:
     ld hl, i2c1Status
     ld (hl), I2C_STATUS_BUS_STOP
     ret
 
-_ILGL_START_STOP_AD:
-_ILGL_ICOUNT_AD:
-_SCL_STUCK_AD:
+_ILGL_START_STOP:
+_ILGL_ICOUNT:
+_SCL_STUCK:
     jp pca_software_reset
 
-_MSTR_ARB_LOST_AD:
-_MSTR_SLA_R_ACK_AD:
-_MSTR_SLA_R_NAK_AD:
-_MSTR_DATA_R_ACK_AD:
-_MSTR_DATA_R_NAK_AD
-_SLVE_AD_W_AD:
-_SLVE_AL_AD_W_AD:
-_SDA_STUCK_AD:
-_SLVE_DATA_RX_ACK_AD:
-_SLVE_DATA_RX_NAK_AD:
-_SLVE_STOP_RESRT_AD:
-_SLVE_AD_R_AD:
-_SLVE_AL_AD_R_AD:
-_SLVE_DATA_TX_ACK_AD:
-_SLVE_DATA_TX_NAK_AD:
-_SLVE_LST_TX_ACK_AD:
-_SLVE_GC_AD:
-_SLVE_GC_AL_AD:                             ;bus should be released for other master
-_SLVE_GC_RX_ACK_AD:
-_SLVE_GC_RX_NAK_AD:
+_MASTER_ARB_LOST:
+_MASTER_SLA_R_ACK:
+_MASTER_SLA_R_NAK:
+_MASTER_DATA_R_ACK:
+_MASTER_DATA_R_NAK
+_SLAVE_AD_W:
+_SLAVE_AL_AD_W:
+_SDA_STUCK:
+_SLAVE_DATA_RX_ACK:
+_SLAVE_DATA_RX_NAK:
+_SLAVE_STOP_RESRT:
+_SLAVE_AD_R:
+_SLAVE_AL_AD_R:
+_SLAVE_DATA_TX_ACK:
+_SLAVE_DATA_TX_NAK:
+_SLAVE_LST_TX_ACK:
+_SLAVE_GC:
+_SLAVE_GC_AL:                   ;bus should be released for other master
+_SLAVE_GC_RX_ACK:
+_SLAVE_GC_RX_NAK:
 
     ld hl, i2c1Status
-    ld (hl), I2C_STATUS_BUS_RELEASE         ;unexpected bus status or error
+    ld (hl), I2C_STATUS_BUS_RELEASE ;unexpected bus status or error
     ret
 
 i2c_int1_write_buffer_switch:
-    .dw _ILGL_START_STOP_AD
-    .dw _MSTR_START_TX_AD
-    .dw _MSTR_RESRT_TX_AD
-    .dw _MSTR_SLA_W_ACK_AD
-    .dw _MSTR_SLA_W_NAK_AD
-    .dw _MSTR_DATA_W_ACK_AD
-    .dw _MSTR_DATA_W_NAK_AD
-    .dw _MSTR_ARB_LOST_AD
-    .dw _MSTR_SLA_R_ACK_AD
-    .dw _MSTR_SLA_R_NAK_AD
-    .dw _MSTR_DATA_R_ACK_AD
-    .dw _MSTR_DATA_R_NAK_AD
-    .dw _SLVE_AD_W_AD
-    .dw _SLVE_AL_AD_W_AD
-    .dw _SDA_STUCK_AD
-    .dw _SCL_STUCK_AD
-    .dw _SLVE_DATA_RX_ACK_AD
-    .dw _SLVE_DATA_RX_NAK_AD
-    .dw _SLVE_STOP_RESRT_AD
-    .dw _SLVE_AD_R_AD
-    .dw _SLVE_AL_AD_R_AD
-    .dw _SLVE_DATA_TX_ACK_AD
-    .dw _SLVE_DATA_TX_NAK_AD
-    .dw _SLVE_LST_TX_ACK_AD
-    .dw _SLVE_GC_AD
-    .dw _SLVE_GC_AL_AD
-    .dw _SLVE_GC_RX_ACK_AD
-    .dw _SLVE_GC_RX_NAK_AD
-    .dw _ILGL_ICOUNT_AD                     ;_ILGL_ICOUNT can be $F8 _IDLE case
+    .dw _ILGL_START_STOP
+    .dw _MASTER_START_TX
+    .dw _MASTER_RESTART_TX
+    .dw _MASTER_SLA_W_ACK
+    .dw _MASTER_SLA_W_NAK
+    .dw _MASTER_DATA_W_ACK
+    .dw _MASTER_DATA_W_NAK
+    .dw _MASTER_ARB_LOST
+    .dw _MASTER_SLA_R_ACK
+    .dw _MASTER_SLA_R_NAK
+    .dw _MASTER_DATA_R_ACK
+    .dw _MASTER_DATA_R_NAK
+    .dw _SLAVE_AD_W
+    .dw _SLAVE_AL_AD_W
+    .dw _SDA_STUCK
+    .dw _SCL_STUCK
+    .dw _SLAVE_DATA_RX_ACK
+    .dw _SLAVE_DATA_RX_NAK
+    .dw _SLAVE_STOP_RESRT
+    .dw _SLAVE_AD_R
+    .dw _SLAVE_AL_AD_R
+    .dw _SLAVE_DATA_TX_ACK
+    .dw _SLAVE_DATA_TX_NAK
+    .dw _SLAVE_LST_TX_ACK
+    .dw _SLAVE_GC
+    .dw _SLAVE_GC_AL
+    .dw _SLAVE_GC_RX_ACK
+    .dw _SLAVE_GC_RX_NAK
+    .dw _ILGL_ICOUNT        ;_ILGL_ICOUNT can be $F8 _IDLE case
 
 ;------------------------------------------------------------------------------
 ; interrupt service routine - direct to hardware - i2c_int1_read_byte
@@ -644,7 +643,7 @@ i2c_int1_read_byte:
     push de
     push hl
 
-    ld b, PCA1_ADDR        ;for the PCA9665 1, we need the status
+    ld b, PCA1_ADDR         ;for the PCA9665 1, we need the status
     ld c, PCA_STA
     in l, (c)               ;get the status from status register for switch
     srl l                   ;shift right to make word offset case addresses
@@ -669,9 +668,9 @@ i2c_int1_read_byte_end:
     pop af
     ret
 
-_MSTR_START_TX_AD:
-_MSTR_RESRT_TX_AD:
-    ld hl, i2c1SlaveAddr                    ; get address of slave we're reading
+_MASTER_START_TX:
+_MASTER_RESTART_TX:
+    ld hl, i2c1SlaveAddr    ; get address of slave we're reading
     ld a, (hl)
     or $01
     i2c_write_direct_m(PCA1_ADDR,PCA_DAT)
@@ -679,11 +678,11 @@ _MSTR_RESRT_TX_AD:
     i2c_write_direct_m(PCA1_ADDR,PCA_CON)
     ret
     
-_MSTR_DATA_R_NAK_AD:
+_MASTER_DATA_R_NAK:
     ld hl, i2c1Status
     ld (hl), I2C_STATUS_BUS_STOP            ;then fall through
-_MSTR_DATA_R_ACK_AD:                        ;data received
-    i2c_read_direct_m(PCA1_ADDR,PCA_DAT)   ;get the byte
+_MASTER_DATA_R_ACK:                         ;data received
+    i2c_read_direct_m(PCA1_ADDR,PCA_DAT)    ;get the byte
     ld hl, (i2c1RxInPtr)                    ;get the pointer to where we poke                
     ld (hl), a                              ;write the Rx byte to the i2c1RxInPtr target
     inc l                                   ;move the Rx pointer low byte along, 0xFF rollover
@@ -695,14 +694,14 @@ _MSTR_DATA_R_ACK_AD:                        ;data received
     ld hl, i2c1SentenceLgth                 ;decrement the remaining sentence length
     dec (hl)
     
-_MSTR_SLA_R_ACK_AD:                         ;SLA+R transmitted
+_MASTER_SLA_R_ACK:                          ;SLA+R transmitted
     ld hl, i2c1SentenceLgth
     ld a, (hl)
     or a
-    jr nz, _MSTR_SLA_R_ACK_AD2
-    ld hl, i2c1Status
+    ld hl, i2c1Status    
+    jr nz, _MASTER_SLA_R_ACK2
     ld (hl), I2C_STATUS_BUS_STOP            ;sentence complete, we're done
-_MSTR_SLA_R_ACK_AD2:
+_MASTER_SLA_R_ACK2:
     ld a, (hl)                              ;get the status
     or a                                    ;check whether done (non zero).
     ret z
@@ -710,78 +709,78 @@ _MSTR_SLA_R_ACK_AD2:
     ld hl, i2c1SentenceLgth                 ;load the the remaining sentence length
     ld a, (hl)
     cp 1
-    jr nz, _MSTR_SLA_R_ACK_AD3              ;sentence remaining is greater than 1 byte
+    jr nz, _MASTER_SLA_R_ACK3               ;sentence remaining is greater than 1 byte
     ld a, I2C_CON_ENSIO
     i2c_write_direct_m(PCA1_ADDR,PCA_CON)
     ret
     
-_MSTR_SLA_R_ACK_AD3:
+_MASTER_SLA_R_ACK3:
     ld a, I2C_CON_ENSIO|I2C_CON_AA
     i2c_write_direct_m(PCA1_ADDR,PCA_CON)
     ret
         
-_MSTR_SLA_R_NAK_AD:
+_MASTER_SLA_R_NAK:
     ld hl, i2c1Status
     ld (hl), I2C_STATUS_BUS_STOP
     ret
 
-_ILGL_START_STOP_AD:
-_MSTR_SLA_W_ACK_AD:
-_MSTR_SLA_W_NAK_AD:
-_MSTR_DATA_W_ACK_AD:
-_MSTR_DATA_W_NAK_AD:
-_MSTR_ARB_LOST_AD:
-_SLVE_AD_W_AD:
-_SLVE_AL_AD_W_AD:
-_SDA_STUCK_AD:
-_SCL_STUCK_AD:
-_SLVE_DATA_RX_ACK_AD:
-_SLVE_DATA_RX_NAK_AD:
-_SLVE_STOP_RESRT_AD:
-_SLVE_AD_R_AD:
-_SLVE_AL_AD_R_AD:
-_SLVE_DATA_TX_ACK_AD:
-_SLVE_DATA_TX_NAK_AD:
-_SLVE_LST_TX_ACK_AD:
-_SLVE_GC_AD:
-_SLVE_GC_AL_AD:                             ;bus should be released for other master
-_SLVE_GC_RX_ACK_AD:
-_SLVE_GC_RX_NAK_AD:
-_ILGL_ICOUNT_AD:
+_ILGL_START_STOP:
+_MASTER_SLA_W_ACK:
+_MASTER_SLA_W_NAK:
+_MASTER_DATA_W_ACK:
+_MASTER_DATA_W_NAK:
+_MASTER_ARB_LOST:
+_SLAVE_AD_W:
+_SLAVE_AL_AD_W:
+_SDA_STUCK:
+_SCL_STUCK:
+_SLAVE_DATA_RX_ACK:
+_SLAVE_DATA_RX_NAK:
+_SLAVE_STOP_RESRT:
+_SLAVE_AD_R:
+_SLAVE_AL_AD_R:
+_SLAVE_DATA_TX_ACK:
+_SLAVE_DATA_TX_NAK:
+_SLAVE_LST_TX_ACK:
+_SLAVE_GC:
+_SLAVE_GC_AL:                   ;bus should be released for other master
+_SLAVE_GC_RX_ACK:
+_SLAVE_GC_RX_NAK:
+_ILGL_ICOUNT:
     ld hl, i2c1Status
     ld (hl), I2C_STATUS_BUS_RELEASE         ;unexpected bus status or error
     ret
 
 i2c_int1_read_byte_switch:
-    .dw _ILGL_START_STOP_AD
-    .dw _MSTR_START_TX_AD
-    .dw _MSTR_RESRT_TX_AD
-    .dw _MSTR_SLA_W_ACK_AD
-    .dw _MSTR_SLA_W_NAK_AD
-    .dw _MSTR_DATA_W_ACK_AD
-    .dw _MSTR_DATA_W_NAK_AD
-    .dw _MSTR_ARB_LOST_AD
-    .dw _MSTR_SLA_R_ACK_AD
-    .dw _MSTR_SLA_R_NAK_AD
-    .dw _MSTR_DATA_R_ACK_AD
-    .dw _MSTR_DATA_R_NAK_AD
-    .dw _SLVE_AD_W_AD
-    .dw _SLVE_AL_AD_W_AD
-    .dw _SDA_STUCK_AD
-    .dw _SCL_STUCK_AD
-    .dw _SLVE_DATA_RX_ACK_AD
-    .dw _SLVE_DATA_RX_NAK_AD
-    .dw _SLVE_STOP_RESRT_AD
-    .dw _SLVE_AD_R_AD
-    .dw _SLVE_AL_AD_R_AD
-    .dw _SLVE_DATA_TX_ACK_AD
-    .dw _SLVE_DATA_TX_NAK_AD
-    .dw _SLVE_LST_TX_ACK_AD
-    .dw _SLVE_GC_AD
-    .dw _SLVE_GC_AL_AD
-    .dw _SLVE_GC_RX_ACK_AD
-    .dw _SLVE_GC_RX_NAK_AD
-    .dw _ILGL_ICOUNT_AD                  ;_ILGL_ICOUNT can be $F8 _IDLE case
+    .dw _ILGL_START_STOP
+    .dw _MASTER_START_TX
+    .dw _MASTER_RESTART_TX
+    .dw _MASTER_SLA_W_ACK
+    .dw _MASTER_SLA_W_NAK
+    .dw _MASTER_DATA_W_ACK
+    .dw _MASTER_DATA_W_NAK
+    .dw _MASTER_ARB_LOST
+    .dw _MASTER_SLA_R_ACK
+    .dw _MASTER_SLA_R_NAK
+    .dw _MASTER_DATA_R_ACK
+    .dw _MASTER_DATA_R_NAK
+    .dw _SLAVE_AD_W
+    .dw _SLAVE_AL_AD_W
+    .dw _SDA_STUCK
+    .dw _SCL_STUCK
+    .dw _SLAVE_DATA_RX_ACK
+    .dw _SLAVE_DATA_RX_NAK
+    .dw _SLAVE_STOP_RESRT
+    .dw _SLAVE_AD_R
+    .dw _SLAVE_AL_AD_R
+    .dw _SLAVE_DATA_TX_ACK
+    .dw _SLAVE_DATA_TX_NAK
+    .dw _SLAVE_LST_TX_ACK
+    .dw _SLAVE_GC
+    .dw _SLAVE_GC_AL
+    .dw _SLAVE_GC_RX_ACK
+    .dw _SLAVE_GC_RX_NAK
+    .dw _ILGL_ICOUNT        ;_ILGL_ICOUNT can be $F8 _IDLE case
 
 ;------------------------------------------------------------------------------
 ; interrupt service routine - direct to hardware - i2c_int1_write_byte
@@ -794,7 +793,7 @@ i2c_int1_write_byte:
     push de
     push hl
 
-    ld b, PCA1_ADDR        ;for the PCA9665 1, we need the status
+    ld b, PCA1_ADDR         ;for the PCA9665 1, we need the status
     ld c, PCA_STA
     in l, (c)               ;get the status from status register for switch
     srl l                   ;shift right to make word offset case addresses
@@ -819,9 +818,9 @@ i2c_int1_write_byte_end:
     pop af
     ret
 
-_MSTR_START_TX_AD:
-_MSTR_RESRT_TX_AD:
-    ld hl, i2c1SlaveAddr                    ; get address of slave we're reading
+_MASTER_START_TX:
+_MASTER_RESTART_TX:
+    ld hl, i2c1SlaveAddr    ; get address of slave we're reading
     ld a, (hl)
     and $FE
     i2c_write_direct_m(PCA1_ADDR,PCA_DAT)
@@ -829,19 +828,19 @@ _MSTR_RESRT_TX_AD:
     i2c_write_direct_m(PCA1_ADDR,PCA_CON)
     ret
 
-_MSTR_DATA_W_ACK_AD:                        ;data transmitted
-    ld hl, i2c1SentenceLgth                 ;decrement the remaining sentence length
+_MASTER_DATA_W_ACK:             ;data transmitted
+    ld hl, i2c1SentenceLgth     ;decrement the remaining sentence length
     dec (hl)
-_MSTR_SLA_W_ACK_AD:                         ;SLA+W transmitted
+_MASTER_SLA_W_ACK:              ;SLA+W transmitted
     ld hl, i2c1SentenceLgth
     ld a, (hl)
     or a
-    jp nz, _MSTR_SLA_W_ACK_AD2
+    jp nz, _MASTER_SLA_W_ACK2
     ld hl, i2c1Status
     ld (hl), I2C_STATUS_BUS_STOP
     ret
 
-_MSTR_SLA_W_ACK_AD2:
+_MASTER_SLA_W_ACK2:
     ld hl, (i2c1TxOutPtr)
     ld a, (hl)
     i2c_write_direct_m(PCA1_ADDR,PCA_DAT)  ;write the byte
@@ -853,69 +852,69 @@ _MSTR_SLA_W_ACK_AD2:
     i2c_write_direct_m(PCA1_ADDR,PCA_CON)
     ret
 
-_MSTR_SLA_W_NAK_AD:
-_MSTR_DATA_W_NAK_AD:
+_MASTER_SLA_W_NAK:
+_MASTER_DATA_W_NAK:
     ld hl, i2c1Status
     ld (hl), I2C_STATUS_BUS_STOP
     ret
 
-_ILGL_START_STOP_AD:
-_MSTR_ARB_LOST_AD:
-_MSTR_SLA_R_ACK_AD:
-_MSTR_SLA_R_NAK_AD:
-_MSTR_DATA_R_ACK_AD:
-_MSTR_DATA_R_NAK_AD
-_SLVE_AD_W_AD:
-_SLVE_AL_AD_W_AD:
-_SDA_STUCK_AD:
-_SCL_STUCK_AD:
-_SLVE_DATA_RX_ACK_AD:
-_SLVE_DATA_RX_NAK_AD:
-_SLVE_STOP_RESRT_AD:
-_SLVE_AD_R_AD:
-_SLVE_AL_AD_R_AD:
-_SLVE_DATA_TX_ACK_AD:
-_SLVE_DATA_TX_NAK_AD:
-_SLVE_LST_TX_ACK_AD:
-_SLVE_GC_AD:
-_SLVE_GC_AL_AD:                             ;bus should be released for other master
-_SLVE_GC_RX_ACK_AD:
-_SLVE_GC_RX_NAK_AD:
-_ILGL_ICOUNT_AD:
+_ILGL_START_STOP:
+_MASTER_ARB_LOST:
+_MASTER_SLA_R_ACK:
+_MASTER_SLA_R_NAK:
+_MASTER_DATA_R_ACK:
+_MASTER_DATA_R_NAK
+_SLAVE_AD_W:
+_SLAVE_AL_AD_W:
+_SDA_STUCK:
+_SCL_STUCK:
+_SLAVE_DATA_RX_ACK:
+_SLAVE_DATA_RX_NAK:
+_SLAVE_STOP_RESRT:
+_SLAVE_AD_R:
+_SLAVE_AL_AD_R:
+_SLAVE_DATA_TX_ACK:
+_SLAVE_DATA_TX_NAK:
+_SLAVE_LST_TX_ACK:
+_SLAVE_GC:
+_SLAVE_GC_AL:                   ;bus should be released for other master
+_SLAVE_GC_RX_ACK:
+_SLAVE_GC_RX_NAK:
+_ILGL_ICOUNT:
     ld hl, i2c1Status
-    ld (hl), I2C_STATUS_BUS_RELEASE         ;unexpected bus status or error
+    ld (hl), I2C_STATUS_BUS_RELEASE     ;unexpected bus status or error
     ret
 
 i2c_int1_write_byte_switch:
-    .dw _ILGL_START_STOP_AD
-    .dw _MSTR_START_TX_AD
-    .dw _MSTR_RESRT_TX_AD
-    .dw _MSTR_SLA_W_ACK_AD
-    .dw _MSTR_SLA_W_NAK_AD
-    .dw _MSTR_DATA_W_ACK_AD
-    .dw _MSTR_DATA_W_NAK_AD
-    .dw _MSTR_ARB_LOST_AD
-    .dw _MSTR_SLA_R_ACK_AD
-    .dw _MSTR_SLA_R_NAK_AD
-    .dw _MSTR_DATA_R_ACK_AD
-    .dw _MSTR_DATA_R_NAK_AD
-    .dw _SLVE_AD_W_AD
-    .dw _SLVE_AL_AD_W_AD
-    .dw _SDA_STUCK_AD
-    .dw _SCL_STUCK_AD
-    .dw _SLVE_DATA_RX_ACK_AD
-    .dw _SLVE_DATA_RX_NAK_AD
-    .dw _SLVE_STOP_RESRT_AD
-    .dw _SLVE_AD_R_AD
-    .dw _SLVE_AL_AD_R_AD
-    .dw _SLVE_DATA_TX_ACK_AD
-    .dw _SLVE_DATA_TX_NAK_AD
-    .dw _SLVE_LST_TX_ACK_AD
-    .dw _SLVE_GC_AD
-    .dw _SLVE_GC_AL_AD
-    .dw _SLVE_GC_RX_ACK_AD
-    .dw _SLVE_GC_RX_NAK_AD
-    .dw _ILGL_ICOUNT_AD                     ;_ILGL_ICOUNT can be $F8 _IDLE case
+    .dw _ILGL_START_STOP
+    .dw _MASTER_START_TX
+    .dw _MASTER_RESTART_TX
+    .dw _MASTER_SLA_W_ACK
+    .dw _MASTER_SLA_W_NAK
+    .dw _MASTER_DATA_W_ACK
+    .dw _MASTER_DATA_W_NAK
+    .dw _MASTER_ARB_LOST
+    .dw _MASTER_SLA_R_ACK
+    .dw _MASTER_SLA_R_NAK
+    .dw _MASTER_DATA_R_ACK
+    .dw _MASTER_DATA_R_NAK
+    .dw _SLAVE_AD_W
+    .dw _SLAVE_AL_AD_W
+    .dw _SDA_STUCK
+    .dw _SCL_STUCK
+    .dw _SLAVE_DATA_RX_ACK
+    .dw _SLAVE_DATA_RX_NAK
+    .dw _SLAVE_STOP_RESRT
+    .dw _SLAVE_AD_R
+    .dw _SLAVE_AL_AD_R
+    .dw _SLAVE_DATA_TX_ACK
+    .dw _SLAVE_DATA_TX_NAK
+    .dw _SLAVE_LST_TX_ACK
+    .dw _SLAVE_GC
+    .dw _SLAVE_GC_AL
+    .dw _SLAVE_GC_RX_ACK
+    .dw _SLAVE_GC_RX_NAK
+    .dw _ILGL_ICOUNT    ;_ILGL_ICOUNT can be $F8 _IDLE case
 
 ;------------------------------------------------------------------------------
 ; low level routines - direct to hardware
@@ -1055,7 +1054,6 @@ i2c_write_indirect:
     ;Do a read from the direct registers
     ;input  C =  device addr | direct register address ($DR)
     ;output A =  byte read
-    ;uses BC
 
 i2c_read_direct:
     push bc             ;preserve the device and register address
@@ -1069,7 +1067,6 @@ i2c_read_direct:
     ;Do a write to the direct registers
     ;input C  =  device addr | direct register address ($DR)
     ;input A  =  byte to write
-    ;uses BC
 
 i2c_write_direct:
     push bc             ;preserve the device and register address
@@ -1090,7 +1087,7 @@ begin:
     ld (STACKTOP), sp
     ld sp, STACKTOP
 
-    ld hl, msg_1            ;print a welcome message
+    ld hl, msg_1        ;print a welcome message
     call pstr 
 
 
