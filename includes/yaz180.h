@@ -39,11 +39,11 @@ STACKTOP        .EQU    $2FFE   ; start of a global stack (any pushes pre-decrem
 APU_CMD_BUFSIZE .EQU    $FF     ; FIXED CMD buffer size, 256 CMDs
 APU_PTR_BUFSIZE .EQU    $FF     ; FIXED DATA POINTER buffer size, 128 POINTERs
 
-SER_RX0_BUFSIZE .EQU    $FF     ; FIXED Rx buffer size, 256 Bytes, no range checking
-SER_TX0_BUFSIZE .EQU    $FF     ; FIXED Tx buffer size, 256 Bytes, no range checking
+ASCI0_RX_BUFSIZE    .EQU    $FF ; FIXED Rx buffer size, 256 Bytes, no range checking
+ASCI0_TX_BUFSIZE    .EQU    $FF ; FIXED Tx buffer size, 256 Bytes, no range checking
 
-SER_RX1_BUFSIZE .EQU    $FF     ; FIXED Rx buffer size, 256 Bytes, no range checking
-SER_TX1_BUFSIZE .EQU    $FF     ; FIXED Tx buffer size, 256 Bytes, no range checking
+ASCI1_RX_BUFSIZE    .EQU    $FF ; FIXED Rx buffer size, 256 Bytes, no range checking
+ASCI1_TX_BUFSIZE    .EQU    $FF ; FIXED Tx buffer size, 256 Bytes, no range checking
 
 ;==============================================================================
 ;
@@ -202,50 +202,50 @@ ICR             .EQU    Z180_IO_BASE+$3F    ; I/O Control Reg
 
 ;   ASCI Control Reg A (CNTLAn)
 
-SER_MPE         .EQU    $80     ; Multi Processor Enable
-SER_RE          .EQU    $40     ; Receive Enable
-SER_TE          .EQU    $20     ; Transmit Enable
-SER_RTS0        .EQU    $10     ; _RTS Request To Send
-SER_EFR         .EQU    $08     ; Error Flag Reset
+ASCI_MPE        .EQU    $80     ; Multi Processor Enable
+ASCI_RE         .EQU    $40     ; Receive Enable
+ASCI_TE         .EQU    $20     ; Transmit Enable
+ASCI_RTS0       .EQU    $10     ; _RTS Request To Send
+ASCI_EFR        .EQU    $08     ; Error Flag Reset
 
-SER_8P2         .EQU    $07     ; 8 Bits    Parity 2 Stop Bits
-SER_8P1         .EQU    $06     ; 8 Bits    Parity 1 Stop Bit
-SER_8N2         .EQU    $05     ; 8 Bits No Parity 2 Stop Bits
-SER_8N1         .EQU    $04     ; 8 Bits No Parity 1 Stop Bit
-SER_7P2         .EQU    $03     ; 7 Bits    Parity 2 Stop Bits
-SER_7P1         .EQU    $02     ; 7 Bits    Parity 1 Stop Bit
-SER_7N2         .EQU    $01     ; 7 Bits No Parity 2 Stop Bits
-SER_7N1         .EQU    $00     ; 7 Bits No Parity 1 Stop Bit
+ASCI_8P2        .EQU    $07     ; 8 Bits    Parity 2 Stop Bits
+ASCI_8P1        .EQU    $06     ; 8 Bits    Parity 1 Stop Bit
+ASCI_8N2        .EQU    $05     ; 8 Bits No Parity 2 Stop Bits
+ASCI_8N1        .EQU    $04     ; 8 Bits No Parity 1 Stop Bit
+ASCI_7P2        .EQU    $03     ; 7 Bits    Parity 2 Stop Bits
+ASCI_7P1        .EQU    $02     ; 7 Bits    Parity 1 Stop Bit
+ASCI_7N2        .EQU    $01     ; 7 Bits No Parity 2 Stop Bits
+ASCI_7N1        .EQU    $00     ; 7 Bits No Parity 1 Stop Bit
 
 ;   ASCI Control Reg B (CNTLBn)
                                 ; BAUD Rate = PHI / PS / SS / DR
 
-SER_MPBT        .EQU    $80     ; Multi Processor Bit Transmit
-SER_MP          .EQU    $40     ; Multi Processor
-SER_PS          .EQU    $20     ; Prescale PHI by 10 (PS 0) or 30 (PS 1)
-SER_PEO         .EQU    $10     ; Parity Even or Odd
-SER_DR          .EQU    $08     ; Divide SS by 16 (DR 0) or 64 (DR 1)
+ASCI_MPBT       .EQU    $80     ; Multi Processor Bit Transmit
+ASCI_MP         .EQU    $40     ; Multi Processor
+ASCI_PS         .EQU    $20     ; Prescale PHI by 10 (PS 0) or 30 (PS 1)
+ASCI_PEO        .EQU    $10     ; Parity Even or Odd
+ASCI_DR         .EQU    $08     ; Divide SS by 16 (DR 0) or 64 (DR 1)
 
-SER_SS_EXT      .EQU    $07     ; External Clock Source <= PHI / 40
-SER_SS_DIV_64   .EQU    $06     ; Divide PS by 64
-SER_SS_DIV_32   .EQU    $05     ; Divide PS by 32
-SER_SS_DIV_16   .EQU    $04     ; Divide PS by 16
-SER_SS_DIV_8    .EQU    $03     ; Divide PS by  8
-SER_SS_DIV_4    .EQU    $02     ; Divide PS by  4
-SER_SS_DIV_2    .EQU    $01     ; Divide PS by  2
-SER_SS_DIV_1    .EQU    $00     ; Divide PS by  1
+ASCI_SS_EXT     .EQU    $07     ; External Clock Source <= PHI / 40
+ASCI_SS_DIV_64  .EQU    $06     ; Divide PS by 64
+ASCI_SS_DIV_32  .EQU    $05     ; Divide PS by 32
+ASCI_SS_DIV_16  .EQU    $04     ; Divide PS by 16
+ASCI_SS_DIV_8   .EQU    $03     ; Divide PS by  8
+ASCI_SS_DIV_4   .EQU    $02     ; Divide PS by  4
+ASCI_SS_DIV_2   .EQU    $01     ; Divide PS by  2
+ASCI_SS_DIV_1   .EQU    $00     ; Divide PS by  1
 
 ;   ASCI Status Reg (STATn)
 
-SER_RDRF        .EQU   $80    ; Receive Data Register Full
-SER_OVRN        .EQU   $40    ; Overrun (Received Byte)
-SER_PE          .EQU   $20    ; Parity Error (Received Byte)
-SER_FE          .EQU   $10    ; Framing Error (Received Byte)
-SER_RIE         .EQU   $08    ; Receive Interrupt Enabled
-SER_DCD0        .EQU   $04    ; _DCD0 Data Carrier Detect USART0
-SER_CTS1        .EQU   $04    ; _CTS1 Clear To Send USART1
-SER_TDRE        .EQU   $02    ; Transmit Data Register Empty
-SER_TIE         .EQU   $01    ; Transmit Interrupt Enabled
+ASCI_RDRF       .EQU   $80    ; Receive Data Register Full
+ASCI_OVRN       .EQU   $40    ; Overrun (Received Byte)
+ASCI_PE         .EQU   $20    ; Parity Error (Received Byte)
+ASCI_FE         .EQU   $10    ; Framing Error (Received Byte)
+ASCI_RIE        .EQU   $08    ; Receive Interrupt Enabled
+ASCI_DCD0       .EQU   $04    ; _DCD0 Data Carrier Detect USART0
+ASCI_CTS1       .EQU   $04    ; _CTS1 Clear To Send USART1
+ASCI_TDRE       .EQU   $02    ; Transmit Data Register Empty
+ASCI_TIE        .EQU   $01    ; Transmit Interrupt Enabled
 
 ;   CPU Clock Multiplier Reg (CMR) (Z8S180 & higher Only)
 
@@ -388,21 +388,21 @@ DEL             .EQU    $7F     ; Delete
 ;
 
 ;   Starting immediately after the Z180 Vector Table.
-ser0RxInPtr     .EQU    Z180_VECTOR_BASE+Z180_VECTOR_SIZE
-ser0RxOutPtr    .EQU    ser0RxInPtr+2
-ser0TxInPtr     .EQU    ser0RxOutPtr+2
-ser0TxOutPtr    .EQU    ser0TxInPtr+2
-ser0RxBufUsed   .EQU    ser0TxOutPtr+2
-ser0TxBufUsed   .EQU    ser0RxBufUsed+1
+ASCI0RxInPtr    .EQU    Z180_VECTOR_BASE+Z180_VECTOR_SIZE
+ASCI0RxOutPtr   .EQU    ASCI0RxInPtr+2
+ASCI0TxInPtr    .EQU    ASCI0RxOutPtr+2
+ASCI0TxOutPtr   .EQU    ASCI0TxInPtr+2
+ASCI0RxBufUsed  .EQU    ASCI0TxOutPtr+2
+ASCI0TxBufUsed  .EQU    ASCI0RxBufUsed+1
 
-basicStarted    .EQU    ser0TxBufUsed+1
+basicStarted    .EQU    ASCI0TxBufUsed+1
 
-ser1RxInPtr     .EQU    Z180_VECTOR_BASE+Z180_VECTOR_SIZE+$10
-ser1RxOutPtr    .EQU    ser1RxInPtr+2
-ser1TxInPtr     .EQU    ser1RxOutPtr+2
-ser1TxOutPtr    .EQU    ser1TxInPtr+2
-ser1RxBufUsed   .EQU    ser1TxOutPtr+2
-ser1TxBufUsed   .EQU    ser1RxBufUsed+1
+ASCI1RxInPtr    .EQU    Z180_VECTOR_BASE+Z180_VECTOR_SIZE+$10
+ASCI1RxOutPtr   .EQU    ASCI1RxInPtr+2
+ASCI1TxInPtr    .EQU    ASCI1RxOutPtr+2
+ASCI1TxOutPtr   .EQU    ASCI1TxInPtr+2
+ASCI1RxBufUsed  .EQU    ASCI1TxOutPtr+2
+ASCI1TxBufUsed  .EQU    ASCI1RxBufUsed+1
 
 APUCMDInPtr     .EQU    Z180_VECTOR_BASE+Z180_VECTOR_SIZE+$20
 APUCMDOutPtr    .EQU    APUCMDInPtr+2
@@ -418,13 +418,13 @@ APUError        .EQU    APUStatus+1
 ;   I/O Buffers must start on 0xnn00 because we increment low byte to roll-over
 BUFSTART_IO     .EQU    Z180_VECTOR_BASE-(Z180_VECTOR_BASE%$100) + $100
 
-ser0RxBuf       .EQU    BUFSTART_IO
-ser0TxBuf       .EQU    ser0RxBuf+SER_RX0_BUFSIZE+1
+ASCI0RxBuf      .EQU    BUFSTART_IO
+ASCI0TxBuf      .EQU    ASCI0RxBuf+ASCI0_RX_BUFSIZE+1
 
-ser1RxBuf       .EQU    ser0TxBuf+SER_TX0_BUFSIZE+1
-ser1TxBuf       .EQU    ser1RxBuf+SER_RX1_BUFSIZE+1
+ASCI1RxBuf      .EQU    ASCI0TxBuf+ASCI0_TX_BUFSIZE+1
+ASCI1TxBuf      .EQU    ASCI1RxBuf+ASCI1_RX_BUFSIZE+1
 
-APUCMDBuf       .EQU    ser1TxBuf+SER_TX1_BUFSIZE+1
+APUCMDBuf       .EQU    ASCI1TxBuf+ASCI1_TX_BUFSIZE+1
 APUPTRBuf       .EQU    APUCMDBuf+APU_CMD_BUFSIZE+1
 
 ;==============================================================================
