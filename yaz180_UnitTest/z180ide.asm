@@ -381,7 +381,7 @@ phd2:
     rst 08
 
     pop hl
-    ld b, 16            ;print 16 ascii words per line
+    ld b, 16            ;print 16 ascii bytes per line
 phd3:
     ld a, (hl)
     inc hl
