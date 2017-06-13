@@ -6,7 +6,7 @@ Adapted for the freeware Zilog Macro Assembler 2.10 to produce the original ROM 
 
 http://www.nascomhomepage.com/
 
-==================================================================================
+==============================================================================
 
 The updates to the original BASIC within this file are copyright Grant Searle.
 
@@ -17,7 +17,7 @@ http://searle.hostei.com/grant/index.html
 
 If the above don't work, please perform an Internet search to see if I have updated the web page hosting service.
 
-==================================================================================
+==============================================================================
 
 # RC2014
 
@@ -80,7 +80,7 @@ It can be used to simply provide accelerated I/O over the standard ROM, and it p
 Also, this ROM provides both Intel HexLoadr functions and a `RST`, `INT0`, and `NMI` JumP Table.
 This allows you to upload Assembly or compiled C programs, and then run them as described below. 
 
-==================================================================================
+==============================================================================
 
 # YAZ180
 
@@ -201,7 +201,7 @@ The `YAZ180_LABELS.TXT` file is provided to advise of all the relevant RAM and R
 
 4. When HexLoadr has finished, and you are back at the Basic `ok` prompt, use the `DOKE` command relocate the address for the Basic `USR(x)` command to point to `.ORG` of your arbitrary program. For the YAZ180 the `USR(x)` jump address is located at `0x8224` (RC2014 32k), `0x8004` (YAZ180 32k), or `0x2704` (YAZ180 56k). If your arbitrary program is located at `0x3000` then the Basic command is `DOKE &h8224, &h3000`, for example.
 
-5. Start your arbitrary program using `PRINT USR(0)`, or other variant if you have parameters to pass to your program.
+5. Start your arbitrary program by typing `PRINT USR(0)`, or other variant if you have a parameter to pass to your program.
 
 6. Profit.
 
