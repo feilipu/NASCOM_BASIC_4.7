@@ -20,6 +20,8 @@
 ; INCLUDE           "yaz180.h"              ; OR
 ; INCLUDE           "rc2014.h"
 
+INCLUDE           "rc2014.h"
+
 ;==============================================================================
 ;
 ; Z80 INTERRUPT ORIGINATING VECTOR TABLE
@@ -27,7 +29,6 @@
 SECTION         z80_vector_rst
 
 EXTERN          INIT
-EXTERN          Z80_VECTOR_BASE, Z80_VECTOR_PROTO
 
 ;------------------------------------------------------------------------------
 ; RST 00 - RESET / TRAP

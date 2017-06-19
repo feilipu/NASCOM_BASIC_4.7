@@ -30,14 +30,17 @@
 
 ;==============================================================================
 ;
+; INCLUDES SECTION
+;
+
+INCLUDE "rc2014.h"
+
+;==============================================================================
+;
 ; DEFINES SECTION
 ;
 
-PUBLIC  RAMSTART
-
-EXTERN  RAM_32_START
-
-DEFC    RAMSTART    =   RAM_32_START
+; DEFC    RAMSTART    =   RAM_32_START
 
 ; Top of BASIC line input buffer (CURPOS WRKSPC+0ABH)
 ; so it is "free ram" when BASIC resets
@@ -49,13 +52,6 @@ DEFC    WRKSPC      =   RAMSTART+$0220  ; set BASIC Work space WRKSPC
 DEFC    TEMPSTACK   =   WRKSPC+$0AB     ; Top of BASIC line input buffer
                                         ; (CURPOS = WRKSPC+0ABH)
                                         ; so it is "free ram" when BASIC resets
-
-;==============================================================================
-;
-; INCLUDES SECTION
-;
-
-INCLUDE "rc2014.h"
 
 ;==============================================================================
 ;
@@ -430,8 +426,6 @@ LoadOKStr:      DEFM    "Done",CR,LF,0
 ;
 ; VARIABLES
 ;
-
-EXTERN  Z80_VECTOR_BASE, Z80_VECTOR_SIZE, SER_RX_BUFSIZE
 
 DEFC    serRxInPtr      =     Z80_VECTOR_BASE+Z80_VECTOR_SIZE
 DEFC    serRxOutPtr     =     serRxInPtr+2

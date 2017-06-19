@@ -30,19 +30,17 @@
 ; DEFINES SECTION
 ;
 
-PUBLIC  ROMSTART, ROMSTOP
-
 DEFC    ROMSTART        =   $0000   ; Bottom of ROM
 DEFC    ROMSTOP         =   $1FFF   ; Top of ROM
-
-PUBLIC  RAM_56_START, RAM_48_START, RAM_32_START, RAMSTOP
 
 DEFC    RAM_56_START    =   $2000   ; Bottom of 56k RAM
 DEFC    RAM_48_START    =   $4000   ; Bottom of 48k RAM
 DEFC    RAM_32_START    =   $8000   ; Bottom of 32k RAM
-DEFC    RAMSTOP         =   $FFFF   ; Top of RAM
 
-PUBLIC  SER_RX_BUFSIZE, SER_RX_FULLSIZE, SER_RX_EMPTYSIZE, SER_TX_BUFSIZE
+DEFC    RAMSTART        =   RAM_32_START            ; FIXME Not happy about this.
+                                                    ; FIXME Should be in user
+                                                    ; FIXME .asm file
+DEFC    RAMSTOP         =   $FFFF   ; Top of RAM
 
 DEFC    SER_RX_BUFSIZE  =   $FF ; FIXED Rx buffer size, 256 Bytes, no range checking
 DEFC    SER_RX_FULLSIZE =   SER_RX_BUFSIZE - $08
@@ -55,10 +53,6 @@ DEFC    SER_TX_BUFSIZE  =   $0F ; Size of the Tx Buffer, 2^n Bytes, n = 4 here
 ;
 ; Interrupt vectors (offsets) for Z80 RST, INT0, and NMI interrupts
 ;
-
-PUBLIC  Z80_VECTOR_BASE, Z80_VECTOR_PROTO, Z80_VECTOR_SIZE
-
-EXTERN  RAMSTART
 
 DEFC    Z80_VECTOR_BASE =   RAMSTART   ; RAM vector address for Z80 RST Table
                                        ; <<< SET THIS AS DESIRED >>>
@@ -79,9 +73,6 @@ DEFC    Z80_VECTOR_SIZE     =   $20
 ;DEFC       INT_NMI         =    NULL_NMI
 
 ;   Z80 Interrupt Service Routine Addresses - rewrite as needed
-PUBLIC  RST_08_ADDR, RST_10_ADDR, RST_18_ADDR
-PUBLIC  RST_20_ADDR, RST_28_ADDR, RST_30_ADDR
-PUBLIC  INT_INT0_ADDR, INT_NMI_ADDR
 
 DEFC    RST_08_ADDR     =   Z80_VECTOR_BASE+$01
 DEFC    RST_10_ADDR     =   Z80_VECTOR_BASE+$05
@@ -136,9 +127,6 @@ DEFC    SER_TDRE        =   $02    ; Transmit Data Register Empty
 DEFC    SER_RDRF        =   $01    ; Receive Data Register Full
 
 ; General TTY
-
-PUBLIC  BKSP, LF, CS, CR, ESC, DEL
-PUBLIC  CTRLC, CTRLG, CTRLO, CTRLQ, CTRLR, CTRLS, CTRLU
 
 DEFC    CTRLC           =    03H     ; Control "C"
 DEFC    CTRLG           =    07H     ; Control "G"

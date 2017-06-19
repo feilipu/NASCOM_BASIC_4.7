@@ -9,7 +9,7 @@
 ; https://feilipu.me/
 ;
 
-EXTERN      Z80_VECTOR_PROTO, Z80_VECTOR_SIZE
+INCLUDE     "rc2014.h"
 
 SECTION     z80_vector_rst
 ORG         0x0000
@@ -47,3 +47,4 @@ ORG         0x0240
 SECTION     z80_init_strings
 ORG         0x0300
 
+; DEFB        0     ; Needed to work...?
