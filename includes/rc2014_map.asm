@@ -47,4 +47,4 @@ ORG         0x0240
 SECTION     z80_init_strings
 ORG         0x0300
 
-; DEFB        0     ; Needed to work...?
+DEFB        0     ; Needed to work...?

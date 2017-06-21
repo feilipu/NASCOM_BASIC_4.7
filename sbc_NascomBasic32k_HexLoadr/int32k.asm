@@ -98,8 +98,8 @@ im1_tx_check:                       ; now start doing the Tx stuff
         ld a, (hl)                  ; get the Tx byte
         out (SER_DATA_ADDR), a      ; output the Tx byte to the ACIA
 
-        inc l                       ; move the Tx pointer, just low byte along
-        ld a, SER_TX_BUFSIZE        ; load the buffer size, power of 2
+        inc l                       ; move the Tx pointer, just low byte, along
+        ld a, SER_TX_BUFSIZE        ; load the buffer size, (n^2)-1
         and l                       ; range check
         ld l, a                     ; return the low byte to l
         ld (serTxOutPtr), hl        ; write where the next byte should be popped
@@ -207,7 +207,7 @@ txa_buffer_out:
         ld (hl), a                  ; write the Tx byte to the serTxInPtr
 
         inc l                       ; move the Tx pointer, just low byte along
-        ld a, SER_TX_BUFSIZE        ; load the buffer size, power of 2
+        ld a, SER_TX_BUFSIZE        ; load the buffer size, (n^2)-1
         and l                       ; range check
         ld l, a                     ; return the low byte to l
         ld (serTxInPtr), hl         ; write where the next byte should be poked
