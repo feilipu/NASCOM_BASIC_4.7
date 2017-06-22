@@ -27,19 +27,19 @@
 
 ;==============================================================================
 ;
+; INCLUDES SECTION
+;
+
+INCLUDE "rc2014_config.h"
+
+;==============================================================================
+;
 ; DEFINES SECTION
 ;
 
 DEFC    ROMSTART        =   $0000   ; Bottom of ROM
 DEFC    ROMSTOP         =   $1FFF   ; Top of ROM
 
-DEFC    RAM_56_START    =   $2000   ; Bottom of 56k RAM
-DEFC    RAM_48_START    =   $4000   ; Bottom of 48k RAM
-DEFC    RAM_32_START    =   $8000   ; Bottom of 32k RAM
-
-DEFC    RAMSTART        =   RAM_32_START            ; FIXME Not happy about this.
-                                                    ; FIXME Should be in user
-                                                    ; FIXME .asm file
 DEFC    RAMSTOP         =   $FFFF   ; Top of RAM
 
 DEFC    SER_RX_BUFSIZE  =   $FF ; FIXED Rx buffer size, 256 Bytes, no range checking

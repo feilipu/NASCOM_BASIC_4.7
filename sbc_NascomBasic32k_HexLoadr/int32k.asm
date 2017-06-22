@@ -37,24 +37,6 @@ INCLUDE "rc2014.h"
 
 ;==============================================================================
 ;
-; DEFINES SECTION
-;
-
-; DEFC    RAMSTART    =   RAM_32_START
-
-; Top of BASIC line input buffer (CURPOS WRKSPC+0ABH)
-; so it is "free ram" when BASIC resets
-; set BASIC Work space WRKSPC $8000, in RAM
-
-DEFC    WRKSPC      =   RAMSTART+$0220  ; set BASIC Work space WRKSPC
-                                        ; beyond the end of ACIA stuff
-
-DEFC    TEMPSTACK   =   WRKSPC+$0AB     ; Top of BASIC line input buffer
-                                        ; (CURPOS = WRKSPC+0ABH)
-                                        ; so it is "free ram" when BASIC resets
-
-;==============================================================================
-;
 ; CODE SECTION
 ;
 SECTION z80_acia_interrupt
@@ -407,7 +389,8 @@ WARMSTART:
 SECTION         z80_init_strings        ; ORG $0300
 
 SIGNON1:        DEFM    "SBC - Grant Searle",CR,LF
-                DEFM    "ACIA - feilipu",CR,LF,0
+                DEFM    "ACIA - feilipu",CR,LF
+                DEFM    "z88dk",CR,LF,0
 
 SIGNON2:        DEFM    CR,LF
                 DEFM    "Cold or Warm start, "
@@ -461,7 +444,5 @@ DEFC    RST_30      =       NULL_RET        ; RET
 DEFC    INT_INT0    =       serialInt       ; ACIA interrupt
 DEFC    INT_NMI     =       NULL_NMI        ; RETN
 
-;
 ;==============================================================================
-
 

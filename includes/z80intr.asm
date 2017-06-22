@@ -13,14 +13,10 @@
 ;
 ; REQUIRES
 ;
-; DEFC   Z80_VECTOR_BASE   =   RAM vector address for Z80 RST eg.
-;
-; DEFC   Z80_VECTOR_BASE   =   RAMSTART_CA0 ; RAM vector address for Z80 RST
-;
-; INCLUDE           "yaz180.h"              ; OR
-; INCLUDE           "rc2014.h"
+; INCLUDE       "yaz180.h"              ; OR
+; INCLUDE       "rc2014.h"
 
-INCLUDE           "rc2014.h"
+INCLUDE         "rc2014.h"
 
 ;==============================================================================
 ;
@@ -33,8 +29,8 @@ EXTERN          INIT
 ;------------------------------------------------------------------------------
 ; RST 00 - RESET / TRAP
                 DEFS    0x0000 - ASMPC  ; ORG     0000H
-                DI                  ; Disable interrupts
-                JP      INIT        ; Initialize Hardware and go
+                DI                      ; Disable interrupts
+                JP      INIT            ; Initialize Hardware and go
 
 ;------------------------------------------------------------------------------
 ; RST 08
@@ -132,7 +128,5 @@ NULL_RET:
 SECTION         z80_vector_nmi
                 JP      Z80_VECTOR_BASE-Z80_VECTOR_PROTO+INT_NMI_LBL
 
-;
 ;==============================================================================
-
 
