@@ -54,7 +54,6 @@ EXTERN          INIT
 
 ;------------------------------------------------------------------------------
 ; RST 28
-
                 DEFS    0x0028 - ASMPC  ; ORG     0028H
                 JP      Z80_VECTOR_BASE-Z80_VECTOR_PROTO+RST_28_LBL
 
