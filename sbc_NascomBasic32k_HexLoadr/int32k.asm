@@ -54,7 +54,7 @@ serialInt:
         ld l, a                     ; Move Rx byte to l
 
         ld a, (serRxBufUsed)        ; Get the number of bytes in the Rx buffer
-        cp SER_RX_BUFSIZE           ; check whether there is space in the buffer
+        cp SER_RX_BUFSIZE-1         ; check whether there is space in the buffer
         jr nc, im1_tx_check         ; buffer full, check if we can send something
 
         ld a, l                     ; get Rx byte from l
@@ -81,7 +81,7 @@ im1_tx_check:                       ; now start doing the Tx stuff
         out (SER_DATA_ADDR), a      ; output the Tx byte to the ACIA
 
         inc l                       ; move the Tx pointer, just low byte, along
-        ld a, SER_TX_BUFSIZE        ; load the buffer size, (n^2)-1
+        ld a, SER_TX_BUFSIZE-1      ; load the buffer size, (n^2)-1
         and l                       ; range check
         ld l, a                     ; return the low byte to l
         ld (serTxOutPtr), hl        ; write where the next byte should be popped
@@ -181,7 +181,7 @@ TXA:
 
 txa_buffer_out:
         ld a, (serTxBufUsed)        ; Get the number of bytes in the Tx buffer
-        cp SER_TX_BUFSIZE           ; check whether there is space in the buffer
+        cp SER_TX_BUFSIZE-1         ; check whether there is space in the buffer
         jr nc, txa_buffer_out       ; buffer full, so wait till it has space
 
         ld a, l                     ; Retrieve Tx character     
@@ -189,7 +189,7 @@ txa_buffer_out:
         ld (hl), a                  ; write the Tx byte to the serTxInPtr
 
         inc l                       ; move the Tx pointer, just low byte along
-        ld a, SER_TX_BUFSIZE        ; load the buffer size, (n^2)-1
+        ld a, SER_TX_BUFSIZE-1      ; load the buffer size, (n^2)-1
         and l                       ; range check
         ld l, a                     ; return the low byte to l
         ld (serTxInPtr), hl         ; write where the next byte should be poked
@@ -424,7 +424,7 @@ DEFC    basicStarted    =     serControl+1
 DEFC    BUFSTART_IO     =     Z80_VECTOR_BASE-(Z80_VECTOR_BASE%$100) + $100
   
 DEFC    serRxBuf        =     BUFSTART_IO
-DEFC    serTxBuf        =     serRxBuf+SER_RX_BUFSIZE+1
+DEFC    serTxBuf        =     serRxBuf+SER_RX_BUFSIZE
 
 ;==============================================================================
 ;
