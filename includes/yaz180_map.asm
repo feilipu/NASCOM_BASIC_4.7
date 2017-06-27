@@ -9,7 +9,7 @@
 ; https://feilipu.me/
 ;
 
-INCLUDE     "rc2014.h"
+INCLUDE     "yaz180.h"
 
 SECTION     z80_vector_rst
 ORG         0x0000
@@ -22,6 +22,12 @@ ORG         Z80_VECTOR_PROTO+Z80_VECTOR_SIZE
 
 SECTION     z80_vector_nmi
 ORG         0x0066
+
+SECTION     z180_vector_trap_handler
+ORG         Z180_VECTOR_TRAP
+
+SECTION     z180_vector_table_prototype
+ORG         Z180_VECTOR_PROTO
 
 SECTION     z80_acia_interrupt
 ORG         0x0080
@@ -45,6 +51,6 @@ SECTION     z80_init
 ORG         0x0240
 
 SECTION     z80_init_strings
-ORG         0x02D0
+ORG         0x0300
 
 ;==============================================================================

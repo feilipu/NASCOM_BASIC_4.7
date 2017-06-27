@@ -14,36 +14,44 @@
 ; https://feilipu.me/
 ;
 
+
+;==============================================================================
+;
+; INCLUDES SECTION
+;
+
+; INCLUDE "yaz180_config.h"
+
 ;==============================================================================
 ;
 ; DEFINES SECTION
 ;
 
-ROMSTART        .EQU    $0000   ; Bottom of FLASH
-ROMSTOP         .EQU    $1FFF   ; Top of FLASH
+DEFC    ROMSTART        =   $0000   ; Bottom of FLASH
+DEFC    ROMSTOP         =   $1FFF   ; Top of FLASH
 
-RAMSTART_CA0    .EQU    $2000   ; Bottom of Common 0 RAM
-RAMSTOP_CA0     .EQU    $3FFF   ; Top of Common 0 RAM
+DEFC    RAMSTART_CA0    =   $2000   ; Bottom of Common 0 RAM
+DEFC    RAMSTOP_CA0     =   $3FFF   ; Top of Common 0 RAM
 
-RAMSTART_BANK   .EQU    $4000   ; Bottom of Banked RAM
-RAMSTOP_BANK    .EQU    $7FFF   ; Top of Banked RAM
+DEFC    RAMSTART_BANK   =   $4000   ; Bottom of Banked RAM
+DEFC    RAMSTOP_BANK    =   $7FFF   ; Top of Banked RAM
 
-RAMSTART_CA1    .EQU    $8000   ; Bottom of Common 1 RAM
-RAMSTOP_CA1     .EQU    $FFFF   ; Top of Common 1 RAM
+DEFC    RAMSTART_CA1    =   $8000   ; Bottom of Common 1 RAM
+DEFC    RAMSTOP_CA1     =   $FFFF   ; Top of Common 1 RAM
 
-RAMSTART        .EQU    RAMSTART_CA0
-RAMSTOP         .EQU    RAMSTOP_CA1
+DEFC    RAMSTART        =   RAMSTART_CA0
+DEFC    RAMSTOP         =   RAMSTOP_CA1
 
-STACKTOP        .EQU    $2FFE   ; start of a global stack (any pushes pre-decrement)
+DEFC    STACKTOP        =   $2FFE   ; start of a global stack (any pushes pre-decrement)
 
-APU_CMD_BUFSIZE .EQU    $FF     ; FIXED CMD buffer size, 256 CMDs
-APU_PTR_BUFSIZE .EQU    $FF     ; FIXED DATA POINTER buffer size, 128 POINTERs
+DEFC    APU_CMD_BUFSIZE     =   $FF     ; FIXED CMD buffer size, 256 CMDs
+DEFC    APU_PTR_BUFSIZE     =   $FF     ; FIXED DATA POINTER buffer size, 128 POINTERs
 
-ASCI0_RX_BUFSIZE    .EQU    $FF ; FIXED Rx buffer size, 256 Bytes, no range checking
-ASCI0_TX_BUFSIZE    .EQU    $FF ; FIXED Tx buffer size, 256 Bytes, no range checking
+DEFC    ASCI0_RX_BUFSIZE    =   $FF ; FIXED Rx buffer size, 256 Bytes, no range checking
+DEFC    ASCI0_TX_BUFSIZE    =   $FF ; FIXED Tx buffer size, 256 Bytes, no range checking
 
-ASCI1_RX_BUFSIZE    .EQU    $FF ; FIXED Rx buffer size, 256 Bytes, no range checking
-ASCI1_TX_BUFSIZE    .EQU    $FF ; FIXED Tx buffer size, 256 Bytes, no range checking
+DEFC    ASCI1_RX_BUFSIZE    =   $FF ; FIXED Rx buffer size, 256 Bytes, no range checking
+DEFC    ASCI1_TX_BUFSIZE    =   $FF ; FIXED Tx buffer size, 256 Bytes, no range checking
 
 ;==============================================================================
 ;
@@ -51,32 +59,32 @@ ASCI1_TX_BUFSIZE    .EQU    $FF ; FIXED Tx buffer size, 256 Bytes, no range chec
 ;
 
 ;   Squeezed between INT0 0x0038 and NMI 0x0066
-Z80_VECTOR_PROTO    .EQU    $0040
-Z80_VECTOR_SIZE     .EQU    $20
+DEFC    Z80_VECTOR_PROTO    =   $0040
+DEFC    Z80_VECTOR_SIZE     =   $20
 
 ;   RAM vector address for Z80 RST Table
-Z80_VECTOR_BASE     .EQU    RAMSTART_CA0    ; <<< SET THIS AS DESIRED >>>
+DEFC    Z80_VECTOR_BASE     =   RAMSTART_CA0    ; <<< SET THIS AS DESIRED >>>
 
 ;   Prototype Interrupt Service Routines - complete in main program
 ;
-;   RST_08          .EQU    TX0         TX a character over ASCI0
-;   RST_10          .EQU    RX0         RX a character over ASCI0, block no bytes available
-;   RST_18          .EQU    RX0_CHK     Check ASCI0 status, return # bytes available
-;   RST_20          .EQU    NULL_INT
-;   RST_28          .EQU    NULL_INT
-;   RST_30          .EQU    NULL_INT
-;   INT_INT0        .EQU    NULL_INT
-;   INT_NMI         .EQU    NULL_NMI
+;DEFC       RST_08      =       TX0         TX a character over ASCI0
+;DEFC       RST_10      =       RX0         RX a character over ASCI0, block no bytes available
+;DEFC       RST_18      =       RX0_CHK     Check ASCI0 status, return # bytes available
+;DEFC       RST_20      =       NULL_INT
+;DEFC       RST_28      =       NULL_INT
+;DEFC       RST_30      =       NULL_INT
+;DEFC       INT_INT0    =       NULL_INT
+;DEFC       INT_NMI     =       NULL_NMI
 
 ;   Z80 Interrupt Service Routine Addresses - rewrite as needed
-RST_08_ADDR     .EQU    Z80_VECTOR_BASE+$01
-RST_10_ADDR     .EQU    Z80_VECTOR_BASE+$05
-RST_18_ADDR     .EQU    Z80_VECTOR_BASE+$09
-RST_20_ADDR     .EQU    Z80_VECTOR_BASE+$0D
-RST_28_ADDR     .EQU    Z80_VECTOR_BASE+$11
-RST_30_ADDR     .EQU    Z80_VECTOR_BASE+$15
-INT_INT0_ADDR   .EQU    Z80_VECTOR_BASE+$19
-INT_NMI_ADDR    .EQU    Z80_VECTOR_BASE+$1D
+DEFC    RST_08_ADDR         =   Z80_VECTOR_BASE+$01
+DEFC    RST_10_ADDR         =   Z80_VECTOR_BASE+$05
+DEFC    RST_18_ADDR         =   Z80_VECTOR_BASE+$09
+DEFC    RST_20_ADDR         =   Z80_VECTOR_BASE+$0D
+DEFC    RST_28_ADDR         =   Z80_VECTOR_BASE+$11
+DEFC    RST_30_ADDR         =   Z80_VECTOR_BASE+$15
+DEFC    INT_INT0_ADDR       =   Z80_VECTOR_BASE+$19
+DEFC    INT_NMI_ADDR        =   Z80_VECTOR_BASE+$1D
 
 ;==============================================================================
 ;
@@ -84,116 +92,116 @@ INT_NMI_ADDR    .EQU    Z80_VECTOR_BASE+$1D
 ;
 
 ;   Locate the TRAP management just after NMI
-Z180_VECTOR_TRAP    .EQU    $0070
+DEFC    Z180_VECTOR_TRAP    =   $0070
 
 ;   Locate the prototypes just after TRAP code
-Z180_VECTOR_PROTO   .EQU    $00C0
-Z180_VECTOR_SIZE    .EQU    $12
+DEFC    Z180_VECTOR_PROTO   =   $00C0
+DEFC    Z180_VECTOR_SIZE    =   $12
 
-Z180_VECTOR_IL      .EQU    $20     ; Vector Base address (IL)
+DEFC    Z180_VECTOR_IL      =   $20 ; Vector Base address (IL)
                                     ; [001x xxxx] for Vectors at $nn20 - $nn3F
 
 ;   Start Z180 Vectors immediately after the Z80 Vector Table.                                    
-Z180_VECTOR_BASE    .EQU    Z80_VECTOR_BASE-(Z80_VECTOR_BASE%$100)+Z180_VECTOR_IL
+DEFC    Z180_VECTOR_BASE    =   Z80_VECTOR_BASE-(Z80_VECTOR_BASE%$100)+Z180_VECTOR_IL
 
 ;   Prototype Interrupt Service Routines - provide these in your main program
 ;
-;   INT_INT1        .EQU    NULL_RET        ; external /INT1
-;   INT_INT2        .EQU    NULL_RET        ; external /INT2
-;   INT_PRT0        .EQU    NULL_RET        ; PRT channel 0
-;   INT_PRT1        .EQU    NULL_RET        ; PRT channel 1
-;   INT_DMA0        .EQU    NULL_RET        ; DMA channel 0
-;   INT_DMA1        .EQU    NULL_RET        ; DMA Channel 1
-;   INT_CSIO        .EQU    NULL_RET        ; Clocked serial I/O
-;   INT_ASCI0       .EQU    ASCI0_INTERRUPT ; Async channel 0
-;   INT_ASCI1       .EQU    NULL_RET        ; Async channel 1
+;   INT_INT1    =       NULL_RET        ; external /INT1
+;   INT_INT2    =       NULL_RET        ; external /INT2
+;   INT_PRT0    =       NULL_RET        ; PRT channel 0
+;   INT_PRT1    =       NULL_RET        ; PRT channel 1
+;   INT_DMA0    =       NULL_RET        ; DMA channel 0
+;   INT_DMA1    =       NULL_RET        ; DMA Channel 1
+;   INT_CSIO    =       NULL_RET        ; Clocked serial I/O
+;   INT_ASCI0   =       ASCI0_INTERRUPT ; Async channel 0
+;   INT_ASCI1   =       NULL_RET        ; Async channel 1
 
 ;   Z180 Interrupt Service Routine Addresses - rewrite as needed
-INT_INT1_ADDR   .EQU    Z180_VECTOR_BASE+$00
-INT_INT2_ADDR   .EQU    Z180_VECTOR_BASE+$02
-INT_PRT0_ADDR   .EQU    Z180_VECTOR_BASE+$04
-INT_PRT1_ADDR   .EQU    Z180_VECTOR_BASE+$06
-INT_DMA0_ADDR   .EQU    Z180_VECTOR_BASE+$08
-INT_DMA1_ADDR   .EQU    Z180_VECTOR_BASE+$0A
-INT_CSIO_ADDR   .EQU    Z180_VECTOR_BASE+$0C
-INT_ASCI0_ADDR  .EQU    Z180_VECTOR_BASE+$0E
-INT_ASCI1_ADDR  .EQU    Z180_VECTOR_BASE+$10
+DEFC    INT_INT1_ADDR       =   Z180_VECTOR_BASE+$00
+DEFC    INT_INT2_ADDR       =   Z180_VECTOR_BASE+$02
+DEFC    INT_PRT0_ADDR       =   Z180_VECTOR_BASE+$04
+DEFC    INT_PRT1_ADDR       =   Z180_VECTOR_BASE+$06
+DEFC    INT_DMA0_ADDR       =   Z180_VECTOR_BASE+$08
+DEFC    INT_DMA1_ADDR       =   Z180_VECTOR_BASE+$0A
+DEFC    INT_CSIO_ADDR       =   Z180_VECTOR_BASE+$0C
+DEFC    INT_ASCI0_ADDR      =   Z180_VECTOR_BASE+$0E
+DEFC    INT_ASCI1_ADDR      =   Z180_VECTOR_BASE+$10
 
 ;==============================================================================
 ;
 ; Z180 Register Mnemonics
 ;
 
-Z180_IO_BASE    .EQU    $00 ; Internal I/O Base Address (ICR) <<< SET THIS AS DESIRED >>>
+DEFC    Z180_IO_BASE    =       $00 ; Internal I/O Base Address (ICR)
 
-CNTLA0          .EQU    Z180_IO_BASE+$00    ; ASCI Control Reg A Ch 0
-CNTLA1          .EQU    Z180_IO_BASE+$01    ; ASCI Control Reg A Ch 1
-CNTLB0          .EQU    Z180_IO_BASE+$02    ; ASCI Control Reg B Ch 0
-CNTLB1          .EQU    Z180_IO_BASE+$03    ; ASCI Control Reg B Ch 1
-STAT0           .EQU    Z180_IO_BASE+$04    ; ASCI Status  Reg   Ch 0
-STAT1           .EQU    Z180_IO_BASE+$05    ; ASCI Status  Reg   Ch 1
-TDR0            .EQU    Z180_IO_BASE+$06    ; ASCI Tx Data Reg   Ch 0
-TDR1            .EQU    Z180_IO_BASE+$07    ; ASCI Tx Data Reg   Ch 1
-RDR0            .EQU    Z180_IO_BASE+$08    ; ASCI Rx Data Reg   Ch 0
-RDR1            .EQU    Z180_IO_BASE+$09    ; ASCI Rx Data Reg   Ch 1
+DEFC    CNTLA0          =       Z180_IO_BASE+$00    ; ASCI Control Reg A Ch 0
+DEFC    CNTLA1          =       Z180_IO_BASE+$01    ; ASCI Control Reg A Ch 1
+DEFC    CNTLB0          =       Z180_IO_BASE+$02    ; ASCI Control Reg B Ch 0
+DEFC    CNTLB1          =       Z180_IO_BASE+$03    ; ASCI Control Reg B Ch 1
+DEFC    STAT0           =       Z180_IO_BASE+$04    ; ASCI Status  Reg   Ch 0
+DEFC    STAT1           =       Z180_IO_BASE+$05    ; ASCI Status  Reg   Ch 1
+DEFC    TDR0            =       Z180_IO_BASE+$06    ; ASCI Tx Data Reg   Ch 0
+DEFC    TDR1            =       Z180_IO_BASE+$07    ; ASCI Tx Data Reg   Ch 1
+DEFC    RDR0            =       Z180_IO_BASE+$08    ; ASCI Rx Data Reg   Ch 0
+DEFC    RDR1            =       Z180_IO_BASE+$09    ; ASCI Rx Data Reg   Ch 1
 
-ASEXT0          .EQU    Z180_IO_BASE+$12    ; ASCI Extension Control Reg Ch 0 (Z8S180 & higher Only)
-ASEXT1          .EQU    Z180_IO_BASE+$13    ; ASCI Extension Control Reg Ch 1 (Z8S180 & higher Only)
+DEFC    ASEXT0          =       Z180_IO_BASE+$12    ; ASCI Extension Control Reg Ch 0 (Z8S180 & higher Only)
+DEFC    ASEXT1          =       Z180_IO_BASE+$13    ; ASCI Extension Control Reg Ch 1 (Z8S180 & higher Only)
 
-ASTC0L          .EQU    Z180_IO_BASE+$1A    ; ASCI Time Constant Ch 0 Low (Z8S180 & higher Only)
-ASTC0H          .EQU    Z180_IO_BASE+$1B    ; ASCI Time Constant Ch 0 High (Z8S180 & higher Only)
-ASTC1L          .EQU    Z180_IO_BASE+$1C    ; ASCI Time Constant Ch 1 Low (Z8S180 & higher Only)
-ASTC1H          .EQU    Z180_IO_BASE+$1D    ; ASCI Time Constant Ch 1 High (Z8S180 & higher Only)
+DEFC    ASTC0L          =       Z180_IO_BASE+$1A    ; ASCI Time Constant Ch 0 Low (Z8S180 & higher Only)
+DEFC    ASTC0H          =       Z180_IO_BASE+$1B    ; ASCI Time Constant Ch 0 High (Z8S180 & higher Only)
+DEFC    ASTC1L          =       Z180_IO_BASE+$1C    ; ASCI Time Constant Ch 1 Low (Z8S180 & higher Only)
+DEFC    ASTC1H          =       Z180_IO_BASE+$1D    ; ASCI Time Constant Ch 1 High (Z8S180 & higher Only)
 
-CNTR            .EQU    Z180_IO_BASE+$0A    ; CSI/O Control Reg
-TRDR            .EQU    Z180_IO_BASE+$0B    ; CSI/O Tx/Rx Data Reg
+DEFC    CNTR            =       Z180_IO_BASE+$0A    ; CSI/O Control Reg
+DEFC    TRDR            =       Z180_IO_BASE+$0B    ; CSI/O Tx/Rx Data Reg
 
-TMDR0L          .EQU    Z180_IO_BASE+$0C    ; Timer Data Reg Ch 0 Low
-TMDR0H          .EQU    Z180_IO_BASE+$0D    ; Timer Data Reg Ch 0 High
-RLDR0L          .EQU    Z180_IO_BASE+$0E    ; Timer Reload Reg Ch 0 Low
-RLDR0H          .EQU    Z180_IO_BASE+$0F    ; Timer Reload Reg Ch 0 High
-TCR             .EQU    Z180_IO_BASE+$10    ; Timer Control Reg
+DEFC    TMDR0L          =       Z180_IO_BASE+$0C    ; Timer Data Reg Ch 0 Low
+DEFC    TMDR0H          =       Z180_IO_BASE+$0D    ; Timer Data Reg Ch 0 High
+DEFC    RLDR0L          =       Z180_IO_BASE+$0E    ; Timer Reload Reg Ch 0 Low
+DEFC    RLDR0H          =       Z180_IO_BASE+$0F    ; Timer Reload Reg Ch 0 High
+DEFC    TCR             =       Z180_IO_BASE+$10    ; Timer Control Reg
 
-TMDR1L          .EQU    Z180_IO_BASE+$14    ; Timer Data Reg Ch 1 Low
-TMDR1H          .EQU    Z180_IO_BASE+$15    ; Timer Data Reg Ch 1 High
-RLDR1L          .EQU    Z180_IO_BASE+$16    ; Timer Reload Reg Ch 1 Low
-RLDR1H          .EQU    Z180_IO_BASE+$17    ; Timer Reload Reg Ch 1 High
+DEFC    TMDR1L          =       Z180_IO_BASE+$14    ; Timer Data Reg Ch 1 Low
+DEFC    TMDR1H          =       Z180_IO_BASE+$15    ; Timer Data Reg Ch 1 High
+DEFC    RLDR1L          =       Z180_IO_BASE+$16    ; Timer Reload Reg Ch 1 Low
+DEFC    RLDR1H          =       Z180_IO_BASE+$17    ; Timer Reload Reg Ch 1 High
 
-FRC             .EQU    Z180_IO_BASE+$18    ; Free-Running Counter
+DEFC    FRC             =       Z180_IO_BASE+$18    ; Free-Running Counter
 
-CMR             .EQU    Z180_IO_BASE+$1E    ; CPU Clock Multiplier Reg (Z8S180 & higher Only)
-CCR             .EQU    Z180_IO_BASE+$1F    ; CPU Control Reg (Z8S180 & higher Only)
+DEFC    CMR             =       Z180_IO_BASE+$1E    ; CPU Clock Multiplier Reg (Z8S180 & higher Only)
+DEFC    CCR             =       Z180_IO_BASE+$1F    ; CPU Control Reg (Z8S180 & higher Only)
 
-SAR0L           .EQU    Z180_IO_BASE+$20    ; DMA Source Addr Reg Ch0-Low
-SAR0H           .EQU    Z180_IO_BASE+$21    ; DMA Source Addr Reg Ch0-High
-SAR0B           .EQU    Z180_IO_BASE+$22    ; DMA Source Addr Reg Ch0-Bank
-DAR0L           .EQU    Z180_IO_BASE+$23    ; DMA Dest Addr Reg Ch0-Low
-DAR0H           .EQU    Z180_IO_BASE+$24    ; DMA Dest Addr Reg Ch0-High
-DAR0B           .EQU    Z180_IO_BASE+$25    ; DMA Dest ADDR REG CH0-Bank
-BCR0L           .EQU    Z180_IO_BASE+$26    ; DMA Byte Count Reg Ch0-Low
-BCR0H           .EQU    Z180_IO_BASE+$27    ; DMA Byte Count Reg Ch0-High
-MAR1L           .EQU    Z180_IO_BASE+$28    ; DMA Memory Addr Reg Ch1-Low
-MAR1H           .EQU    Z180_IO_BASE+$29    ; DMA Memory Addr Reg Ch1-High
-MAR1B           .EQU    Z180_IO_BASE+$2A    ; DMA Memory Addr Reg Ch1-Bank
-IAR1L           .EQU    Z180_IO_BASE+$2B    ; DMA I/O Addr Reg Ch1-Low
-IAR1H           .EQU    Z180_IO_BASE+$2C    ; DMA I/O Addr Reg Ch2-High
-BCR1L           .EQU    Z180_IO_BASE+$2E    ; DMA Byte Count Reg Ch1-Low
-BCR1H           .EQU    Z180_IO_BASE+$2F    ; DMA Byte Count Reg Ch1-High
-DSTAT           .EQU    Z180_IO_BASE+$30    ; DMA Status Reg
-DMODE           .EQU    Z180_IO_BASE+$31    ; DMA Mode Reg
-DCNTL           .EQU    Z180_IO_BASE+$32    ; DMA/Wait Control Reg
+DEFC    SAR0L           =       Z180_IO_BASE+$20    ; DMA Source Addr Reg Ch0-Low
+DEFC    SAR0H           =       Z180_IO_BASE+$21    ; DMA Source Addr Reg Ch0-High
+DEFC    SAR0B           =       Z180_IO_BASE+$22    ; DMA Source Addr Reg Ch0-Bank
+DEFC    DAR0L           =       Z180_IO_BASE+$23    ; DMA Dest Addr Reg Ch0-Low
+DEFC    DAR0H           =       Z180_IO_BASE+$24    ; DMA Dest Addr Reg Ch0-High
+DEFC    DAR0B           =       Z180_IO_BASE+$25    ; DMA Dest ADDR REG CH0-Bank
+DEFC    BCR0L           =       Z180_IO_BASE+$26    ; DMA Byte Count Reg Ch0-Low
+DEFC    BCR0H           =       Z180_IO_BASE+$27    ; DMA Byte Count Reg Ch0-High
+DEFC    MAR1L           =       Z180_IO_BASE+$28    ; DMA Memory Addr Reg Ch1-Low
+DEFC    MAR1H           =       Z180_IO_BASE+$29    ; DMA Memory Addr Reg Ch1-High
+DEFC    MAR1B           =       Z180_IO_BASE+$2A    ; DMA Memory Addr Reg Ch1-Bank
+DEFC    IAR1L           =       Z180_IO_BASE+$2B    ; DMA I/O Addr Reg Ch1-Low
+DEFC    IAR1H           =       Z180_IO_BASE+$2C    ; DMA I/O Addr Reg Ch2-High
+DEFC    BCR1L           =       Z180_IO_BASE+$2E    ; DMA Byte Count Reg Ch1-Low
+DEFC    BCR1H           =       Z180_IO_BASE+$2F    ; DMA Byte Count Reg Ch1-High
+DEFC    DSTAT           =       Z180_IO_BASE+$30    ; DMA Status Reg
+DEFC    DMODE           =       Z180_IO_BASE+$31    ; DMA Mode Reg
+DEFC    DCNTL           =       Z180_IO_BASE+$32    ; DMA/Wait Control Reg
 
-IL              .EQU    Z180_IO_BASE+$33    ; INT Vector Low Reg
-ITC             .EQU    Z180_IO_BASE+$34    ; INT/TRAP Control Reg
+DEFC    IL              =       Z180_IO_BASE+$33    ; INT Vector Low Reg
+DEFC    ITC             =       Z180_IO_BASE+$34    ; INT/TRAP Control Reg
 
-RCR             .EQU    Z180_IO_BASE+$36    ; Refresh Control Reg
+DEFC    RCR             =       Z180_IO_BASE+$36    ; Refresh Control Reg
 
-CBR             .EQU    Z180_IO_BASE+$38    ; MMU Common Base Reg
-BBR             .EQU    Z180_IO_BASE+$39    ; MMU Bank Base Reg
-CBAR            .EQU    Z180_IO_BASE+$3A    ; MMU Common/Bank Area Reg
-
-OMCR            .EQU    Z180_IO_BASE+$3E    ; Operation Mode Control Reg
-ICR             .EQU    Z180_IO_BASE+$3F    ; I/O Control Reg
+DEFC    CBR             =       Z180_IO_BASE+$38    ; MMU Common Base Reg
+DEFC    BBR             =       Z180_IO_BASE+$39    ; MMU Bank Base Reg
+DEFC    CBAR            =       Z180_IO_BASE+$3A    ; MMU Common/Bank Area Reg
+    
+DEFC    OMCR            =       Z180_IO_BASE+$3E    ; Operation Mode Control Reg
+DEFC    ICR             =       Z180_IO_BASE+$3F    ; I/O Control Reg
 
 ;==============================================================================
 ;
@@ -202,98 +210,98 @@ ICR             .EQU    Z180_IO_BASE+$3F    ; I/O Control Reg
 
 ;   ASCI Control Reg A (CNTLAn)
 
-ASCI_MPE        .EQU    $80     ; Multi Processor Enable
-ASCI_RE         .EQU    $40     ; Receive Enable
-ASCI_TE         .EQU    $20     ; Transmit Enable
-ASCI_RTS0       .EQU    $10     ; _RTS Request To Send
-ASCI_EFR        .EQU    $08     ; Error Flag Reset
+DEFC    ASCI_MPE        =       $80     ; Multi Processor Enable
+DEFC    ASCI_RE         =       $40     ; Receive Enable
+DEFC    ASCI_TE         =       $20     ; Transmit Enable
+DEFC    ASCI_RTS0       =       $10     ; _RTS Request To Send
+DEFC    ASCI_EFR        =       $08     ; Error Flag Reset
 
-ASCI_8P2        .EQU    $07     ; 8 Bits    Parity 2 Stop Bits
-ASCI_8P1        .EQU    $06     ; 8 Bits    Parity 1 Stop Bit
-ASCI_8N2        .EQU    $05     ; 8 Bits No Parity 2 Stop Bits
-ASCI_8N1        .EQU    $04     ; 8 Bits No Parity 1 Stop Bit
-ASCI_7P2        .EQU    $03     ; 7 Bits    Parity 2 Stop Bits
-ASCI_7P1        .EQU    $02     ; 7 Bits    Parity 1 Stop Bit
-ASCI_7N2        .EQU    $01     ; 7 Bits No Parity 2 Stop Bits
-ASCI_7N1        .EQU    $00     ; 7 Bits No Parity 1 Stop Bit
+DEFC    ASCI_8P2        =       $07     ; 8 Bits    Parity 2 Stop Bits
+DEFC    ASCI_8P1        =       $06     ; 8 Bits    Parity 1 Stop Bit
+DEFC    ASCI_8N2        =       $05     ; 8 Bits No Parity 2 Stop Bits
+DEFC    ASCI_8N1        =       $04     ; 8 Bits No Parity 1 Stop Bit
+DEFC    ASCI_7P2        =       $03     ; 7 Bits    Parity 2 Stop Bits
+DEFC    ASCI_7P1        =       $02     ; 7 Bits    Parity 1 Stop Bit
+DEFC    ASCI_7N2        =       $01     ; 7 Bits No Parity 2 Stop Bits
+DEFC    ASCI_7N1        =       $00     ; 7 Bits No Parity 1 Stop Bit
 
 ;   ASCI Control Reg B (CNTLBn)
-                                ; BAUD Rate = PHI / PS / SS / DR
+                                        ; BAUD Rate = PHI / PS / SS / DR
 
-ASCI_MPBT       .EQU    $80     ; Multi Processor Bit Transmit
-ASCI_MP         .EQU    $40     ; Multi Processor
-ASCI_PS         .EQU    $20     ; Prescale PHI by 10 (PS 0) or 30 (PS 1)
-ASCI_PEO        .EQU    $10     ; Parity Even or Odd
-ASCI_DR         .EQU    $08     ; Divide SS by 16 (DR 0) or 64 (DR 1)
+DEFC    ASCI_MPBT       =       $80     ; Multi Processor Bit Transmit
+DEFC    ASCI_MP         =       $40     ; Multi Processor
+DEFC    ASCI_PS         =       $20     ; Prescale PHI by 10 (PS 0) or 30 (PS 1)
+DEFC    ASCI_PEO        =       $10     ; Parity Even or Odd
+DEFC    ASCI_DR         =       $08     ; Divide SS by 16 (DR 0) or 64 (DR 1)
 
-ASCI_SS_EXT     .EQU    $07     ; External Clock Source <= PHI / 40
-ASCI_SS_DIV_64  .EQU    $06     ; Divide PS by 64
-ASCI_SS_DIV_32  .EQU    $05     ; Divide PS by 32
-ASCI_SS_DIV_16  .EQU    $04     ; Divide PS by 16
-ASCI_SS_DIV_8   .EQU    $03     ; Divide PS by  8
-ASCI_SS_DIV_4   .EQU    $02     ; Divide PS by  4
-ASCI_SS_DIV_2   .EQU    $01     ; Divide PS by  2
-ASCI_SS_DIV_1   .EQU    $00     ; Divide PS by  1
+DEFC    ASCI_SS_EXT     =      $07      ; External Clock Source <= PHI / 40
+DEFC    ASCI_SS_DIV_64  =      $06      ; Divide PS by 64
+DEFC    ASCI_SS_DIV_32  =      $05      ; Divide PS by 32
+DEFC    ASCI_SS_DIV_16  =      $04      ; Divide PS by 16
+DEFC    ASCI_SS_DIV_8   =      $03      ; Divide PS by  8
+DEFC    ASCI_SS_DIV_4   =      $02      ; Divide PS by  4
+DEFC    ASCI_SS_DIV_2   =      $01      ; Divide PS by  2
+DEFC    ASCI_SS_DIV_1   =      $00      ; Divide PS by  1
 
 ;   ASCI Status Reg (STATn)
 
-ASCI_RDRF       .EQU   $80    ; Receive Data Register Full
-ASCI_OVRN       .EQU   $40    ; Overrun (Received Byte)
-ASCI_PE         .EQU   $20    ; Parity Error (Received Byte)
-ASCI_FE         .EQU   $10    ; Framing Error (Received Byte)
-ASCI_RIE        .EQU   $08    ; Receive Interrupt Enabled
-ASCI_DCD0       .EQU   $04    ; _DCD0 Data Carrier Detect USART0
-ASCI_CTS1       .EQU   $04    ; _CTS1 Clear To Send USART1
-ASCI_TDRE       .EQU   $02    ; Transmit Data Register Empty
-ASCI_TIE        .EQU   $01    ; Transmit Interrupt Enabled
+DEFC    ASCI_RDRF       =      $80      ; Receive Data Register Full
+DEFC    ASCI_OVRN       =      $40      ; Overrun (Received Byte)
+DEFC    ASCI_PE         =      $20      ; Parity Error (Received Byte)
+DEFC    ASCI_FE         =      $10      ; Framing Error (Received Byte)
+DEFC    ASCI_RIE        =      $08      ; Receive Interrupt Enabled
+DEFC    ASCI_DCD0       =      $04      ; _DCD0 Data Carrier Detect USART0
+DEFC    ASCI_CTS1       =      $04      ; _CTS1 Clear To Send USART1
+DEFC    ASCI_TDRE       =      $02      ; Transmit Data Register Empty
+DEFC    ASCI_TIE        =      $01      ; Transmit Interrupt Enabled
 
 ;   CPU Clock Multiplier Reg (CMR) (Z8S180 & higher Only)
 
-CMR_X2          .EQU   $80    ; CPU x2 XTAL Multiplier Mode
-CMR_LN_XTAL     .EQU   $40    ; Low Noise Crystal 
+DEFC    CMR_X2          =      $80      ; CPU x2 XTAL Multiplier Mode
+DEFC    CMR_LN_XTAL     =      $40      ; Low Noise Crystal 
 
 ;   CPU Control Reg (CCR) (Z8S180 & higher Only)
 
-CCR_XTAL_X2     .EQU   $80    ; PHI = XTAL Mode
-CCR_STANDBY     .EQU   $40    ; STANDBY after SLEEP
-CCR_BREXT       .EQU   $20    ; Exit STANDBY on BUSREQ
-CCR_LNPHI       .EQU   $10    ; Low Noise PHI (30% Drive)
-CCR_IDLE        .EQU   $08    ; IDLE after SLEEP
-CCR_LNIO        .EQU   $04    ; Low Noise I/O Signals (30% Drive)
-CCR_LNCPUCTL    .EQU   $02    ; Low Noise CPU Control Signals (30% Drive)
-CCR_LNAD        .EQU   $01    ; Low Noise Address and Data Signals (30% Drive)
+DEFC    CCR_XTAL_X2     =      $80      ; PHI = XTAL Mode
+DEFC    CCR_STANDBY     =      $40      ; STANDBY after SLEEP
+DEFC    CCR_BREXT       =      $20      ; Exit STANDBY on BUSREQ
+DEFC    CCR_LNPHI       =      $10      ; Low Noise PHI (30% Drive)
+DEFC    CCR_IDLE        =      $08      ; IDLE after SLEEP
+DEFC    CCR_LNIO        =      $04      ; Low Noise I/O Signals (30% Drive)
+DEFC    CCR_LNCPUCTL    =      $02      ; Low Noise CPU Control Signals (30% Drive)
+DEFC    CCR_LNAD        =      $01      ; Low Noise Address and Data Signals (30% Drive)
 
 ;   DMA/Wait Control Reg (DCNTL)
 
-DCNTL_MWI1      .EQU   $80    ; Memory Wait Insertion 1 (1 Default)
-DCNTL_MWI0      .EQU   $40    ; Memory Wait Insertion 0 (1 Default)
-DCNTL_IWI1      .EQU   $20    ; I/O Wait Insertion 1 (1 Default)
-DCNTL_IWI0      .EQU   $10    ; I/O Wait Insertion 0 (1 Default)
-DCNTL_DMS1      .EQU   $08    ; DMA Request Sense 1
-DCNTL_DMS0      .EQU   $04    ; DMA Request Sense 0
-DCNTL_DIM1      .EQU   $02    ; DMA Channel 1 I/O & Memory Mode
-DCNTL_DIM0      .EQU   $01    ; DMA Channel 1 I/O & Memory Mode
+DEFC    DCNTL_MWI1      =      $80      ; Memory Wait Insertion 1 (1 Default)
+DEFC    DCNTL_MWI0      =      $40      ; Memory Wait Insertion 0 (1 Default)
+DEFC    DCNTL_IWI1      =      $20      ; I/O Wait Insertion 1 (1 Default)
+DEFC    DCNTL_IWI0      =      $10      ; I/O Wait Insertion 0 (1 Default)
+DEFC    DCNTL_DMS1      =      $08      ; DMA Request Sense 1
+DEFC    DCNTL_DMS0      =      $04      ; DMA Request Sense 0
+DEFC    DCNTL_DIM1      =      $02      ; DMA Channel 1 I/O & Memory Mode
+DEFC    DCNTL_DIM0      =      $01      ; DMA Channel 1 I/O & Memory Mode
 
 ;   INT/TRAP Control Register (ITC)
 
-ITC_TRAP        .EQU   $80    ; TRAP Encountered
-ITC_UFO         .EQU   $40    ; Unidentified Fetch Object
-ITC_ITE2        .EQU   $04    ; Interrupt Enable #2
-ITC_ITE1        .EQU   $02    ; Interrupt Enable #1
-ITC_ITE0        .EQU   $01    ; Interrupt Enable #0 (1 Default)
+DEFC    ITC_TRAP        =      $80      ; TRAP Encountered
+DEFC    ITC_UFO         =      $40      ; Unidentified Fetch Object
+DEFC    ITC_ITE2        =      $04      ; Interrupt Enable #2
+DEFC    ITC_ITE1        =      $02      ; Interrupt Enable #1
+DEFC    ITC_ITE0        =      $01      ; Interrupt Enable #0 (1 Default)
 
 ;   Refresh Control Reg (RCR)
 
-RCR_REFE        .EQU   $80    ; DRAM Refresh Enable
-RCR_REFW        .EQU   $40    ; DRAM Refresh 2 or 3 Wait states
-RCR_CYC1        .EQU   $02    ; Cycles x4
-RCR_CYC0        .EQU   $01    ; Cycles x2 on base 10 T states
+DEFC    RCR_REFE        =      $80      ; DRAM Refresh Enable
+DEFC    RCR_REFW        =      $40      ; DRAM Refresh 2 or 3 Wait states
+DEFC    RCR_CYC1        =      $02      ; Cycles x4
+DEFC    RCR_CYC0        =      $01      ; Cycles x2 on base 10 T states
 
 ;   Operation Mode Control Reg (OMCR)
 
-OMCR_M1E        .EQU   $80    ; M1 Enable (0 Disabled)
-OMCR_M1TE       .EQU   $40    ; M1 Temporary Enable
-OMCR_IOC        .EQU   $20    ; IO Control (1 64180 Mode)
+DEFC    OMCR_M1E        =      $80      ; M1 Enable (0 Disabled)
+DEFC    OMCR_M1TE       =      $40      ; M1 Temporary Enable
+DEFC    OMCR_IOC        =      $20      ; IO Control (1 64180 Mode)
 
 ;==============================================================================
 ;
@@ -302,39 +310,39 @@ OMCR_IOC        .EQU   $20    ; IO Control (1 64180 Mode)
 
 ;   BREAK for Single Step Mode
 
-BREAK           .EQU    $2000       ; Any value written $2000->$21FF, halts CPU
+DEFC    BREAK       =           $2000   ; Any value written $2000->$21FF, halts CPU
 
 ;   82C55 PIO Port Definitions
 
-PIO             .EQU    $4000       ; Base Address for 82C55
-PIOA            .EQU    PIO+$00     ; Address for Port A
-PIOB            .EQU    PIO+$01     ; Address for Port B
-PIOC            .EQU    PIO+$02     ; Address for Port C
-PIOCNTL         .EQU    PIO+$03     ; Address for Control Byte
+DEFC    PIO         =       $4000       ; Base Address for 82C55
+DEFC    PIOA        =       PIO+$00     ; Address for Port A
+DEFC    PIOB        =       PIO+$01     ; Address for Port B
+DEFC    PIOC        =       PIO+$02     ; Address for Port C
+DEFC    PIOCNTL     =       PIO+$03     ; Address for Control Byte
 
 ;   PIO Mode Definitions
 
 ;   Mode 0 - Basic Input / Output
 
-PIOCNTL00       .EQU    $80     ; A->, B->, CH->, CL->
-PIOCNTL01       .EQU    $81     ; A->, B->, CH->, ->CL
-PIOCNTL0        .EQU    $82     ; A->, ->B, CH->, CL->
-PIOCNTL03       .EQU    $83     ; A->, ->B, CH->, ->CL
+DEFC    PIOCNTL00   =       $80         ; A->, B->, CH->, CL->
+DEFC    PIOCNTL01   =       $81         ; A->, B->, CH->, ->CL
+DEFC    PIOCNTL0    =       $82         ; A->, ->B, CH->, CL->
+DEFC    PIOCNTL03   =       $83         ; A->, ->B, CH->, ->CL
 
-PIOCNTL04       .EQU    $88     ; A->, B->, ->CH, CL->
-PIOCNTL05       .EQU    $89     ; A->, B->, ->CH, ->CL
-PIOCNTL06       .EQU    $8A     ; A->, ->B, ->CH, CL->
-PIOCNTL07       .EQU    $8B     ; A->, ->B, ->CH, ->CL
+DEFC    PIOCNTL04   =       $88         ; A->, B->, ->CH, CL->
+DEFC    PIOCNTL05   =       $89         ; A->, B->, ->CH, ->CL
+DEFC    PIOCNTL06   =       $8A         ; A->, ->B, ->CH, CL->
+DEFC    PIOCNTL07   =       $8B         ; A->, ->B, ->CH, ->CL
 
-PIOCNTL08       .EQU    $90     ; ->A, B->, CH->, CL->
-PIOCNTL09       .EQU    $91     ; ->A, B->, CH->, ->CL
-PIOCNTL10       .EQU    $92     ; ->A, ->B, CH->, CL->
-PIOCNTL11       .EQU    $83     ; ->A, ->B, CH->, ->CL
+DEFC    PIOCNTL08   =       $90         ; ->A, B->, CH->, CL->
+DEFC    PIOCNTL09   =       $91         ; ->A, B->, CH->, ->CL
+DEFC    PIOCNTL10   =       $92         ; ->A, ->B, CH->, CL->
+DEFC    PIOCNTL11   =       $83         ; ->A, ->B, CH->, ->CL
 
-PIOCNTL12       .EQU    $98     ; ->A, B->, ->CH, CL-> (Default Setting)
-PIOCNTL13       .EQU    $99     ; ->A, B->, ->CH, ->CL
-PIOCNTL14       .EQU    $9A     ; ->A, ->B, ->CH, CL->
-PIOCNTL15       .EQU    $9B     ; ->A, ->B, ->CH, ->CL
+DEFC    PIOCNTL12   =       $98         ; ->A, B->, ->CH, CL-> (Default Setting)
+DEFC    PIOCNTL13   =       $99         ; ->A, B->, ->CH, ->CL
+DEFC    PIOCNTL14   =       $9A         ; ->A, ->B, ->CH, CL->
+DEFC    PIOCNTL15   =       $9B         ; ->A, ->B, ->CH, ->CL
 
 ;   Mode 1 - Strobed Input / Output
 ;   TBA Later
@@ -344,43 +352,43 @@ PIOCNTL15       .EQU    $9B     ; ->A, ->B, ->CH, ->CL
 
 ;   Am9511A-1 APU Port Definitions
 
-APU             .EQU    $C000   ; Base Address for Am9511A
-APUDATA         .EQU    APU+$00 ; APU Data Port
-APUCNTL         .EQU    APU+$01 ; APU Control Port
+DEFC    APU             =   $C000       ; Base Address for Am9511A
+DEFC    APUDATA         =   APU+$00     ; APU Data Port
+DEFC    APUCNTL         =   APU+$01     ; APU Control Port
 
-APU_OP_ENT      .EQU    $40
-APU_OP_REM      .EQU    $50
-APU_OP_ENT16    .EQU    $40
-APU_OP_ENT32    .EQU    $41
-APU_OP_REM16    .EQU    $50
-APU_OP_REM32    .EQU    $51
+DEFC    APU_OP_ENT      =   $40
+DEFC    APU_OP_REM      =   $50
+DEFC    APU_OP_ENT16    =   $40
+DEFC    APU_OP_ENT32    =   $41
+DEFC    APU_OP_REM16    =   $50
+DEFC    APU_OP_REM32    =   $51
 
-APU_CNTL_BUSY   .EQU    $80
-APU_CNTL_SIGN   .EQU    $40
-APU_CNTL_ZERO   .EQU    $20
-APU_CNTL_DIV0   .EQU    $10
-APU_CNTL_NEGRT  .EQU    $08
-APU_CNTL_UNDFL  .EQU    $04
-APU_CNTL_OVRFL  .EQU    $02
-APU_CNTL_CARRY  .EQU    $01
+DEFC    APU_CNTL_BUSY   =   $80
+DEFC    APU_CNTL_SIGN   =   $40
+DEFC    APU_CNTL_ZERO   =   $20
+DEFC    APU_CNTL_DIV0   =   $10
+DEFC    APU_CNTL_NEGRT  =   $08
+DEFC    APU_CNTL_UNDFL  =   $04
+DEFC    APU_CNTL_OVRFL  =   $02
+DEFC    APU_CNTL_CARRY  =   $01
 
-APU_CNTL_ERROR  .EQU    $1E
+DEFC    APU_CNTL_ERROR  =   $1E
 
 ;   General TTY
 
-CTRLC           .EQU    $03     ; Control "C"
-CTRLG           .EQU    $07     ; Control "G"
-BKSP            .EQU    $08     ; Back space
-LF              .EQU    $0A     ; Line feed
-CS              .EQU    $0C     ; Clear screen
-CR              .EQU    $0D     ; Carriage return
-CTRLO           .EQU    $0F     ; Control "O"
-CTRLQ	        .EQU	$11     ; Control "Q"
-CTRLR           .EQU    $12     ; Control "R"
-CTRLS           .EQU    $13     ; Control "S"
-CTRLU           .EQU    $15     ; Control "U"
-ESC             .EQU    $1B     ; Escape
-DEL             .EQU    $7F     ; Delete
+DEFC    CTRLC           =   $03         ; Control "C"
+DEFC    CTRLG           =   $07         ; Control "G"
+DEFC    BKSP            =   $08         ; Back space
+DEFC    LF              =   $0A         ; Line feed
+DEFC    CS              =   $0C         ; Clear screen
+DEFC    CR              =   $0D         ; Carriage return
+DEFC    CTRLO           =   $0F         ; Control "O"
+DEFC    CTRLQ	        =   $11         ; Control "Q"
+DEFC    CTRLR           =   $12         ; Control "R"
+DEFC    CTRLS           =   $13         ; Control "S"
+DEFC    CTRLU           =   $15         ; Control "U"
+DEFC    ESC             =   $1B         ; Escape
+DEFC    DEL             =   $7F         ; Delete
 
 ;==============================================================================
 ;
@@ -388,49 +396,44 @@ DEL             .EQU    $7F     ; Delete
 ;
 
 ;   Starting immediately after the Z180 Vector Table.
-ASCI0RxInPtr    .EQU    Z180_VECTOR_BASE+Z180_VECTOR_SIZE
-ASCI0RxOutPtr   .EQU    ASCI0RxInPtr+2
-ASCI0TxInPtr    .EQU    ASCI0RxOutPtr+2
-ASCI0TxOutPtr   .EQU    ASCI0TxInPtr+2
-ASCI0RxBufUsed  .EQU    ASCI0TxOutPtr+2
-ASCI0TxBufUsed  .EQU    ASCI0RxBufUsed+1
+DEFC    ASCI0RxInPtr    =   Z180_VECTOR_BASE+Z180_VECTOR_SIZE
+DEFC    ASCI0RxOutPtr   =   ASCI0RxInPtr+2
+DEFC    ASCI0TxInPtr    =   ASCI0RxOutPtr+2
+DEFC    ASCI0TxOutPtr   =   ASCI0TxInPtr+2
+DEFC    ASCI0RxBufUsed  =   ASCI0TxOutPtr+2
+DEFC    ASCI0TxBufUsed  =   ASCI0RxBufUsed+1
 
-basicStarted    .EQU    ASCI0TxBufUsed+1
+DEFC    basicStarted    =   ASCI0TxBufUsed+1
 
-ASCI1RxInPtr    .EQU    Z180_VECTOR_BASE+Z180_VECTOR_SIZE+$10
-ASCI1RxOutPtr   .EQU    ASCI1RxInPtr+2
-ASCI1TxInPtr    .EQU    ASCI1RxOutPtr+2
-ASCI1TxOutPtr   .EQU    ASCI1TxInPtr+2
-ASCI1RxBufUsed  .EQU    ASCI1TxOutPtr+2
-ASCI1TxBufUsed  .EQU    ASCI1RxBufUsed+1
+DEFC    ASCI1RxInPtr    =   Z180_VECTOR_BASE+Z180_VECTOR_SIZE+$10
+DEFC    ASCI1RxOutPtr   =   ASCI1RxInPtr+2
+DEFC    ASCI1TxInPtr    =   ASCI1RxOutPtr+2
+DEFC    ASCI1TxOutPtr   =   ASCI1TxInPtr+2
+DEFC    ASCI1RxBufUsed  =   ASCI1TxOutPtr+2
+DEFC    ASCI1TxBufUsed  =   ASCI1RxBufUsed+1
 
-APUCMDInPtr     .EQU    Z180_VECTOR_BASE+Z180_VECTOR_SIZE+$20
-APUCMDOutPtr    .EQU    APUCMDInPtr+2
-APUPTRInPtr     .EQU    APUCMDOutPtr+2
-APUPTROutPtr    .EQU    APUPTRInPtr+2
-APUCMDBufUsed   .EQU    APUPTROutPtr+2
-APUPTRBufUsed   .EQU    APUCMDBufUsed+1
-APUStatus       .EQU    APUPTRBufUsed+1
-APUError        .EQU    APUStatus+1
+DEFC    APUCMDInPtr     =   Z180_VECTOR_BASE+Z180_VECTOR_SIZE+$20
+DEFC    APUCMDOutPtr    =   APUCMDInPtr+2
+DEFC    APUPTRInPtr     =   APUCMDOutPtr+2
+DEFC    APUPTROutPtr    =   APUPTRInPtr+2
+DEFC    APUCMDBufUsed   =   APUPTROutPtr+2
+DEFC    APUPTRBufUsed   =   APUCMDBufUsed+1
+DEFC    APUStatus       =   APUPTRBufUsed+1
+DEFC    APUError        =   APUStatus+1
 
 ;   $nn60 -> $nnFF is slack memory.
 
 ;   I/O Buffers must start on 0xnn00 because we increment low byte to roll-over
-BUFSTART_IO     .EQU    Z180_VECTOR_BASE-(Z180_VECTOR_BASE%$100) + $100
+DEFC    BUFSTART_IO     =   Z180_VECTOR_BASE-(Z180_VECTOR_BASE%$100) + $100
 
-ASCI0RxBuf      .EQU    BUFSTART_IO
-ASCI0TxBuf      .EQU    ASCI0RxBuf+ASCI0_RX_BUFSIZE+1
+DEFC    ASCI0RxBuf      =   BUFSTART_IO
+DEFC    ASCI0TxBuf      =   ASCI0RxBuf+ASCI0_RX_BUFSIZE+1
 
-ASCI1RxBuf      .EQU    ASCI0TxBuf+ASCI0_TX_BUFSIZE+1
-ASCI1TxBuf      .EQU    ASCI1RxBuf+ASCI1_RX_BUFSIZE+1
+DEFC    ASCI1RxBuf      =   ASCI0TxBuf+ASCI0_TX_BUFSIZE+1
+DEFC    ASCI1TxBuf      =   ASCI1RxBuf+ASCI1_RX_BUFSIZE+1
 
-APUCMDBuf       .EQU    ASCI1TxBuf+ASCI1_TX_BUFSIZE+1
-APUPTRBuf       .EQU    APUCMDBuf+APU_CMD_BUFSIZE+1
+DEFC    APUCMDBuf       =   ASCI1TxBuf+ASCI1_TX_BUFSIZE+1
+DEFC    APUPTRBuf       =   APUCMDBuf+APU_CMD_BUFSIZE+1
 
 ;==============================================================================
-;
-                .END
-;
-;==============================================================================
-
 

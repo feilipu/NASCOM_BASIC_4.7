@@ -22,7 +22,7 @@ Cold or Warm start, or HexLoadr (C|W|H) ? C
 Memory top? 
 Z80 BASIC Ver 4.7b
 Copyright (C) 1978 by Microsoft
-31907 Bytes free
+56483 Bytes free
 
 Ok
 ```

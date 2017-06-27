@@ -1,2 +1,0 @@
-zcc +z80 --no-crt -v -m --list @nascom56k.lst -o int56k
-appmake +glue -b int56k --ihex --pad --filler 0xFF --recsize 24 --clean

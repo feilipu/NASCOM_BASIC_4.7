@@ -14,10 +14,10 @@
 ; REQUIRES
 ;
 ; Z180_VECTOR_BASE  .EQU   RAM vector address for Z180 Vectors
-;
-;
-; #include          "d:/yaz180.h"
-; #include          "d:/z80intr.asm"
+; INCLUDE       "yaz180.h"
+
+INCLUDE         "yaz180.h"
+INCLUDE         "z80intr.asm"
 
 ;==============================================================================
 ;

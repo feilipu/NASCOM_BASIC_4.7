@@ -386,7 +386,7 @@ WARMSTART:
 ;
 ; STRINGS
 ;
-SECTION         z80_init_strings        ; ORG $0300
+SECTION         z80_init_strings        ; ORG $02D0
 
 SIGNON1:        DEFM    CR,LF
                 DEFM    "SBC - Grant Searle",CR,LF
