@@ -1,5 +1,4 @@
 tasm -80 -x3 -a7 -fff -c -l d:bas56k.asm d:bas56k.hex
-tasm -80 -x3 -a7 -fff -c -l d:int56k.asm d:int56k.hex
 
-
-pause
+zcc +z180 --no-crt -v -m --list @nascom56k.lst -o int56k
+appmake +glue -b int56k --ihex --pad --filler 0xFF --recsize 24 --clean
