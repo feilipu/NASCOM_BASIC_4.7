@@ -17,13 +17,17 @@
 ; INCLUDE       "yaz180.h"
 
 INCLUDE         "yaz180.h"
-INCLUDE         "z80intr.asm"
 
 ;==============================================================================
 ;
 ; Z180 TRAP HANDLING
 ;
-            .ORG    Z180_VECTOR_TRAP
+SECTION     z180_vector_trap_handler
+
+EXTERN      Z180_INIT
+
+PUBLIC      INIT
+
 INIT:
             PUSH    AF
                                     ; Set I/O Control Reg (ICR)
@@ -81,7 +85,7 @@ INIT:
             JP      Z180_INIT       ; Start normal Configuration
 
 Z180_TRAP:
-            LD      A,~ITC_TRAP     ; Clear TRAP bit
+            XOR     ITC_TRAP        ; Clear TRAP bit, It must be set to get here.
             OUT0    (ITC),A 
                                     ; TODO Build proper TRAP handling
             POP     AF
@@ -95,42 +99,46 @@ Z180_TRAP:
 ;
 ;           .ORG    Z180_VECTOR_BASE
 
-            .ORG    Z180_VECTOR_PROTO
+SECTION     z180_vector_table_prototype
+
+EXTERN      INT_INT1, INT_INT2, INT_PRT0, INT_PRT1
+EXTERN      INT_DMA0, INT_DMA1, INT_CSIO, INT_ASCI0, INT_ASCI1
+
 ;------------------------------------------------------------------------------
 ; Z180_VECTOR_INT1
-            .WORD   INT_INT1
+            DEFW    INT_INT1
 
 ;------------------------------------------------------------------------------
 ; Z180_VECTOR_INT2
-            .WORD   INT_INT2
+            DEFW    INT_INT2
 
 ;------------------------------------------------------------------------------
 ; Z180_VECTOR_PRT0
-            .WORD   INT_PRT0
+            DEFW    INT_PRT0
 
 ;------------------------------------------------------------------------------
 ; Z180_VECTOR_PRT1
-            .WORD   INT_PRT1
+            DEFW    INT_PRT1
 
 ;------------------------------------------------------------------------------
 ; Z180_VECTOR_DMA0
-            .WORD   INT_DMA0
+            DEFW    INT_DMA0
 
 ;------------------------------------------------------------------------------
 ; Z180_VECTOR_DMA1
-            .WORD   INT_DMA1
+            DEFW    INT_DMA1
 
 ;------------------------------------------------------------------------------
 ; Z180_VECTOR_CSIO
-            .WORD   INT_CSIO
+            DEFW    INT_CSIO
 
 ;------------------------------------------------------------------------------
 ; Z180_VECTOR_ASCI0
-            .WORD   INT_ASCI0
+            DEFW    INT_ASCI0
 
 ;------------------------------------------------------------------------------
 ; Z180_VECTOR_ASCI1
-            .WORD   INT_ASCI1
+            DEFW    INT_ASCI1
 
 ;==============================================================================
 ;

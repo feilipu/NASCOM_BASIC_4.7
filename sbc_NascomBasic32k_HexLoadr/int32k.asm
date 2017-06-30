@@ -347,6 +347,7 @@ INIT:
 
                IM        1               ; interrupt mode 1
                EI
+
 START:
                LD        HL, SIGNON1     ; Sign-on message
                CALL      PRINT           ; Output string
@@ -386,7 +387,7 @@ WARMSTART:
 ;
 ; STRINGS
 ;
-SECTION         z80_init_strings        ; ORG $02D0
+SECTION         z80_init_strings         ; ORG $02D0
 
 SIGNON1:        DEFM    CR,LF
                 DEFM    "SBC - Grant Searle",CR,LF
@@ -400,10 +401,9 @@ SIGNON2:        DEFM    CR,LF
 initString:     DEFM    CR,LF,"HexLoadr: "
                 DEFM    CR,LF,0
 
-invalidTypeStr: DEFM    CR,LF,"Inval Type",CR,LF,0
-badCheckSumStr: DEFM    CR,LF,"Chksum Error",CR,LF,0
+invalidTypeStr: DEFM    CR,LF,"Invalid Type",CR,LF,0
+badCheckSumStr: DEFM    CR,LF,"Checksum Error",CR,LF,0
 LoadOKStr:      DEFM    CR,LF,"Done",CR,LF,0
-
 
 ;==============================================================================
 ;
@@ -431,9 +431,10 @@ DEFC    serTxBuf        =     serRxBuf+SER_RX_BUFSIZE
 ; Z80 INTERRUPT VECTOR PROTOTYPE ASSIGNMENTS
 ;
 
+EXTERN  NULL_RET, NULL_INT, NULL_NMI
+
 PUBLIC  RST_08, RST_10, RST_18, RST_20, RST_28, RST_30, INT_INT0, INT_NMI
 
-EXTERN  NULL_RET, NULL_INT, NULL_NMI
 
 DEFC    RST_08      =       TXA             ; TX a character over ACIA
 DEFC    RST_10      =       RXA             ; RX a character over ACIA, loop byte available

@@ -29,28 +29,22 @@ ORG         Z180_VECTOR_TRAP
 SECTION     z180_vector_table_prototype
 ORG         Z180_VECTOR_PROTO
 
-SECTION     z80_acia_interrupt
-ORG         0x0080
-
-SECTION     z80_acia_rxa_chk
+SECTION     z180_asci0_interrupt
 ORG         0x00F0
 
-SECTION     z80_acia_rxa
-ORG         0x0100
+SECTION     z180_asci0
+ORG         0x0150
 
-SECTION     z80_acia_txa
-ORG         0x0130
+SECTION     z180_asci0_print
+ORG         -1
 
-SECTION     z80_acia_print
-ORG         0x0180
+SECTION     z180_hexloadr
+ORG         0x01C0
 
-SECTION     z80_hexloadr
-ORG         0x0190
+SECTION     z180_init
+ORG         0x0280
 
-SECTION     z80_init
-ORG         0x0240
-
-SECTION     z80_init_strings
-ORG         0x0300
+SECTION     z180_init_strings
+ORG         -1
 
 ;==============================================================================

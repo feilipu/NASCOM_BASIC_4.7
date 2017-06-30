@@ -1,4 +1,2 @@
-tasm -80 -x3 -a7 -fff -c -l d:yaz32k.asm d:yaz32k.hex
-
-
-pause
+zcc +z180 --no-crt -v -m --list @nascom32k.lst -o int32k
+appmake +glue -b int32k --ihex --pad --filler 0xFF --recsize 24 --clean

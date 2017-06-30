@@ -14,21 +14,13 @@
 ; https://feilipu.me/
 ;
 
-
-;==============================================================================
-;
-; INCLUDES SECTION
-;
-
-; INCLUDE "yaz180_config.h"
-
 ;==============================================================================
 ;
 ; DEFINES SECTION
 ;
 
-DEFC    ROMSTART        =   $0000   ; Bottom of FLASH
-DEFC    ROMSTOP         =   $1FFF   ; Top of FLASH
+DEFC    ROMSTART        =   $0000   ; Bottom of Common 0 FLASH
+DEFC    ROMSTOP         =   $1FFF   ; Top of Common 0 FLASH
 
 DEFC    RAMSTART_CA0    =   $2000   ; Bottom of Common 0 RAM
 DEFC    RAMSTOP_CA0     =   $3FFF   ; Top of Common 0 RAM
@@ -38,11 +30,6 @@ DEFC    RAMSTOP_BANK    =   $7FFF   ; Top of Banked RAM
 
 DEFC    RAMSTART_CA1    =   $8000   ; Bottom of Common 1 RAM
 DEFC    RAMSTOP_CA1     =   $FFFF   ; Top of Common 1 RAM
-
-DEFC    RAMSTART        =   RAMSTART_CA0
-DEFC    RAMSTOP         =   RAMSTOP_CA1
-
-DEFC    STACKTOP        =   $2FFE   ; start of a global stack (any pushes pre-decrement)
 
 DEFC    APU_CMD_BUFSIZE     =   $FF     ; FIXED CMD buffer size, 256 CMDs
 DEFC    APU_PTR_BUFSIZE     =   $FF     ; FIXED DATA POINTER buffer size, 128 POINTERs
@@ -55,15 +42,19 @@ DEFC    ASCI1_TX_BUFSIZE    =   $FF ; FIXED Tx buffer size, 256 Bytes, no range 
 
 ;==============================================================================
 ;
+; INCLUDES SECTION
+;
+
+INCLUDE "yaz180_config.h"
+
+;==============================================================================
+;
 ; Interrupt vectors (offsets) for Z80 RST, INT0, and NMI interrupts
 ;
 
 ;   Squeezed between INT0 0x0038 and NMI 0x0066
 DEFC    Z80_VECTOR_PROTO    =   $0040
 DEFC    Z80_VECTOR_SIZE     =   $20
-
-;   RAM vector address for Z80 RST Table
-DEFC    Z80_VECTOR_BASE     =   RAMSTART_CA0    ; <<< SET THIS AS DESIRED >>>
 
 ;   Prototype Interrupt Service Routines - complete in main program
 ;
@@ -91,18 +82,18 @@ DEFC    INT_NMI_ADDR        =   Z80_VECTOR_BASE+$1D
 ; Interrupt vectors (offsets) for Z180/HD64180 external and internal interrupts
 ;
 
-;   Locate the TRAP management just after NMI
-DEFC    Z180_VECTOR_TRAP    =   $0070
-
-;   Locate the prototypes just after TRAP code
-DEFC    Z180_VECTOR_PROTO   =   $00C0
-DEFC    Z180_VECTOR_SIZE    =   $12
-
 DEFC    Z180_VECTOR_IL      =   $20 ; Vector Base address (IL)
                                     ; [001x xxxx] for Vectors at $nn20 - $nn3F
 
+;   Locate the TRAP management just after NMI
+DEFC    Z180_VECTOR_TRAP    =   $0070
+
 ;   Start Z180 Vectors immediately after the Z80 Vector Table.                                    
 DEFC    Z180_VECTOR_BASE    =   Z80_VECTOR_BASE-(Z80_VECTOR_BASE%$100)+Z180_VECTOR_IL
+
+;   Locate the prototypes just after TRAP code
+DEFC    Z180_VECTOR_PROTO   =   $00D0
+DEFC    Z180_VECTOR_SIZE    =   $12
 
 ;   Prototype Interrupt Service Routines - provide these in your main program
 ;
@@ -234,74 +225,74 @@ DEFC    ASCI_PS         =       $20     ; Prescale PHI by 10 (PS 0) or 30 (PS 1)
 DEFC    ASCI_PEO        =       $10     ; Parity Even or Odd
 DEFC    ASCI_DR         =       $08     ; Divide SS by 16 (DR 0) or 64 (DR 1)
 
-DEFC    ASCI_SS_EXT     =      $07      ; External Clock Source <= PHI / 40
-DEFC    ASCI_SS_DIV_64  =      $06      ; Divide PS by 64
-DEFC    ASCI_SS_DIV_32  =      $05      ; Divide PS by 32
-DEFC    ASCI_SS_DIV_16  =      $04      ; Divide PS by 16
-DEFC    ASCI_SS_DIV_8   =      $03      ; Divide PS by  8
-DEFC    ASCI_SS_DIV_4   =      $02      ; Divide PS by  4
-DEFC    ASCI_SS_DIV_2   =      $01      ; Divide PS by  2
-DEFC    ASCI_SS_DIV_1   =      $00      ; Divide PS by  1
+DEFC    ASCI_SS_EXT     =       $07     ; External Clock Source <= PHI / 40
+DEFC    ASCI_SS_DIV_64  =       $06     ; Divide PS by 64
+DEFC    ASCI_SS_DIV_32  =       $05     ; Divide PS by 32
+DEFC    ASCI_SS_DIV_16  =       $04     ; Divide PS by 16
+DEFC    ASCI_SS_DIV_8   =       $03     ; Divide PS by  8
+DEFC    ASCI_SS_DIV_4   =       $02     ; Divide PS by  4
+DEFC    ASCI_SS_DIV_2   =       $01     ; Divide PS by  2
+DEFC    ASCI_SS_DIV_1   =       $00     ; Divide PS by  1
 
 ;   ASCI Status Reg (STATn)
 
-DEFC    ASCI_RDRF       =      $80      ; Receive Data Register Full
-DEFC    ASCI_OVRN       =      $40      ; Overrun (Received Byte)
-DEFC    ASCI_PE         =      $20      ; Parity Error (Received Byte)
-DEFC    ASCI_FE         =      $10      ; Framing Error (Received Byte)
-DEFC    ASCI_RIE        =      $08      ; Receive Interrupt Enabled
-DEFC    ASCI_DCD0       =      $04      ; _DCD0 Data Carrier Detect USART0
-DEFC    ASCI_CTS1       =      $04      ; _CTS1 Clear To Send USART1
-DEFC    ASCI_TDRE       =      $02      ; Transmit Data Register Empty
-DEFC    ASCI_TIE        =      $01      ; Transmit Interrupt Enabled
+DEFC    ASCI_RDRF       =       $80     ; Receive Data Register Full
+DEFC    ASCI_OVRN       =       $40     ; Overrun (Received Byte)
+DEFC    ASCI_PE         =       $20     ; Parity Error (Received Byte)
+DEFC    ASCI_FE         =       $10     ; Framing Error (Received Byte)
+DEFC    ASCI_RIE        =       $08     ; Receive Interrupt Enabled
+DEFC    ASCI_DCD0       =       $04     ; _DCD0 Data Carrier Detect USART0
+DEFC    ASCI_CTS1       =       $04     ; _CTS1 Clear To Send USART1
+DEFC    ASCI_TDRE       =       $02     ; Transmit Data Register Empty
+DEFC    ASCI_TIE        =       $01     ; Transmit Interrupt Enabled
 
 ;   CPU Clock Multiplier Reg (CMR) (Z8S180 & higher Only)
 
-DEFC    CMR_X2          =      $80      ; CPU x2 XTAL Multiplier Mode
-DEFC    CMR_LN_XTAL     =      $40      ; Low Noise Crystal 
+DEFC    CMR_X2          =       $80     ; CPU x2 XTAL Multiplier Mode
+DEFC    CMR_LN_XTAL     =       $40     ; Low Noise Crystal 
 
 ;   CPU Control Reg (CCR) (Z8S180 & higher Only)
 
-DEFC    CCR_XTAL_X2     =      $80      ; PHI = XTAL Mode
-DEFC    CCR_STANDBY     =      $40      ; STANDBY after SLEEP
-DEFC    CCR_BREXT       =      $20      ; Exit STANDBY on BUSREQ
-DEFC    CCR_LNPHI       =      $10      ; Low Noise PHI (30% Drive)
-DEFC    CCR_IDLE        =      $08      ; IDLE after SLEEP
-DEFC    CCR_LNIO        =      $04      ; Low Noise I/O Signals (30% Drive)
-DEFC    CCR_LNCPUCTL    =      $02      ; Low Noise CPU Control Signals (30% Drive)
-DEFC    CCR_LNAD        =      $01      ; Low Noise Address and Data Signals (30% Drive)
+DEFC    CCR_XTAL_X2     =       $80     ; PHI = XTAL Mode
+DEFC    CCR_STANDBY     =       $40     ; STANDBY after SLEEP
+DEFC    CCR_BREXT       =       $20     ; Exit STANDBY on BUSREQ
+DEFC    CCR_LNPHI       =       $10     ; Low Noise PHI (30% Drive)
+DEFC    CCR_IDLE        =       $08     ; IDLE after SLEEP
+DEFC    CCR_LNIO        =       $04     ; Low Noise I/O Signals (30% Drive)
+DEFC    CCR_LNCPUCTL    =       $02     ; Low Noise CPU Control Signals (30% Drive)
+DEFC    CCR_LNAD        =       $01     ; Low Noise Address and Data Signals (30% Drive)
 
 ;   DMA/Wait Control Reg (DCNTL)
 
-DEFC    DCNTL_MWI1      =      $80      ; Memory Wait Insertion 1 (1 Default)
-DEFC    DCNTL_MWI0      =      $40      ; Memory Wait Insertion 0 (1 Default)
-DEFC    DCNTL_IWI1      =      $20      ; I/O Wait Insertion 1 (1 Default)
-DEFC    DCNTL_IWI0      =      $10      ; I/O Wait Insertion 0 (1 Default)
-DEFC    DCNTL_DMS1      =      $08      ; DMA Request Sense 1
-DEFC    DCNTL_DMS0      =      $04      ; DMA Request Sense 0
-DEFC    DCNTL_DIM1      =      $02      ; DMA Channel 1 I/O & Memory Mode
-DEFC    DCNTL_DIM0      =      $01      ; DMA Channel 1 I/O & Memory Mode
+DEFC    DCNTL_MWI1      =       $80     ; Memory Wait Insertion 1 (1 Default)
+DEFC    DCNTL_MWI0      =       $40     ; Memory Wait Insertion 0 (1 Default)
+DEFC    DCNTL_IWI1      =       $20     ; I/O Wait Insertion 1 (1 Default)
+DEFC    DCNTL_IWI0      =       $10     ; I/O Wait Insertion 0 (1 Default)
+DEFC    DCNTL_DMS1      =       $08     ; DMA Request Sense 1
+DEFC    DCNTL_DMS0      =       $04     ; DMA Request Sense 0
+DEFC    DCNTL_DIM1      =       $02     ; DMA Channel 1 I/O & Memory Mode
+DEFC    DCNTL_DIM0      =       $01     ; DMA Channel 1 I/O & Memory Mode
 
 ;   INT/TRAP Control Register (ITC)
 
-DEFC    ITC_TRAP        =      $80      ; TRAP Encountered
-DEFC    ITC_UFO         =      $40      ; Unidentified Fetch Object
-DEFC    ITC_ITE2        =      $04      ; Interrupt Enable #2
-DEFC    ITC_ITE1        =      $02      ; Interrupt Enable #1
-DEFC    ITC_ITE0        =      $01      ; Interrupt Enable #0 (1 Default)
+DEFC    ITC_TRAP        =       $80     ; TRAP Encountered
+DEFC    ITC_UFO         =       $40     ; Unidentified Fetch Object
+DEFC    ITC_ITE2        =       $04     ; Interrupt Enable #2
+DEFC    ITC_ITE1        =       $02     ; Interrupt Enable #1
+DEFC    ITC_ITE0        =       $01     ; Interrupt Enable #0 (1 Default)
 
 ;   Refresh Control Reg (RCR)
 
-DEFC    RCR_REFE        =      $80      ; DRAM Refresh Enable
-DEFC    RCR_REFW        =      $40      ; DRAM Refresh 2 or 3 Wait states
-DEFC    RCR_CYC1        =      $02      ; Cycles x4
-DEFC    RCR_CYC0        =      $01      ; Cycles x2 on base 10 T states
+DEFC    RCR_REFE        =       $80     ; DRAM Refresh Enable
+DEFC    RCR_REFW        =       $40     ; DRAM Refresh 2 or 3 Wait states
+DEFC    RCR_CYC1        =       $02     ; Cycles x4
+DEFC    RCR_CYC0        =       $01     ; Cycles x2 on base 10 T states
 
 ;   Operation Mode Control Reg (OMCR)
 
-DEFC    OMCR_M1E        =      $80      ; M1 Enable (0 Disabled)
-DEFC    OMCR_M1TE       =      $40      ; M1 Temporary Enable
-DEFC    OMCR_IOC        =      $20      ; IO Control (1 64180 Mode)
+DEFC    OMCR_M1E        =       $80     ; M1 Enable (0 Disabled)
+DEFC    OMCR_M1TE       =       $40     ; M1 Temporary Enable
+DEFC    OMCR_IOC        =       $20     ; IO Control (1 64180 Mode)
 
 ;==============================================================================
 ;
@@ -310,7 +301,7 @@ DEFC    OMCR_IOC        =      $20      ; IO Control (1 64180 Mode)
 
 ;   BREAK for Single Step Mode
 
-DEFC    BREAK       =           $2000   ; Any value written $2000->$21FF, halts CPU
+DEFC    BREAK       =       $2000       ; Any value written $2000->$21FF, halts CPU
 
 ;   82C55 PIO Port Definitions
 

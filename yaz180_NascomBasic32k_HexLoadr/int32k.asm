@@ -10,7 +10,6 @@
 ; Full input and output buffering.
 ;
 ; https://github.com/feilipu/
-;
 ; https://feilipu.me/
 ;
 
@@ -19,30 +18,15 @@
 ; INCLUDES SECTION
 ;
 
-#include    "d:/yaz180.h"
-#include    "d:/z80intr.asm"
-#include    "d:/z180intr.asm"
-
-;==============================================================================
-;
-; DEFINES SECTION
-;
-
-; Top of BASIC line input buffer (CURPOS WRKSPC+0ABH)
-; so it is "free ram" when BASIC resets
-; set BASIC Work space WRKSPC $8000, in CA1 RAM
-
-WRKSPC      .EQU     RAMSTART_CA1 
-TEMPSTACK   .EQU     WRKSPC+$AB
+INCLUDE    "yaz180.h"
 
 ;==============================================================================
 ;
 ; CODE SECTION
 ;
-
-        .ORG    0100H
-
+SECTION z180_asci0_interrupt
 ;------------------------------------------------------------------------------
+
 ASCI0_INTERRUPT:
         push af
         push hl
@@ -115,6 +99,13 @@ ASCI0_TX_END:
         ret
 
 ;------------------------------------------------------------------------------
+SECTION z180_asci0
+RX0_CHK:
+        LD      A,(ASCI0RxBufUsed)
+        CP      $0
+        RET
+
+;------------------------------------------------------------------------------
 RX0:
         ld a, (ASCI0RxBufUsed)      ; get the number of bytes in the Rx buffer
         or a                        ; see if there are zero bytes available
@@ -182,12 +173,7 @@ TX0_BUFFER_OUT:
         ret
 
 ;------------------------------------------------------------------------------
-RX0_CHK:
-        LD      A,(ASCI0RxBufUsed)
-        CP      $0
-        RET
-
-;------------------------------------------------------------------------------
+SECTION z180_asci0_print
 TX0_PRINT:
         LD      A,(HL)              ; Get a byte
         OR      A                   ; Is it $00 ?
@@ -197,6 +183,7 @@ TX0_PRINT:
         JR      TX0_PRINT           ; Continue until $00
 
 ;------------------------------------------------------------------------------
+SECTION     z180_hexloadr
 HEX_START:
             ld hl, initString
             call TX0_PRINT
@@ -222,8 +209,8 @@ HEX_WAIT_COLON:
             cp 00                   ; check if record type is 00 (data)
             jr nz, HEX_INVAL_TYPE   ; if not, error
 HEX_READ_DATA:
-            ld a, '*'               ; "*" per byte loaded  # DEBUG
-            call TX0                ; Print it             # DEBUG
+;            ld a, '*'               ; "*" per byte loaded  # DEBUG
+;            call TX0                ; Print it             # DEBUG
             call HEX_READ_BYTE
             ld (de), a              ; write the byte at the RAM address
             inc de
@@ -235,10 +222,10 @@ HEX_READ_CHKSUM:
             jr nz, HEX_BAD_CHK      ; non zero, we have an issue
             ld a, '#'               ; "#" per line loaded
             call TX0                ; Print it
-            ld a, CR                ; CR                   # DEBUG
-            call TX0                ; Print it             # DEBUG
-            ld a, LF                ; LF                   # DEBUG
-            call TX0                ; Print it             # DEBUG
+;            ld a, CR                ; CR                   # DEBUG
+;            call TX0                ; Print it             # DEBUG
+;            ld a, LF                ; LF                   # DEBUG
+;            call TX0                ; Print it             # DEBUG
             jr HEX_WAIT_COLON
 
 HEX_ESA_DATA:
@@ -304,6 +291,9 @@ HEX_READ_END:
             ret                     ; return the byte read in a
 
 ;------------------------------------------------------------------------------
+SECTION     z180_init
+
+PUBLIC      Z180_INIT
 
 Z180_INIT:
                                     ; Set Logical RAM Addresses
@@ -394,60 +384,67 @@ CHECKWARM:
             LD      A, LF
             RST     08H
 WARMSTART:
-            JP      $0393          ; <<<< Start Basic WARM:
+            JP      $0393           ; <<<< Start Basic WARM:
 
 
 ;==============================================================================
 ;
 ; STRINGS
 ;
-SIGNON1:    .BYTE   "YAZ180 - feilipu",CR,LF,0
+SECTION         z180_init_strings
 
-SIGNON2:    .BYTE   CR,LF
-            .BYTE   "Cold or Warm start, "
-            .BYTE   "or HexLoadr (C|W|H) ? ",0
+SIGNON1:        DEFM    CR,LF
+                DEFM    "YAZ180 - feilipu",CR,LF
+                DEFM    "z88dk",CR,LF,0
 
-initString: .BYTE CR,LF
-            .BYTE "HexLoadr: "
-            .BYTE CR,LF,0
+SIGNON2:        DEFM    CR,LF
+                DEFM    "Cold or Warm start, "
+                DEFM    "or HexLoadr (C|W|H) ? ",0
 
-invalidTypeStr: .BYTE "Inval Type",CR,LF,0
-badCheckSumStr: .BYTE "Chksum Error",CR,LF,0
-LoadOKStr:      .BYTE "Done",CR,LF,0
+initString:     DEFM    CR,LF,"HexLoadr: "
+                DEFM    CR,LF,0
+
+invalidTypeStr: DEFM    CR,LF,"Invalid Type",CR,LF,0
+badCheckSumStr: DEFM    CR,LF,"Checksum Error",CR,LF,0
+LoadOKStr:      DEFM    CR,LF,"Done",CR,LF,0
 
 ;==============================================================================
 ;
 ; Z80 INTERRUPT VECTOR SERVICE ROUTINES
 ;
 
-RST_08      .EQU    TX0             ; TX a byte over ASCI0
-RST_10      .EQU    RX0             ; RX a byte over ASCI0, loop byte available
-RST_18      .EQU    RX0_CHK         ; Check ASCI0 status, return # bytes available
-RST_20      .EQU    NULL_RET        ; RET
-RST_28      .EQU    NULL_RET        ; RET
-RST_30      .EQU    NULL_RET        ; RET
-INT_INT0    .EQU    NULL_INT        ; EI RETI
-INT_NMI     .EQU    NULL_NMI        ; RETN
+EXTERN  NULL_RET, NULL_INT, NULL_NMI
+
+PUBLIC  RST_08, RST_10, RST_18, RST_20, RST_28, RST_30, INT_INT0, INT_NMI
+
+DEFC    RST_08      =   TX0             ; TX a byte over ASCI0
+DEFC    RST_10      =   RX0             ; RX a byte over ASCI0, loop byte available
+DEFC    RST_18      =   RX0_CHK         ; Check ASCI0 status, return # bytes available
+DEFC    RST_20      =   NULL_RET        ; RET
+DEFC    RST_28      =   NULL_RET        ; RET
+DEFC    RST_30      =   NULL_RET        ; RET
+DEFC    INT_INT0    =   NULL_INT        ; EI RETI
+DEFC    INT_NMI     =   NULL_NMI        ; RETN
 
 ;==============================================================================
 ;
 ; Z180 INTERRUPT VECTOR SERVICE ROUTINES
 ;
 
-INT_INT1    .EQU    NULL_RET        ; external /INT1
-INT_INT2    .EQU    NULL_RET        ; external /INT2
-INT_PRT0    .EQU    NULL_RET        ; PRT channel 0
-INT_PRT1    .EQU    NULL_RET        ; PRT channel 1
-INT_DMA0    .EQU    NULL_RET        ; DMA channel 0
-INT_DMA1    .EQU    NULL_RET        ; DMA Channel 1
-INT_CSIO    .EQU    NULL_RET        ; Clocked serial I/O
-INT_ASCI0   .EQU    ASCI0_INTERRUPT ; Async channel 0
-INT_ASCI1   .EQU    NULL_RET        ; Async channel 1
+EXTERN  NULL_RET
+
+PUBLIC  INT_INT1, INT_INT2, INT_PRT0, INT_PRT1
+PUBLIC  INT_DMA0, INT_DMA1, INT_CSIO, INT_ASCI0, INT_ASCI1
+
+DEFC    INT_INT1    =   NULL_RET        ; external /INT1
+DEFC    INT_INT2    =   NULL_RET        ; external /INT2
+DEFC    INT_PRT0    =   NULL_RET        ; PRT channel 0
+DEFC    INT_PRT1    =   NULL_RET        ; PRT channel 1
+DEFC    INT_DMA0    =   NULL_RET        ; DMA channel 0
+DEFC    INT_DMA1    =   NULL_RET        ; DMA Channel 1
+DEFC    INT_CSIO    =   NULL_RET        ; Clocked serial I/O
+DEFC    INT_ASCI0   =   ASCI0_INTERRUPT ; Async channel 0
+DEFC    INT_ASCI1   =   NULL_RET        ; Async channel 1
 
 ;==============================================================================
-;
-            .END
-;
-;==============================================================================
-
 
