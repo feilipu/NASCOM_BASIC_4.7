@@ -42,7 +42,7 @@ ASCI0_RX_GET:
         jr nz, ASCI0_RX_ERROR       ; drop this byte, clear error, and get the next byte
 
         ld a, (ASCI0RxBufUsed)      ; get the number of bytes in the Rx buffer      
-        cp ASCI0_RX_BUFSIZE         ; check whether there is space in the buffer
+        cp ASCI0_RX_BUFSIZE-1       ; check whether there is space in the buffer
         jr nc, ASCI0_RX_CHECK       ; buffer full, check whether we need to drain H/W FIFO
 
         ld a, l                     ; get Rx byte from l
@@ -146,7 +146,7 @@ TX0:
 
 TX0_BUFFER_OUT:
         ld a, (ASCI0TxBufUsed)      ; Get the number of bytes in the Tx buffer
-        cp ASCI0_TX_BUFSIZE         ; check whether there is space in the buffer
+        cp ASCI0_TX_BUFSIZE-1       ; check whether there is space in the buffer
         jr nc, TX0_BUFFER_OUT       ; buffer full, so wait for free buffer for Tx
 
         ld a, l                     ; retrieve Tx character

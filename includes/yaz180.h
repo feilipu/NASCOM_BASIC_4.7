@@ -31,14 +31,14 @@ DEFC    RAMSTOP_BANK    =   $7FFF   ; Top of Banked RAM
 DEFC    RAMSTART_CA1    =   $8000   ; Bottom of Common 1 RAM
 DEFC    RAMSTOP_CA1     =   $FFFF   ; Top of Common 1 RAM
 
-DEFC    APU_CMD_BUFSIZE     =   $FF     ; FIXED CMD buffer size, 256 CMDs
-DEFC    APU_PTR_BUFSIZE     =   $FF     ; FIXED DATA POINTER buffer size, 128 POINTERs
+DEFC    APU_CMD_BUFSIZE     =   $100    ; FIXED CMD buffer size, 256 CMDs
+DEFC    APU_PTR_BUFSIZE     =   $100    ; FIXED DATA POINTER buffer size, 128 POINTERs
 
-DEFC    ASCI0_RX_BUFSIZE    =   $FF ; FIXED Rx buffer size, 256 Bytes, no range checking
-DEFC    ASCI0_TX_BUFSIZE    =   $FF ; FIXED Tx buffer size, 256 Bytes, no range checking
+DEFC    ASCI0_RX_BUFSIZE    =   $100    ; FIXED Rx buffer, 256 Bytes, no range checking
+DEFC    ASCI0_TX_BUFSIZE    =   $100    ; FIXED Tx buffer, 256 Bytes, no range checking
 
-DEFC    ASCI1_RX_BUFSIZE    =   $FF ; FIXED Rx buffer size, 256 Bytes, no range checking
-DEFC    ASCI1_TX_BUFSIZE    =   $FF ; FIXED Tx buffer size, 256 Bytes, no range checking
+DEFC    ASCI1_RX_BUFSIZE    =   $100    ; FIXED Rx buffer, 256 Bytes, no range checking
+DEFC    ASCI1_TX_BUFSIZE    =   $100    ; FIXED Tx buffer, 256 Bytes, no range checking
 
 ;==============================================================================
 ;
@@ -418,13 +418,13 @@ DEFC    APUError        =   APUStatus+1
 DEFC    BUFSTART_IO     =   Z180_VECTOR_BASE-(Z180_VECTOR_BASE%$100) + $100
 
 DEFC    ASCI0RxBuf      =   BUFSTART_IO
-DEFC    ASCI0TxBuf      =   ASCI0RxBuf+ASCI0_RX_BUFSIZE+1
+DEFC    ASCI0TxBuf      =   ASCI0RxBuf+ASCI0_RX_BUFSIZE
 
-DEFC    ASCI1RxBuf      =   ASCI0TxBuf+ASCI0_TX_BUFSIZE+1
-DEFC    ASCI1TxBuf      =   ASCI1RxBuf+ASCI1_RX_BUFSIZE+1
+DEFC    ASCI1RxBuf      =   ASCI0TxBuf+ASCI0_TX_BUFSIZE
+DEFC    ASCI1TxBuf      =   ASCI1RxBuf+ASCI1_RX_BUFSIZE
 
-DEFC    APUCMDBuf       =   ASCI1TxBuf+ASCI1_TX_BUFSIZE+1
-DEFC    APUPTRBuf       =   APUCMDBuf+APU_CMD_BUFSIZE+1
+DEFC    APUCMDBuf       =   ASCI1TxBuf+ASCI1_TX_BUFSIZE
+DEFC    APUPTRBuf       =   APUCMDBuf+APU_CMD_BUFSIZE
 
 ;==============================================================================
 
