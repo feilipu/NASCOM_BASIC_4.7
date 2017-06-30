@@ -16,8 +16,8 @@
 ; INCLUDE       "yaz180.h"              ; OR
 ; INCLUDE       "rc2014.h"
 
-INCLUDE       "yaz180.h"
-;INCLUDE       "rc2014.h"
+;INCLUDE       "yaz180.h"
+INCLUDE       "rc2014.h"
 
 ;==============================================================================
 ;
