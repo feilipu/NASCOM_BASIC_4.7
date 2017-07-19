@@ -24,9 +24,9 @@ INCLUDE         "yaz180.h"
 ;
 SECTION     z180_vector_trap_handler
 
-EXTERN      Z180_INIT
+EXTERN      Z180_INIT, Z180_TRAP
 
-PUBLIC      INIT
+PUBLIC      INIT, REINIT
 
 INIT:
             PUSH    AF
@@ -36,16 +36,16 @@ INIT:
 
             IN0     A,(ITC)         ; Check whether TRAP is set, or normal RESET
             AND     ITC_TRAP
-            JR      NZ, Z180_TRAP   ; Handle the TRAP event
+            JR      NZ, Z180_TRAP_HANDLER ; Handle the TRAP event
 
             POP     AF
-                                    ; Set interrupt vector address high byte (I)
+REINIT:
             LD      A,Z180_VECTOR_BASE/$100
-            LD      I,A
-                                    ; Set interrupt vector address low byte (IL)
-                                    ; IL = $20 [001x xxxx] for Vectors at $nn20 - $nn2F
+            LD      I,A             ; Set interrupt vector address high byte (I)
+
+                                    ; IL = $40 [010x xxxx] for Vectors at $nn40 - $nn5F
             LD      A,Z180_VECTOR_BASE%$100
-            OUT0    (IL),A          ; Set the interrupt vector low byte
+            OUT0    (IL),A          ; Set interrupt vector address low byte (IL)
 
             IM      1               ; Interrupt mode 1 for INT0
 
@@ -84,13 +84,11 @@ INIT:
 
             JP      Z180_INIT       ; Start normal Configuration
 
-Z180_TRAP:
+Z180_TRAP_HANDLER:
             XOR     ITC_TRAP        ; Clear TRAP bit, It must be set to get here.
             OUT0    (ITC),A 
-                                    ; TODO Build proper TRAP handling
             POP     AF
-            HALT                    
-
+            JP      Z180_TRAP       ; Jump to proper TRAP handling
 ;==============================================================================
 ;
 ; Z180 INTERRUPT VECTOR TABLE PROTOTYPE

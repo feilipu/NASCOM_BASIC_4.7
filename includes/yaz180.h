@@ -53,11 +53,12 @@ INCLUDE "yaz180_config.h"
 ;
 
 ;   Squeezed between INT0 0x0038 and NMI 0x0066
-DEFC    Z80_VECTOR_PROTO    =   $0040
-DEFC    Z80_VECTOR_SIZE     =   $20
+DEFC    Z80_VECTOR_PROTO    =   $003C
+DEFC    Z80_VECTOR_SIZE     =   $24
 
 ;   Prototype Interrupt Service Routines - complete in main program
 ;
+;DEFC       Z180_TRAP   =       Z180_INIT   Reboot
 ;DEFC       RST_08      =       TX0         TX a character over ASCI0
 ;DEFC       RST_10      =       RX0         RX a character over ASCI0, block no bytes available
 ;DEFC       RST_18      =       RX0_CHK     Check ASCI0 status, return # bytes available
@@ -68,22 +69,23 @@ DEFC    Z80_VECTOR_SIZE     =   $20
 ;DEFC       INT_NMI     =       NULL_NMI
 
 ;   Z80 Interrupt Service Routine Addresses - rewrite as needed
-DEFC    RST_08_ADDR         =   Z80_VECTOR_BASE+$01
-DEFC    RST_10_ADDR         =   Z80_VECTOR_BASE+$05
-DEFC    RST_18_ADDR         =   Z80_VECTOR_BASE+$09
-DEFC    RST_20_ADDR         =   Z80_VECTOR_BASE+$0D
-DEFC    RST_28_ADDR         =   Z80_VECTOR_BASE+$11
-DEFC    RST_30_ADDR         =   Z80_VECTOR_BASE+$15
-DEFC    INT_INT0_ADDR       =   Z80_VECTOR_BASE+$19
-DEFC    INT_NMI_ADDR        =   Z80_VECTOR_BASE+$1D
+DEFC    Z180_TRAP_ADDR      =   Z80_VECTOR_BASE+$01
+DEFC    RST_08_ADDR         =   Z80_VECTOR_BASE+$05
+DEFC    RST_10_ADDR         =   Z80_VECTOR_BASE+$09
+DEFC    RST_18_ADDR         =   Z80_VECTOR_BASE+$0D
+DEFC    RST_20_ADDR         =   Z80_VECTOR_BASE+$11
+DEFC    RST_28_ADDR         =   Z80_VECTOR_BASE+$15
+DEFC    RST_30_ADDR         =   Z80_VECTOR_BASE+$19
+DEFC    INT_INT0_ADDR       =   Z80_VECTOR_BASE+$1D
+DEFC    INT_NMI_ADDR        =   Z80_VECTOR_BASE+$21
 
 ;==============================================================================
 ;
 ; Interrupt vectors (offsets) for Z180/HD64180 external and internal interrupts
 ;
 
-DEFC    Z180_VECTOR_IL      =   $20 ; Vector Base address (IL)
-                                    ; [001x xxxx] for Vectors at $nn20 - $nn3F
+DEFC    Z180_VECTOR_IL      =   $40 ; Vector Base address (IL)
+                                    ; [001x xxxx] for Vectors at $nn40 - $nn5F
 
 ;   Locate the TRAP management just after NMI
 DEFC    Z180_VECTOR_TRAP    =   $0070
@@ -415,7 +417,7 @@ DEFC    APUError        =   APUStatus+1
 ;   $nn60 -> $nnFF is slack memory.
 
 ;   I/O Buffers must start on 0xnn00 because we increment low byte to roll-over
-DEFC    BUFSTART_IO     =   Z180_VECTOR_BASE-(Z180_VECTOR_BASE%$100) + $100
+DEFC    BUFSTART_IO     =   Z80_VECTOR_BASE-(Z80_VECTOR_BASE%$100) + $100
 
 DEFC    ASCI0RxBuf      =   BUFSTART_IO
 DEFC    ASCI0TxBuf      =   ASCI0RxBuf+ASCI0_RX_BUFSIZE

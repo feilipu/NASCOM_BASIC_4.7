@@ -17,7 +17,7 @@
 DEFC    RAMSTART        =   RAMSTART_CA0
 DEFC    RAMSTOP         =   RAMSTOP_CA1
 
-DEFC    STACKTOP        =   $2FFE   ; start of a global stack (any pushes pre-decrement)
+DEFC    STACKTOP        =   $3FFE   ; start of a global stack (any pushes pre-decrement)
 
 ;   RAM Vector Address for Z80 RST Table, and for Z180 Vector Table
 DEFC    Z80_VECTOR_BASE =   RAMSTART_CA0

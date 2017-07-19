@@ -24,9 +24,9 @@ INCLUDE    "yaz180.h"
 ;
 ; CODE SECTION
 ;
-SECTION z180_asci0_interrupt
-;------------------------------------------------------------------------------
 
+;------------------------------------------------------------------------------
+SECTION z180_asci0_interrupt
 ASCI0_INTERRUPT:
         push af
         push hl
@@ -302,11 +302,13 @@ Z180_INIT:
                                     ; $2000-$3FFF RAM CA0
                                     ; $0000-$1FFF Flash CA0
                                     
-            LD      A,84H           ; Set New Common / Bank Areas for RAM
+            LD      A,$84           ; Set New Common / Bank Areas for RAM
             OUT0    (CBAR),A
-            LD      A,78H           ; Set Common 1 Area Physical $80000 -> 78H
+
+            LD      A,$F0           ; Set Common 1 Area Physical $F8000 -> F0H (Top of SRAM)
             OUT0    (CBR),A
-            LD      A,3CH           ; Set Bank Area Physical $40000 -> 3CH
+
+            LD      A,$00           ; Set Bank Area Physical $04000 -> 00H (Bottom of SRAM)
             OUT0    (BBR),A
 
                                     ; load the default ASCI configuration
@@ -413,10 +415,14 @@ LoadOKStr:      DEFM    CR,LF,"Done",CR,LF,0
 ; Z80 INTERRUPT VECTOR SERVICE ROUTINES
 ;
 
+EXTERN  REINIT
 EXTERN  NULL_RET, NULL_INT, NULL_NMI
 
-PUBLIC  RST_08, RST_10, RST_18, RST_20, RST_28, RST_30, INT_INT0, INT_NMI
+PUBLIC  Z180_TRAP
+PUBLIC  RST_08, RST_10, RST_18, RST_20, RST_28, RST_30
+PUBLIC  INT_INT0, INT_NMI
 
+DEFC    Z180_TRAP   =   REINIT          ; Initialise again, for the moment
 DEFC    RST_08      =   TX0             ; TX a byte over ASCI0
 DEFC    RST_10      =   RX0             ; RX a byte over ASCI0, loop byte available
 DEFC    RST_18      =   RX0_CHK         ; Check ASCI0 status, return # bytes available
