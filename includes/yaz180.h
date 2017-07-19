@@ -88,12 +88,15 @@ DEFC    Z180_VECTOR_IL      =   $40 ; Vector Base address (IL)
                                     ; [001x xxxx] for Vectors at $nn40 - $nn5F
 
 ;   Locate the TRAP management just after NMI
+
 DEFC    Z180_VECTOR_TRAP    =   $0070
 
-;   Start Z180 Vectors immediately after the Z80 Vector Table.                                    
+;   Start Z180 Vectors immediately after the Z80 Vector Table.   
+                                 
 DEFC    Z180_VECTOR_BASE    =   Z80_VECTOR_BASE-(Z80_VECTOR_BASE%$100)+Z180_VECTOR_IL
 
 ;   Locate the prototypes just after TRAP code
+
 DEFC    Z180_VECTOR_PROTO   =   $00D0
 DEFC    Z180_VECTOR_SIZE    =   $12
 
@@ -110,6 +113,7 @@ DEFC    Z180_VECTOR_SIZE    =   $12
 ;   INT_ASCI1   =       NULL_RET        ; Async channel 1
 
 ;   Z180 Interrupt Service Routine Addresses - rewrite as needed
+
 DEFC    INT_INT1_ADDR       =   Z180_VECTOR_BASE+$00
 DEFC    INT_INT2_ADDR       =   Z180_VECTOR_BASE+$02
 DEFC    INT_PRT0_ADDR       =   Z180_VECTOR_BASE+$04
