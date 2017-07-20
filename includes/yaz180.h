@@ -31,14 +31,14 @@ DEFC    RAMSTOP_BANK    =   $7FFF   ; Top of Banked RAM
 DEFC    RAMSTART_CA1    =   $8000   ; Bottom of Common 1 RAM
 DEFC    RAMSTOP_CA1     =   $FFFF   ; Top of Common 1 RAM
 
-DEFC    APU_CMD_BUFSIZE     =   $100    ; FIXED CMD buffer size, 256 CMDs
-DEFC    APU_PTR_BUFSIZE     =   $100    ; FIXED DATA POINTER buffer size, 128 POINTERs
-
 DEFC    ASCI0_RX_BUFSIZE    =   $100    ; FIXED Rx buffer, 256 Bytes, no range checking
 DEFC    ASCI0_TX_BUFSIZE    =   $100    ; FIXED Tx buffer, 256 Bytes, no range checking
 
 DEFC    ASCI1_RX_BUFSIZE    =   $100    ; FIXED Rx buffer, 256 Bytes, no range checking
 DEFC    ASCI1_TX_BUFSIZE    =   $100    ; FIXED Tx buffer, 256 Bytes, no range checking
+
+DEFC    APU_CMD_BUFSIZE     =   $100    ; FIXED CMD buffer size, 256 CMDs
+DEFC    APU_PTR_BUFSIZE     =   $100    ; FIXED DATA POINTER buffer size, 128 POINTERs
 
 ;==============================================================================
 ;

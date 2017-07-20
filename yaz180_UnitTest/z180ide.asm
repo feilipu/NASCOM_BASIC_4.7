@@ -1,8 +1,7 @@
 ;==============================================================================
 ; Contents of this file are copyright Phillip Stevens
 ;
-; You have permission to use this for NON COMMERCIAL USE ONLY
-; If you wish to use it elsewhere, please include an acknowledgement to myself.
+; If you wish to use it, please include an acknowledgement to myself.
 ;
 ; https://github.com/feilipu/
 ;
@@ -16,19 +15,12 @@
 ; INCLUDES SECTION
 ;
 
-#include "d:/yaz180.h"
+INCLUDE "yaz180.h"
 
 ;==============================================================================
 ;
 ; DEFINES SECTION
 ;
-
-;   from Nascom Basic Symbol Tables .ORIG $0390
-DEINT       .EQU    $0C47       ; Function DEINT to get USR(x) into DE registers
-ABPASS      .EQU    $13BD       ; Function ABPASS to put output into AB register
-
-program     .equ    $4000       ; Where this program will exist
-location    .equ    $3000       ; Where this driver will exist
 
 ;------------------------------------------------------------------
 ;
@@ -90,26 +82,26 @@ location    .equ    $3000       ; Where this driver will exist
 ; upper and lower data bytes.  The last two are mode setting for the
 ; 8255 to configure its ports, which must correspond to the way that
 ; the first three lines define which ports are connected.
-PIO_IDE_LSB     .equ    PIOA        ;IDE lower 8 bits
-PIO_IDE_MSB     .equ    PIOB        ;IDE upper 8 bits
-PIO_IDE_CTL     .equ    PIOC        ;IDE control lines
-PIO_IDE_CONFIG  .equ    PIOCNTL     ;PIO configuration
-PIO_IDE_RD      .equ    PIOCNTL10   ;PIO_IDE_CTL out, PIO_IDE_LSB/MSB input
-PIO_IDE_WR      .equ    PIOCNTL00   ;all PIO ports output
+DEFC    PIO_IDE_LSB     =   PIOA        ;IDE lower 8 bits
+DEFC    PIO_IDE_MSB     =   PIOB        ;IDE upper 8 bits
+DEFC    PIO_IDE_CTL     =   PIOC        ;IDE control lines
+DEFC    PIO_IDE_CONFIG  =   PIOCNTL     ;PIO configuration
+DEFC    PIO_IDE_RD      =   PIOCNTL10   ;PIO_IDE_CTL out, PIO_IDE_LSB/MSB input
+DEFC    PIO_IDE_WR      =   PIOCNTL00   ;all PIO ports output
 
 ; IDE control lines for use with PIO_IDE_CTL. Change these 8
 ; constants to reflect where each signal of the 8255 each of the
 ; IDE control signals is connected.  All the control signals must
 ; be on the same port, but these 8 lines let you connect them to
 ; whichever pins on that port.
-IDE_A0_LINE     .equ    $10        ;direct from 8255 to ide interface
-IDE_A1_LINE     .equ    $04        ;direct from 8255 to ide interface
-IDE_A2_LINE     .equ    $40        ;direct from 8255 to ide interface
-IDE_CS0_LINE    .equ    $08        ;inverter between 8255 and ide interface
-IDE_CS1_LINE    .equ    $20        ;inverter between 8255 and ide interface
-IDE_WR_LINE     .equ    $01        ;inverter between 8255 and ide interface
-IDE_RD_LINE     .equ    $02        ;inverter between 8255 and ide interface
-IDE_RST_LINE    .equ    $80        ;inverter between 8255 and ide interface
+DEFC    IDE_A0_LINE     =   $10        ;direct from 8255 to ide interface
+DEFC    IDE_A1_LINE     =   $04        ;direct from 8255 to ide interface
+DEFC    IDE_A2_LINE     =   $40        ;direct from 8255 to ide interface
+DEFC    IDE_CS0_LINE    =   $08        ;inverter between 8255 and ide interface
+DEFC    IDE_CS1_LINE    =   $20        ;inverter between 8255 and ide interface
+DEFC    IDE_WR_LINE     =   $01        ;inverter between 8255 and ide interface
+DEFC    IDE_RD_LINE     =   $02        ;inverter between 8255 and ide interface
+DEFC    IDE_RST_LINE    =   $80        ;inverter between 8255 and ide interface
 
 
 ;------------------------------------------------------------------------------
@@ -119,35 +111,35 @@ IDE_RST_LINE    .equ    $80        ;inverter between 8255 and ide interface
 ; IDE control lines for use with PIO_IDE_CTL. Symbolic constants
 ; for the IDE registers, which makes the code more readable than
 ; always specifying the address pins
-IDE_DATA        .equ    IDE_CS0_LINE
-IDE_ERROR       .equ    IDE_CS0_LINE + IDE_A0_LINE
-IDE_SEC_CNT     .equ    IDE_CS0_LINE + IDE_A1_LINE  ;Typically 1 Sector only
-IDE_SECTOR      .equ    IDE_CS0_LINE + IDE_A1_LINE + IDE_A0_LINE    ;LBA0
-IDE_CYL_LSB     .equ    IDE_CS0_LINE + IDE_A2_LINE                  ;LBA1
-IDE_CYL_MSB     .equ    IDE_CS0_LINE + IDE_A2_LINE + IDE_A0_LINE    ;LBA2
-IDE_HEAD        .equ    IDE_CS0_LINE + IDE_A2_LINE + IDE_A1_LINE    ;LBA3
-IDE_COMMAND     .equ    IDE_CS0_LINE + IDE_A2_LINE + IDE_A1_LINE + IDE_A0_LINE
-IDE_STATUS      .equ    IDE_CS0_LINE + IDE_A2_LINE + IDE_A1_LINE + IDE_A0_LINE
+DEFC    IDE_DATA        =   IDE_CS0_LINE
+DEFC    IDE_ERROR       =   IDE_CS0_LINE + IDE_A0_LINE
+DEFC    IDE_SEC_CNT     =   IDE_CS0_LINE + IDE_A1_LINE  ;Typically 1 Sector only
+DEFC    IDE_SECTOR      =   IDE_CS0_LINE + IDE_A1_LINE + IDE_A0_LINE    ;LBA0
+DEFC    IDE_CYL_LSB     =   IDE_CS0_LINE + IDE_A2_LINE                  ;LBA1
+DEFC    IDE_CYL_MSB     =   IDE_CS0_LINE + IDE_A2_LINE + IDE_A0_LINE    ;LBA2
+DEFC    IDE_HEAD        =   IDE_CS0_LINE + IDE_A2_LINE + IDE_A1_LINE    ;LBA3
+DEFC    IDE_COMMAND     =   IDE_CS0_LINE + IDE_A2_LINE + IDE_A1_LINE + IDE_A0_LINE
+DEFC    IDE_STATUS      =   IDE_CS0_LINE + IDE_A2_LINE + IDE_A1_LINE + IDE_A0_LINE
 
-IDE_CONTROL     .equ    IDE_CS1_LINE + IDE_A2_LINE + IDE_A1_LINE
-IDE_ALT_STATUS  .equ    IDE_CS1_LINE + IDE_A2_LINE + IDE_A1_LINE
+DEFC    IDE_CONTROL     =   IDE_CS1_LINE + IDE_A2_LINE + IDE_A1_LINE
+DEFC    IDE_ALT_STATUS  =   IDE_CS1_LINE + IDE_A2_LINE + IDE_A1_LINE
 
-IDE_LBA0        .equ    IDE_CS0_LINE + IDE_A1_LINE + IDE_A0_LINE    ;SECTOR
-IDE_LBA1        .equ    IDE_CS0_LINE + IDE_A2_LINE                  ;CYL_LSB
-IDE_LBA2        .equ    IDE_CS0_LINE + IDE_A2_LINE + IDE_A0_LINE    ;CYL_MSB
-IDE_LBA3        .equ    IDE_CS0_LINE + IDE_A2_LINE + IDE_A1_LINE    ;HEAD
+DEFC    IDE_LBA0        =   IDE_CS0_LINE + IDE_A1_LINE + IDE_A0_LINE    ;SECTOR
+DEFC    IDE_LBA1        =   IDE_CS0_LINE + IDE_A2_LINE                  ;CYL_LSB
+DEFC    IDE_LBA2        =   IDE_CS0_LINE + IDE_A2_LINE + IDE_A0_LINE    ;CYL_MSB
+DEFC    IDE_LBA3        =   IDE_CS0_LINE + IDE_A2_LINE + IDE_A1_LINE    ;HEAD
 
 ; IDE Command Constants.  These should never change.
-IDE_CMD_RECAL       .equ    $10 ;recalibrate the disk, wait for ready status
-IDE_CMD_READ        .equ    $20 ;read with retry - $21 read no retry
-IDE_CMD_WRITE       .equ    $30 ;write with retry - $31 write no retry
-IDE_CMD_INIT        .equ    $91 ;initialize drive parameters
+DEFC    IDE_CMD_RECAL       =   $10 ;recalibrate the disk, wait for ready status
+DEFC    IDE_CMD_READ        =   $20 ;read with retry - $21 read no retry
+DEFC    IDE_CMD_WRITE       =   $30 ;write with retry - $31 write no retry
+DEFC    IDE_CMD_INIT        =   $91 ;initialize drive parameters
 
-IDE_CMD_SPINDOWN    .equ    $E0 ;immediate ide_spindown of disk
-IDE_CMD_SPINUP      .equ    $E1 ;immediate ide_spinup of disk
-IDE_CMD_POWERDOWN   .equ    $E2 ;auto powerdown - sector count 5 sec units
-IDE_CMD_CACHE_FLUSH .equ    $E7 ;flush hardware write cache
-IDE_CMD_ID          .equ    $EC ;identify drive
+DEFC    IDE_CMD_SPINDOWN    =   $E0 ;immediate ide_spindown of disk
+DEFC    IDE_CMD_SPINUP      =   $E1 ;immediate ide_spinup of disk
+DEFC    IDE_CMD_POWERDOWN   =   $E2 ;auto powerdown - sector count 5 sec units
+DEFC    IDE_CMD_CACHE_FLUSH =   $E7 ;flush hardware write cache
+DEFC    IDE_CMD_ID          =   $EC ;identify drive
 
 ;==============================================================================
 ;
@@ -158,11 +150,10 @@ IDE_CMD_ID          .equ    $EC ;identify drive
     ;set bit 0 : User selects master (0) or slave (1) drive
     ;bit 1 : Flag 0 = master not previously accessed 
     ;bit 2 : Flag 0 = slave not previously accessed
-idestatus   .equ    Z180_VECTOR_BASE+Z180_VECTOR_SIZE+$30    
-
+defc    idestatus   =   Z180_VECTOR_BASE+Z180_VECTOR_SIZE+$30
 
 ;IDE 512 byte sector buffer origin
-ide_buffer  .equ    APUPTRBuf+APU_PTR_BUFSIZE+1
+defc    IDEBuffer   =   APUPTRBuf+APU_PTR_BUFSIZE
 
 ;==============================================================================
 ;
@@ -172,15 +163,17 @@ ide_buffer  .equ    APUPTRBuf+APU_PTR_BUFSIZE+1
 ;------------------------------------------------------------------------------
 ; Main Program, a simple test.
 
-    .org program
+SECTION code_user
 
-begin:
-    ld (STACKTOP), sp
-    ld sp, STACKTOP
+PUBLIC _main
 
+_main:
+    call pnewline
     ld hl, msg_1            ;print a welcome message
-    call pstr 
-
+    call pstr
+    call pnewline
+    call pnewline
+    
     ;reset the drive
     call ide_hard_reset
 
@@ -194,13 +187,13 @@ begin:
     call ide_spinup
 
     ;get the drive id info. If there is no drive, this may hang
-    ld hl, ide_buffer       ;put the data into this buffer
+    ld hl, IDEBuffer        ;put the data into this buffer
     call ide_drive_id
 
     ;print the drive's model number
     ld hl, msg_mdl
     call pstr
-    ld hl, ide_buffer + 54
+    ld hl, IDEBuffer + 54
     ld b, 20
     call print_name
     call pnewline
@@ -208,7 +201,7 @@ begin:
     ;print the drive's serial number
     ld hl, msg_sn
     call pstr
-    ld hl, ide_buffer + 20
+    ld hl, IDEBuffer + 20
     ld b, 10
     call print_name
     call pnewline
@@ -216,30 +209,36 @@ begin:
     ;print the drive's firmware revision string
     ld hl, msg_rev
     call pstr
-    ld hl, ide_buffer + 46
+    ld hl, IDEBuffer + 46
     ld b, 4
     call print_name
+    call pnewline
     call pnewline
 
     ;print the drive's cylinder, head, and sector specs
     ld hl, msg_cy
     call pstr
-    ld hl, ide_buffer + 2
+    ld hl, IDEBuffer + 2
     call phex16
+    call pnewline
     ld hl, msg_hd
     call pstr
-    ld hl, ide_buffer + 6
+    ld hl, IDEBuffer + 6
     call phex16
+    call pnewline
     ld hl, msg_sc
     call pstr
-    ld hl, ide_buffer + 12
+    ld hl, IDEBuffer + 12
     call phex16
     call pnewline
     call pnewline
 
     ;dump the ID information
-    ld hl, ide_buffer
+    ld hl, IDEBuffer 
     call phexdump
+    
+    ; remove this ret, to get a dump of first 256 sectors
+    ret
 
     xor a
 dump_sector:
@@ -247,32 +246,33 @@ dump_sector:
     ld bc, $0000
     ld de, $0000
     ld e, a
-    ld hl, ide_buffer
+    ld hl, IDEBuffer 
     call ide_read_sector
     ;dump the $00000000 sector information
-    ld hl, ide_buffer
+    ld hl, IDEBuffer 
     call phexdump
-    inc a               ;print first 256 sectors, for fun
+    inc a               ;print first 256 sectors
     jr nz, dump_sector
     
     ;cause the drive to spin down
     call ide_spindown
 
-    ld sp, (STACKTOP)
     ret
 
+section rodata_user
 
-msg_1:      .db     "IDE Disk Drive Test "
-            .db     "Program",13,10,13,10,0
-msg_mdl:    .db     "Model: ",0
-msg_sn:     .db     "S/N:   ",0
-msg_rev:    .db     "Rev:   ",0
-msg_cy:     .db     "Cylinders: ", 0
-msg_hd:     .db     ", Heads: ", 0
-msg_sc:     .db     ", Sectors: ", 0
+msg_1:      DEFM    "IDE Disk Drive Test Program",0
+msg_mdl:    DEFM    "Model:     ",0
+msg_sn:     DEFM    "S/N:       ",0
+msg_rev:    DEFM    "Rev:       ",0
+msg_cy:     DEFM    "Cylinders: 0x",0
+msg_hd:     DEFM    "Heads:     0x",0
+msg_sc:     DEFM    "Sectors:   0x",0
 
 ;------------------------------------------------------------------------------
 ; Extra print routines during testing
+
+SECTION code_user
 
     ;print CR/LF
 pnewline:
@@ -346,7 +346,7 @@ phex_c:
     ret
 
 
-    ;print a hexdump of the data in the 512 byte buffer HL
+    ;print a hexdump of the data in a 512 byte buffer HL
 phexdump:
     push af
     push bc
@@ -412,7 +412,7 @@ phd3c:
 ; Routines that talk with the IDE drive, these should be called by
 ; the main program.
 
-    .org location
+SECTION     code_driver
 
     ;read a sector
     ;LBA specified by the 4 bytes in BCDE
@@ -473,7 +473,7 @@ ide_write_sector:
 
 ;------------------------------------------------------------------------------
 
-    ;do the identify drive command, and return with the ide_buffer
+    ;do the identify drive command, and return with the IDEBuffer 
     ;filled with info about the drive.
     ;the buffer to fill is in HL
 ide_drive_id:
@@ -722,7 +722,7 @@ ide_rdblk2:
     out (c), d              ;deassert read pin
     dec e                   ;keep iterative count in e
     jr nz, ide_rdblk2
-   ;ld bc, PIO_IDE_CTL      ;just for info
+   ;ld bc, PIO_IDE_CTL      ;remembering what's in bc
     ld d, $0
     out (c), d              ;deassert all control pins
     pop de
@@ -754,7 +754,7 @@ ide_wrblk2:
     out (c), d              ;deassert write pin
     dec e                   ;keep iterative count in e
     jr nz, ide_wrblk2
-   ;ld bc, PIO_IDE_CTL      ;just for info
+   ;ld bc, PIO_IDE_CTL      ;remembering what's in bc
     ld d, $0
     out (c), d              ;deassert all control pins
     ld bc, PIO_IDE_CONFIG
