@@ -323,7 +323,7 @@ DEFC    PIOCNTL     =       PIO+$03     ; Address for Control Byte
 
 DEFC    PIOCNTL00   =       $80         ; A->, B->, CH->, CL->
 DEFC    PIOCNTL01   =       $81         ; A->, B->, CH->, ->CL
-DEFC    PIOCNTL0    =       $82         ; A->, ->B, CH->, CL->
+DEFC    PIOCNTL02   =       $82         ; A->, ->B, CH->, CL->
 DEFC    PIOCNTL03   =       $83         ; A->, ->B, CH->, ->CL
 
 DEFC    PIOCNTL04   =       $88         ; A->, B->, ->CH, CL->

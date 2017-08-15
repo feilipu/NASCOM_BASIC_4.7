@@ -219,16 +219,45 @@ _main:
     ld hl, msg_cy
     call pstr
     ld hl, IDEBuffer + 2
+    ld a, (hl)
+    inc hl
+    ld h, (hl)
+    ld l, a
     call phex16
     call pnewline
     ld hl, msg_hd
     call pstr
     ld hl, IDEBuffer + 6
+    ld a, (hl)
+    inc hl
+    ld h, (hl)
+    ld l, a
     call phex16
     call pnewline
     ld hl, msg_sc
     call pstr
     ld hl, IDEBuffer + 12
+    ld a, (hl)
+    inc hl
+    ld h, (hl)
+    ld l, a
+    call phex16
+    call pnewline
+    call pnewline
+
+    ;print the drive's LBA sector specs
+    ld hl, IDEBuffer + 122
+    ld a, (hl)
+    inc hl
+    ld h, (hl)
+    ld l, a
+    call phex16
+    
+    ld hl, IDEBuffer + 120
+    ld a, (hl)
+    inc hl
+    ld h, (hl)
+    ld l, a
     call phex16
     call pnewline
     call pnewline
@@ -792,7 +821,8 @@ ide_read_byte:
     ;uses DE
 ide_write_byte:
     push bc
-    ld d, a                 ;copy address to D (unused MSB)
+    push de
+    ld d, a                 ;copy address to D
     ld bc, PIO_IDE_CONFIG
     ld a, PIO_IDE_WR
     out (c), a              ;config 8255 chip, write mode
@@ -810,6 +840,7 @@ ide_write_byte:
     ld bc, PIO_IDE_CONFIG
     ld a, PIO_IDE_RD
     out (c), a              ;config 8255 chip, read mode
+    pop de
     pop bc
     ret
 
