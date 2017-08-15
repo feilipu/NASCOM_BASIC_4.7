@@ -218,7 +218,7 @@ _main:
     ;print the drive's cylinder, head, and sector specs
     ld hl, msg_cy
     call pstr
-    ld hl, IDEBuffer + 2
+    ld hl, IDEBuffer + 2    ; Word 1
     ld a, (hl)
     inc hl
     ld h, (hl)
@@ -227,7 +227,7 @@ _main:
     call pnewline
     ld hl, msg_hd
     call pstr
-    ld hl, IDEBuffer + 6
+    ld hl, IDEBuffer + 6    ; Word 3
     ld a, (hl)
     inc hl
     ld h, (hl)
@@ -236,7 +236,7 @@ _main:
     call pnewline
     ld hl, msg_sc
     call pstr
-    ld hl, IDEBuffer + 12
+    ld hl, IDEBuffer + 12   ; Word 6
     ld a, (hl)
     inc hl
     ld h, (hl)
@@ -246,18 +246,17 @@ _main:
     call pnewline
 
     ;print the drive's LBA sector specs
-    ld hl, IDEBuffer + 122
+    ld hl, IDEBuffer + 123  ;  Word 60, 61
     ld a, (hl)
-    inc hl
-    ld h, (hl)
-    ld l, a
+    dec hl
+    ld l, (hl)
+    ld h, a
     call phex16
-    
-    ld hl, IDEBuffer + 120
+    dec hl
     ld a, (hl)
-    inc hl
-    ld h, (hl)
-    ld l, a
+    dec hl
+    ld l, (hl)
+    ld h, a
     call phex16
     call pnewline
     call pnewline
@@ -505,6 +504,20 @@ ide_write_sector:
     ;do the identify drive command, and return with the IDEBuffer 
     ;filled with info about the drive.
     ;the buffer to fill is in HL
+    
+    ; Some parameters are defined as a 16-bit value.
+    ; A word that is defined as a 16-bit value places the most
+    ; significant bit of the value on bit DD15
+    ; and the least significant bit on bit DD0.
+
+    ; Some parameters are defined as 32-bit values (e.g., words 57 and 58).
+    ; Such fields are transferred using two successive word transfers.
+    ; The device shall first transfer the least significant bits,
+    ; bits 15 through 0 of the value, on bits DD (15:0) respectively.
+    ; After the least significant bits have been transferred, the most
+    ; significant bits, bits 31 through 16 of the value,
+    ; shall be transferred on DD (15:0) respectively.
+
 ide_drive_id:
     push af
     push de
