@@ -29,7 +29,7 @@ ORG         Z180_VECTOR_TRAP
 SECTION     z180_vector_table_prototype
 ORG         Z180_VECTOR_PROTO
 
-SECTION     z180_asci0_interrupt
+SECTION     z180_interrupts
 ORG         0x00F0
 
 SECTION     z180_asci0

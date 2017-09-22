@@ -19,6 +19,8 @@
 ; DEFINES SECTION
 ;
 
+DEFC    CPU_CLOCK       =   18432000
+
 DEFC    ROMSTART        =   $0000   ; Bottom of Common 0 FLASH
 DEFC    ROMSTOP         =   $1FFF   ; Top of Common 0 FLASH
 
@@ -129,7 +131,9 @@ DEFC    INT_ASCI1_ADDR      =   Z180_VECTOR_BASE+$10
 ; Z180 Register Mnemonics
 ;
 
-DEFC    Z180_IO_BASE    =       $00 ; Internal I/O Base Address (ICR)
+DEFC    CPU_TIMER_SCALE =       20                  ; PRT Scale Factor (Fixed)
+
+DEFC    Z180_IO_BASE    =       $00                 ; Internal I/O Base Address (ICR)
 
 DEFC    CNTLA0          =       Z180_IO_BASE+$00    ; ASCI Control Reg A Ch 0
 DEFC    CNTLA1          =       Z180_IO_BASE+$01    ; ASCI Control Reg A Ch 1
@@ -251,6 +255,17 @@ DEFC    ASCI_DCD0       =       $04     ; _DCD0 Data Carrier Detect USART0
 DEFC    ASCI_CTS1       =       $04     ; _CTS1 Clear To Send USART1
 DEFC    ASCI_TDRE       =       $02     ; Transmit Data Register Empty
 DEFC    ASCI_TIE        =       $01     ; Transmit Interrupt Enabled
+
+;   Programmable Reload Timer (TCR)
+
+DEFC    TCR_TIF1       =        $80
+DEFC    TCR_TIF0       =        $40
+DEFC    TCR_TIE1       =        $20
+DEFC    TCR_TIE0       =        $10
+DEFC    TCR_TOC1       =        $08
+DEFC    TCR_TOC0       =        $04
+DEFC    TCR_TDE1       =        $02
+DEFC    TCR_TDE0       =        $01
 
 ;   CPU Clock Multiplier Reg (CMR) (Z8S180 & higher Only)
 
@@ -393,23 +408,25 @@ DEFC    DEL             =   $7F         ; Delete
 ;
 
 ;   Starting immediately after the Z180 Vector Table.
-DEFC    ASCI0RxInPtr    =   Z180_VECTOR_BASE+Z180_VECTOR_SIZE
+DEFC    basicStarted    =   Z180_VECTOR_BASE+Z180_VECTOR_SIZE
+DEFC    sysTimeFraction =   basicStarted+1      ; uint8_t
+DEFC    sysTime         =   sysTimeFraction+1   ; uint32_t
+
+DEFC    ASCI0RxInPtr    =   Z180_VECTOR_BASE+Z180_VECTOR_SIZE-(Z180_VECTOR_SIZE%$10)+$10
 DEFC    ASCI0RxOutPtr   =   ASCI0RxInPtr+2
 DEFC    ASCI0TxInPtr    =   ASCI0RxOutPtr+2
 DEFC    ASCI0TxOutPtr   =   ASCI0TxInPtr+2
 DEFC    ASCI0RxBufUsed  =   ASCI0TxOutPtr+2
 DEFC    ASCI0TxBufUsed  =   ASCI0RxBufUsed+1
 
-DEFC    basicStarted    =   ASCI0TxBufUsed+1
-
-DEFC    ASCI1RxInPtr    =   Z180_VECTOR_BASE+Z180_VECTOR_SIZE+$10
+DEFC    ASCI1RxInPtr    =   Z180_VECTOR_BASE+Z180_VECTOR_SIZE-(Z180_VECTOR_SIZE%$10)+$20
 DEFC    ASCI1RxOutPtr   =   ASCI1RxInPtr+2
 DEFC    ASCI1TxInPtr    =   ASCI1RxOutPtr+2
 DEFC    ASCI1TxOutPtr   =   ASCI1TxInPtr+2
 DEFC    ASCI1RxBufUsed  =   ASCI1TxOutPtr+2
 DEFC    ASCI1TxBufUsed  =   ASCI1RxBufUsed+1
 
-DEFC    APUCMDInPtr     =   Z180_VECTOR_BASE+Z180_VECTOR_SIZE+$20
+DEFC    APUCMDInPtr     =   Z180_VECTOR_BASE+Z180_VECTOR_SIZE-(Z180_VECTOR_SIZE%$10)+$30
 DEFC    APUCMDOutPtr    =   APUCMDInPtr+2
 DEFC    APUPTRInPtr     =   APUCMDOutPtr+2
 DEFC    APUPTROutPtr    =   APUPTRInPtr+2
@@ -418,7 +435,7 @@ DEFC    APUPTRBufUsed   =   APUCMDBufUsed+1
 DEFC    APUStatus       =   APUPTRBufUsed+1
 DEFC    APUError        =   APUStatus+1
 
-;   $nn60 -> $nnFF is slack memory.
+;   $nn90 -> $nnFF is slack memory.
 
 ;   I/O Buffers must start on 0xnn00 because we increment low byte to roll-over
 DEFC    BUFSTART_IO     =   Z80_VECTOR_BASE-(Z80_VECTOR_BASE%$100) + $100

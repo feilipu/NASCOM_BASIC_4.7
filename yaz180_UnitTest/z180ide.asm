@@ -182,9 +182,6 @@ _main:
 
     ;initialize the drive. If there is no drive, this may hang
     call ide_init
-    
-    ;cause the drive to spin up
-    call ide_spinup
 
     ;get the drive id info. If there is no drive, this may hang
     ld hl, IDEBuffer        ;put the data into this buffer
@@ -246,18 +243,20 @@ _main:
     call pnewline
 
     ;print the drive's LBA sector specs
+    ld hl, msg_sector
+    call pstr
     ld hl, IDEBuffer + 123  ;  Word 60, 61
     ld a, (hl)
-    dec hl
-    ld l, (hl)
-    ld h, a
-    call phex16
+    call phex
     dec hl
     ld a, (hl)
+    call phex
+    dec hl    
+    ld a, (hl)
+    call phex
     dec hl
-    ld l, (hl)
-    ld h, a
-    call phex16
+    ld a, (hl)
+    call phex
     call pnewline
     call pnewline
 
@@ -296,6 +295,7 @@ msg_rev:    DEFM    "Rev:       ",0
 msg_cy:     DEFM    "Cylinders: 0x",0
 msg_hd:     DEFM    "Heads:     0x",0
 msg_sc:     DEFM    "Sectors:   0x",0
+msg_sector: DEFM    "LBA Sectors: 0x", 0
 
 ;------------------------------------------------------------------------------
 ; Extra print routines during testing

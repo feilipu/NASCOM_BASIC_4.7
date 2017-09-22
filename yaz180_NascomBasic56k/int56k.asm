@@ -26,7 +26,7 @@ INCLUDE    "yaz180.h"
 ;
 
 ;------------------------------------------------------------------------------
-SECTION z180_asci0_interrupt
+SECTION z180_interrupt
 ASCI0_INTERRUPT:
         push af
         push hl
@@ -68,7 +68,7 @@ ASCI0_RX_CHECK:                     ; Z8S180 has 4 byte Rx H/W FIFO
 
 ASCI0_TX_CHECK:                     ; now start doing the Tx stuff
         and ASCI_TDRE               ; test whether we can transmit on ASCI0
-        jr z, ASCI0_TX_END          ; if not, then end
+        jr z, INTERRUPT_EXIT        ; if not, then end
 
         ld a, (ASCI0TxBufUsed)      ; get the number of bytes in the Tx buffer
         or a                        ; check whether it is zero
@@ -84,19 +84,43 @@ ASCI0_TX_CHECK:                     ; now start doing the Tx stuff
         ld hl, ASCI0TxBufUsed
         dec (hl)                    ; atomically decrement current Tx count
 
-        jr nz, ASCI0_TX_END         ; if we've more Tx bytes to send, we're done for now
+        jr nz, INTERRUPT_EXIT       ; if we've more Tx bytes to send, we're done for now
 
 ASCI0_TX_TIE0_CLEAR:
         in0 a, (STAT0)              ; get the ASCI0 status register
         and ~ASCI_TIE               ; mask out (disable) the Tx Interrupt
         out0 (STAT0), a             ; set the ASCI0 status register
 
-ASCI0_TX_END:
+INTERRUPT_EXIT:
         pop hl
         pop af
-
         ei
         ret
+
+PRT0_INTERRUPT:
+        push af
+        push hl
+
+        in0 a, (TCR)                ; to clear the PRT0 interrupt, read the TCR
+        in0 a, (TMDR0H)             ; followed by the TMDR0
+
+        ld hl, sysTimeFraction
+        inc (hl)
+        jr NZ, INTERRUPT_EXIT       ; at 0 we're at 1 second count, interrupted 256 times
+
+;       ld hl, sysTime              ; inc hl works, provided the storage is contiguous
+        inc hl
+        inc (hl)
+        jr NZ, INTERRUPT_EXIT
+        inc hl
+        inc (hl)
+        jr NZ, INTERRUPT_EXIT
+        inc hl
+        inc (hl)
+        jr NZ, INTERRUPT_EXIT
+        inc hl
+        inc (hl)
+        jr INTERRUPT_EXIT
 
 ;------------------------------------------------------------------------------
 SECTION z180_asci0
@@ -331,10 +355,13 @@ Z180_INIT:
             LD      A,ASCI_RIE      ; receive interrupt enabled
             OUT0    (STAT0),A       ; output to the ASCI0 status reg
 
-                                    ; Set up 82C55 PIO in Mode 0 #12
-            LD      BC,PIOCNTL      ; 82C55 CNTL address in bc
-            LD      A,PIOCNTL12     ; Set Mode 12 ->A, B->, ->CH, CL->
-            OUT     (C),A           ; output to the PIO control reg
+                                    ; we do 256 ticks per second
+            ld      hl, CPU_CLOCK/CPU_TIMER_SCALE/256-1
+            out0    (RLDR0L), l
+            out0    (RLDR0H), h
+                                    ; enable down counting and interrupts for PRT0
+            ld      a, TCR_TIE0|TCR_TDE0
+            out0    (TCR), a
 
             LD      SP,TEMPSTACK    ; Set up a temporary stack
 
@@ -393,6 +420,7 @@ WARMSTART:
 ;
 ; STRINGS
 ;
+
 SECTION         z180_init_strings
 
 SIGNON1:        DEFM    CR,LF
@@ -444,7 +472,7 @@ PUBLIC  INT_DMA0, INT_DMA1, INT_CSIO, INT_ASCI0, INT_ASCI1
 
 DEFC    INT_INT1    =   NULL_RET        ; external /INT1
 DEFC    INT_INT2    =   NULL_RET        ; external /INT2
-DEFC    INT_PRT0    =   NULL_RET        ; PRT channel 0
+DEFC    INT_PRT0    =   PRT0_INTERRUPT  ; PRT channel 0
 DEFC    INT_PRT1    =   NULL_RET        ; PRT channel 1
 DEFC    INT_DMA0    =   NULL_RET        ; DMA channel 0
 DEFC    INT_DMA1    =   NULL_RET        ; DMA Channel 1
