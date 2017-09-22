@@ -413,7 +413,7 @@ CHECKWARM:
             LD      A, LF
             RST     08H
 WARMSTART:
-            JP      $03AC           ; <<<< Start Basic WARM:
+            JP      $039C           ; <<<< Start Basic WARM:
 
 
 ;==============================================================================
