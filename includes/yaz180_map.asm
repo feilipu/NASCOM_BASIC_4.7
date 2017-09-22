@@ -33,16 +33,16 @@ SECTION     z180_interrupts
 ORG         0x00F0
 
 SECTION     z180_asci0
-ORG         0x0150
+ORG         -1
 
 SECTION     z180_asci0_print
 ORG         -1
 
 SECTION     z180_hexloadr
-ORG         0x01C0
+ORG         -1
 
 SECTION     z180_init
-ORG         0x0280
+ORG         -1
 
 SECTION     z180_init_strings
 ORG         -1

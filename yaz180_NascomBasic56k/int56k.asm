@@ -26,7 +26,7 @@ INCLUDE    "yaz180.h"
 ;
 
 ;------------------------------------------------------------------------------
-SECTION z180_interrupt
+SECTION z180_interrupts
 ASCI0_INTERRUPT:
         push af
         push hl
@@ -332,7 +332,7 @@ Z180_INIT:
             LD      A,$F0           ; Set Common 1 Area Physical $F8000 -> F0H (Top of SRAM)
             OUT0    (CBR),A
 
-            LD      A,$00           ; Set Bank Area Physical $04000 -> 00H (Bottom of SRAM)
+            LD      A,3CH           ; Set Bank Area Physical $40000 -> 3CH
             OUT0    (BBR),A
 
                                     ; load the default ASCI configuration
@@ -402,7 +402,7 @@ CORW:
 COLDSTART:
             LD      A,'Y'           ; Set the BASIC STARTED flag
             LD      (basicStarted),A
-            JP      $0390           ; <<<< Start Basic COLD:
+            JP      $0399           ; <<<< Start Basic COLD:
 
 CHECKWARM:
             CP      'W'
@@ -413,7 +413,7 @@ CHECKWARM:
             LD      A, LF
             RST     08H
 WARMSTART:
-            JP      $0393           ; <<<< Start Basic WARM:
+            JP      $03AC           ; <<<< Start Basic WARM:
 
 
 ;==============================================================================
