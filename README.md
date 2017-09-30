@@ -47,7 +47,7 @@ ACIA - feilipu
 
 Cold or Warm start (C|W) ? C
 
-Memory top? 
+Memory top?
 Z80 BASIC Ver 4.7b
 Copyright (C) 1978 by Microsoft
 56483 Bytes free
@@ -114,7 +114,7 @@ YAZ180 - feilipu
 
 Cold or Warm start, or Hexloadr (C|W|H) ? C
 
-Memory top? 
+Memory top?
 Z80 BASIC Ver 4.7b
 Copyright (C) 1978 by Microsoft
 32451 Bytes free
@@ -142,7 +142,7 @@ There are are several stages to this process.
 3. Once the final line of the HEX code is read, the HexLoadr will return to Nascom Basic.
 4. The newly loaded program starting address must be loaded into the `USR(x)` jump location.
 5. Start the new arbitrary program by entering `USR(x)`.
-    
+
 # Important Addresses
 
 There are a number of important Z180 addresses or origins that need to be managed within your assembly program.
@@ -153,7 +153,7 @@ Your program (the one that you're doing all this for) needs to start in RAM loca
 
 If you're using the RC2014 or YAZ180 with 32kB Nascom Basic, then all of the RAM between `0x3000` and `0x7FFF` is available for your assembly programs, without limitation. In the YAZ180 the area between `0x2000` and `0x2FFF` is reserved for system calls, buffers, and stack space. For the RC2014 the area from `0x8000` is reserved for these uses.
 
-In the YAZ180, the area from `0x4000` to `0x7FFF` is the Banked memory area, and this RAM can be managed by the HexLoadr program to write to all of the physical RAM space using ESA Records.
+In the YAZ180 32kB Basic, the area from `0x4000` to `0x7FFF` is the Banked memory area, and this RAM can be managed by the HexLoadr program to write to all of the physical RAM space using ESA Records.
 
 HexLoadr supports the Extended Segment Address Record Type, and will store the MSB of the ESA in the Z180 BBR Register. The LSB of the ESA is silently abandoned. When HexLoadr terminates the BBR is returned to the original value.
 
@@ -169,9 +169,9 @@ By writing the address of your function into the `RST` jump table locations prov
 
 Note the vector locations provided require only an address to be inserted. The `JP` instruction is already provided. For example, you can attach an `INT0` interrupt service routine by assigning its origin address `INT_INT0    .EQU     NULL_INT` or `INT_INT0    .EQU    serialInt`. Follow the example specifications provided in [`rc2014.asm`](https://github.com/feilipu/NASCOM_BASIC_4.7/blob/master/includes/rc2014.h#L57) or [`yaz180.h`](https://github.com/feilipu/NASCOM_BASIC_4.7/blob/master/includes/yaz180.h#L60) for further details.
 
-## USR Jump Address & Parameter Access 
+## USR Jump Address & Parameter Access
 
-For the RC2014 with 32k Basic the location for `USR(x)` is `0x8224`. For the YAZ180 with 32k Basic the `USR(x)` jump address is located at `0x8004`. For the YAZ180 with 56k Basic the `USR(x)` jump address is located at `0x2704`. For example, if your arbitrary program is located at `0x3000` then the 32k Basic command to set the `USR(x)` jump address is `DOKE &h8224, &h3000`.
+For the RC2014 with 32k Basic the location for `USR(x)` is `0x8224`. For the YAZ180 with 32k Basic the `USR(x)` jump address is located at `0x8004`. For the YAZ180 with 56k Basic the `USR(x)` jump address is located at `0x2704`. For example, if your arbitrary program is located at `0x2900` then the 32k Basic command to set the `USR(x)` jump address is `DOKE &h8224, &h2900`.
 
 Your assembly program can receive a 16 bit parameter passed in from the function by calling `DEINT` at `0x0C47`. The parameter is stored in register pair `DE`.
 
@@ -182,11 +182,11 @@ When your assembly program is finished it can return a 16 bit parameter stored i
 DEINT           .EQU    $0C47   ; Function DEINT to get USR(x) into DE registers
 ABPASS          .EQU    $13BD   ; Function ABPASS to put output into AB register for return
 
-                .ORG    3000H   ; your code origin, for example
+                .ORG    2900H   ; your code origin, for example
                 CALL DEINT      ; get the USR(x) argument in DE
-                 
+
                                 ; your code here
-                                
+
                 JP ABPASS       ; return the 16 bit value to USR(x). Note JP not CALL
 ```
 The `YAZ180_LABELS.TXT` file is provided to advise of all the relevant RAM and ROM locations.
@@ -199,7 +199,7 @@ The `YAZ180_LABELS.TXT` file is provided to advise of all the relevant RAM and R
 
 3. Using a serial terminal, upload the HEX file for your arbitrary program that you prepared in Step 1. If desired the python `slowprint.py` program, or the Linux `cat` utility, can also be used for this purpose. `python slowprint.py > /dev/ttyUSB0 < myprogram.hex` or `cat > /dev/ttyUSB0 < myprogram.hex`.
 
-4. When HexLoadr has finished, and you are back at the Basic `ok` prompt, use the `DOKE` command relocate the address for the Basic `USR(x)` command to point to `.ORG` of your arbitrary program. For the YAZ180 the `USR(x)` jump address is located at `0x8224` (RC2014 32k), `0x8004` (YAZ180 32k), or `0x2704` (YAZ180 56k). If your arbitrary program is located at `0x3000` then the Basic command is `DOKE &h8224, &h3000`, for example.
+4. When HexLoadr has finished, and you are back at the Basic `ok` prompt, use the `DOKE` command relocate the address for the Basic `USR(x)` command to point to `.ORG` of your arbitrary program. For the YAZ180 the `USR(x)` jump address is located at `0x8224` (RC2014 32k), `0x8004` (YAZ180 32k), or `0x2704` (YAZ180 56k). If your arbitrary program is located at `0x2900` then the Basic command is `DOKE &h2704, &h2900`, for example.
 
 5. Start your arbitrary program by typing `PRINT USR(0)`, or other variant if you have a parameter to pass to your program.
 
