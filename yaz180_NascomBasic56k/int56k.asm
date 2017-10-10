@@ -321,18 +321,17 @@ PUBLIC      Z180_INIT
 
 Z180_INIT:
                                     ; Set Logical RAM Addresses
-                                    ; $8000-$FFFF RAM CA1 -> 80H
-                                    ; $4000-$7FFF RAM BANK -> 04H
-                                    ; $2000-$3FFF RAM CA0
-                                    ; $0000-$1FFF Flash CA0
-                                    
-            LD      A,$84           ; Set New Common / Bank Areas for RAM
+                                    ; $4000-$FFFF RAM   CA1 -> $4n
+                                    ; $2000-$3FFF RAM   BANK
+                                    ; $0000-$1FFF Flash BANK -> $n0
+
+            LD      A,$40           ; Set New Common 1 / Bank Areas for RAM
             OUT0    (CBAR),A
 
-            LD      A,$F0           ; Set Common 1 Area Physical $F8000 -> F0H (Top of SRAM)
+            LD      A,$10           ; Set Common 1 Base Physical $14000 -> $10
             OUT0    (CBR),A
 
-            LD      A,3CH           ; Set Bank Area Physical $40000 -> 3CH
+            LD      A,$00           ; Set Bank Base Physical $00000 -> $00
             OUT0    (BBR),A
 
                                     ; load the default ASCI configuration
