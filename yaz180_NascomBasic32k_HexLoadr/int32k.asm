@@ -320,14 +320,14 @@ SECTION     z180_init
 PUBLIC      Z180_INIT
 
 Z180_INIT:
-                                    ; $4000-$FFFF RAM   CA1 -> $4n
-                                    ; $2000-$3FFF RAM   BANK
+                                    ; Set Logical RAM Addresses
+                                    ; $2000-$FFFF RAM   CA1 -> $2n
                                     ; $0000-$1FFF Flash BANK -> $n0
 
-            LD      A,$40           ; Set New Common 1 / Bank Areas for RAM
+            LD      A,$20           ; Set New Common 1 / Bank Areas for RAM
             OUT0    (CBAR),A
 
-            LD      A,$10           ; Set Common 1 Base Physical $14000 -> $10
+            LD      A,$10           ; Set Common 1 Base Physical $12000 -> $10
             OUT0    (CBR),A
 
             LD      A,$00           ; Set Bank Base Physical $00000 -> $00
