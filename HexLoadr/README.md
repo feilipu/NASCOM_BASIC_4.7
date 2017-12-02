@@ -70,7 +70,7 @@ For convenience, because we can't easily change ROM code interrupt routines alre
 
 If you are using the version integrated into the NASCOM Basic, you can start at Item 6 above, by loading your program where you choose. But, don't forget you still need to follow the rest of the steps to set the jump location for the `USR(x)` command.
 
-For the RC2014 the `USR(x)` jump address is located at `&h8124`. If your program is located at `&hA000` then the command is `doke &h8124, &hA000`
+For the RC2014 32kB the `USR(x)` jump address is located at `&h8224`. If your program is located at `&hA000` then the command is `doke &h8224, &hA000`
 
 For the YAZ180 the `USR(x)` jump address is located at `&h8004`.
 
