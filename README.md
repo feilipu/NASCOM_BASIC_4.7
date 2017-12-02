@@ -44,6 +44,7 @@ and `NMI` JumP Table is provided.
 ```bash
 SBC - Grant Searle
 ACIA - feilipu
+z88dk
 
 Cold or Warm start (C|W) ? C
 
@@ -54,6 +55,8 @@ Copyright (C) 1978 by Microsoft
 
 Ok
 ```
+This ROM provides both Intel HexLoadr functions and a `RST`, `INT0`, and `NMI` JumP Table.
+This allows you to upload Assembly or compiled C programs, and then run them as described below.
 
 
 # 32k Basic with integrated HexLoadr
@@ -64,6 +67,7 @@ This is the ROM to choose if you want fast I/O from a standard RC2014.
 ```bash
 SBC - Grant Searle
 ACIA - feilipu
+z88dk
 
 Cold or Warm start, or HexLoadr (C|W|H) ? C
 
@@ -78,7 +82,7 @@ Ok
 It can be used to simply provide accelerated I/O over the standard ROM, and it provides Basic programming space from `0x8000` RAM address.
 
 Also, this ROM provides both Intel HexLoadr functions and a `RST`, `INT0`, and `NMI` JumP Table.
-This allows you to upload Assembly or compiled C programs, and then run them as described below. 
+This allows you to upload Assembly or compiled C programs, and then run them as described below.
 
 ==============================================================================
 
@@ -199,7 +203,7 @@ The `YAZ180_LABELS.TXT` file is provided to advise of all the relevant RAM and R
 
 3. Using a serial terminal, upload the HEX file for your arbitrary program that you prepared in Step 1. If desired the python `slowprint.py` program, or the Linux `cat` utility, can also be used for this purpose. `python slowprint.py > /dev/ttyUSB0 < myprogram.hex` or `cat > /dev/ttyUSB0 < myprogram.hex`.
 
-4. When HexLoadr has finished, and you are back at the Basic `ok` prompt, use the `DOKE` command relocate the address for the Basic `USR(x)` command to point to `.ORG` of your arbitrary program. For the YAZ180 the `USR(x)` jump address is located at `0x8224` (RC2014 32k), `0x8004` (YAZ180 32k), or `0x2704` (YAZ180 56k). If your arbitrary program is located at `0x2900` then the Basic command is `DOKE &h2704, &h2900`, for example.
+4. When HexLoadr has finished, and you are back at the Basic `ok` prompt, use the `DOKE` command relocate the address for the Basic `USR(x)` command to point to `.ORG` of your arbitrary program. For the YAZ180 the `USR(x)` jump address is located at `0x8224` (RC2014 32k),`0x2224` (RC2014 56k), `0x8004` (YAZ180 32k), or `0x2704` (YAZ180 56k). If your arbitrary program is located at `0x2900` then the Basic command is `DOKE &h2704, &h2900`, for example.
 
 5. Start your arbitrary program by typing `PRINT USR(0)`, or other variant if you have a parameter to pass to your program.
 
