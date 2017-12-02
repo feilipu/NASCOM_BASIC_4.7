@@ -38,8 +38,8 @@ Two versions of initialisation routines for NASCOM Basic are provided.
 Provides the maximum Basic program space, and requires a 64k/56k RAM module.
 The 56k version utilises the full 56k RAM memory space of the RC2014, starting at `0x2000`.
 
-No non-Basic programming features are provided, however a `RST`, `INT0`,
-and `NMI` JumP Table is provided.
+This ROM provides both Intel HexLoadr functions and a `RST`, `INT0`, and `NMI` JumP Table.
+This allows you to upload Assembly or compiled C programs, and then run them as described below.
 
 ```bash
 SBC - Grant Searle
@@ -55,8 +55,6 @@ Copyright (C) 1978 by Microsoft
 
 Ok
 ```
-This ROM provides both Intel HexLoadr functions and a `RST`, `INT0`, and `NMI` JumP Table.
-This allows you to upload Assembly or compiled C programs, and then run them as described below.
 
 
 # 32k Basic with integrated HexLoadr
