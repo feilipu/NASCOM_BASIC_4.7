@@ -185,7 +185,12 @@ txa_buffer_out:
         jr NC, txa_buffer_out       ; buffer full, so wait till it has space
 
         ld a, l                     ; Retrieve Tx character
+
+        ld hl, serTxBufUsed
+        di
+        inc (hl)                    ; atomic increment of Tx count
         ld hl, (serTxInPtr)         ; get the pointer to where we poke
+        ei
         ld (hl), a                  ; write the Tx byte to the serTxInPtr
 
         inc l                       ; move the Tx pointer, just low byte along
@@ -193,9 +198,6 @@ txa_buffer_out:
         and l                       ; range check
         ld l, a                     ; return the low byte to l
         ld (serTxInPtr), hl         ; write where the next byte should be poked
-
-        ld hl, serTxBufUsed
-        inc (hl)                    ; atomic increment of Tx count
 
         pop hl                      ; recover HL
 
