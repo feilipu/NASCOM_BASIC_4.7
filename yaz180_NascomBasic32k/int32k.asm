@@ -174,14 +174,16 @@ TX0_BUFFER_OUT:
         jr nc, TX0_BUFFER_OUT       ; buffer full, so wait for free buffer for Tx
 
         ld a, l                     ; retrieve Tx character
+
+        ld hl, ASCI0TxBufUsed
+        di
+        inc (hl)                    ; atomic increment of Tx count
         ld hl, (ASCI0TxInPtr)       ; get the pointer to where we poke
+        ei
         ld (hl), a                  ; write the Tx byte to the ASCI0TxInPtr   
 
         inc l                       ; move the Tx pointer low byte along, 0xFF rollover
         ld (ASCI0TxInPtr), hl       ; write where the next byte should be poked
-
-        ld hl, ASCI0TxBufUsed
-        inc (hl)                    ; atomic increment of Tx count
 
         pop hl                      ; recover HL
 
@@ -320,6 +322,27 @@ SECTION     z180_init
 PUBLIC      Z180_INIT
 
 Z180_INIT:
+            XOR     A               ; Zero Accumulator
+
+                                    ; Clear Refresh Control Reg (RCR)
+            OUT0    (RCR),A         ; DRAM Refresh Enable (0 Disabled)
+
+                                    ; Clear INT/TRAP Control Register (ITC)             
+            OUT0    (ITC),A         ; Disable all external interrupts.             
+
+                                    ; Set Operation Mode Control Reg (OMCR)
+            LD      A,OMCR_M1E      ; Enable M1 for single step, disable 64180 I/O _RD Mode
+            OUT0    (OMCR),A        ; X80 Mode (M1 Disabled, IOC Disabled)
+
+                                    ; Set internal clock = crystal x 2 = 36.864MHz
+                                    ; if using ZS8180 or Z80182 at High-Speed
+            LD      A,CMR_X2        ; Set Hi-Speed flag
+            OUT0    (CMR),A         ; CPU Clock Multiplier Reg (CMR)
+
+                                    ; DMA/Wait Control Reg Set I/O Wait States
+            LD      A,DCNTL_IWI0
+            OUT0    (DCNTL),A       ; 0 Memory Wait & 2 I/O Wait
+
                                     ; Set Logical RAM Addresses
                                     ; $2000-$FFFF RAM   CA1 -> $2n
                                     ; $0000-$1FFF Flash BANK -> $n0
