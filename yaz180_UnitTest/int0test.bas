@@ -1,1 +1,0 @@
-10 print hex$(peek(&h3800));" "; hex$(peek(&h3801)) 20 print hex$(peek(&h3802));" "; hex$(peek(&h3803))
