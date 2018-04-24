@@ -82,6 +82,7 @@ im1_tx_check:                       ; now start doing the Tx stuff
         inc l                       ; move the Tx pointer, just low byte, along
         ld a, SER_TX_BUFSIZE-1      ; load the buffer size, (n^2)-1
         and l                       ; range check
+        or serTxBuf&0xFF            ; locate base
         ld l, a                     ; return the low byte to l
         ld (serTxOutPtr), hl        ; write where the next byte should be popped
 
@@ -191,6 +192,7 @@ txa_buffer_out:
         inc l                       ; move the Tx pointer, just low byte along
         ld a, SER_TX_BUFSIZE-1      ; load the buffer size, (n^2)-1
         and l                       ; range check
+        or serTxBuf&0xFF            ; locate base
         ld l, a                     ; return the low byte to l
         ld (serTxInPtr), hl         ; write where the next byte should be poked
 
