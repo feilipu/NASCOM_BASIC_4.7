@@ -33,9 +33,9 @@ Receive buffer overflows are silently discarded.
 
 Two versions of initialisation routines for NASCOM Basic are provided.
 
-# 56k Basic
+# 56k Basic with integrated HexLoadr
 
-Provides the maximum Basic program space, and requires a 64k/56k RAM module.
+This version requires a 64k/56k RAM module.
 The 56k version utilises the full 56k RAM memory space of the RC2014, starting at `0x2000`.
 
 This ROM provides both Intel HexLoadr functions and a `RST`, `INT0`, and `NMI` JumP Table.
@@ -133,18 +133,6 @@ Transmit function busy waits when buffer is full. No Tx characters lost.
 
 https://feilipu.me/2016/05/23/another-z80-project/
 
-# HexLoadr extension
-
-The goal of this extension to the standard RC2014 and YAZ180 boot sequence is to load an arbitrary program in Intel HEX format into an arbitrary location in the Z180 address space, and allow you to start the program from Nascom Basic.
-
-There are are several stages to this process.
-
-1. Reset the YAZ180, and select the HexLoadr `H` from the `(C|W|H)` options.
-2. Then the HexLoadr program will initiate and look for your program's Intel HEX formatted information on the serial interface.
-3. Once the final line of the HEX code is read, the HexLoadr will return to Nascom Basic.
-4. The newly loaded program starting address must be loaded into the `USR(x)` jump location.
-5. Start the new arbitrary program by entering `USR(x)`.
-
 # Important Addresses
 
 There are a number of important Z180 addresses or origins that need to be managed within your assembly program.
@@ -173,7 +161,7 @@ Note the vector locations provided require only an address to be inserted. The `
 
 ## USR Jump Address & Parameter Access
 
-For the RC2014 with 32k Basic the location for `USR(x)` is `0x8224`. For the YAZ180 with 32k Basic the `USR(x)` jump address is located at `0x8004`. For the YAZ180 with 56k Basic the `USR(x)` jump address is located at `0x2704`. For example, if your arbitrary program is located at `0x2900` then the 32k Basic command to set the `USR(x)` jump address is `DOKE &h8224, &h2900`.
+For the RC2014 with 32k Basic the location for `USR(x)` is `0x8224`, and with 56k Basic the location for `USR(x)` is `0x2224`. For the YAZ180 with 32k Basic the `USR(x)` jump address is located at `0x8004`. For the YAZ180 with 56k Basic the `USR(x)` jump address is located at `0x2704`. For example, if your arbitrary program is located at `0x2900` then the RC2014 32k Basic command to set the `USR(x)` jump address is `DOKE &h8224, &h2900`.
 
 Your assembly program can receive a 16 bit parameter passed in from the function by calling `DEINT` at `0x0C47`. The parameter is stored in register pair `DE`.
 
