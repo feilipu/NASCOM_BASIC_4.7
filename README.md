@@ -82,6 +82,12 @@ It can be used to simply provide accelerated I/O over the standard ROM, and it p
 Also, this ROM provides both Intel HexLoadr functions and a `RST`, `INT0`, and `NMI` JumP Table.
 This allows you to upload Assembly or compiled C programs, and then run them as described below.
 
+
+# 32k Basic with integrated HexLoadr using LUT Multiply Module
+
+This ROM works with the most basic default version of the RC2014, with 32k of RAM.
+This is the ROM to choose if you want fast I/O from a standard RC2014, and you have installed a LUT (Multiply) module.
+
 ==============================================================================
 
 # YAZ180

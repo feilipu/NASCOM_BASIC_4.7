@@ -126,10 +126,10 @@ MO      .EQU    24H             ; Missing operand
 HX      .EQU    26H             ; HEX error
 BN      .EQU    28H             ; BIN error
 
-        .ORG    0390H           ; <<<< Modified to allow for Z80 Tx/Rx interrupt & HexLoadr
+        .ORG    0340H           ; <<<< Modified to allow for Z80 Tx/Rx interrupt & HexLoadr
 
-COLD:   JP      STARTB          ; Jump in for cold start (0390H)
-WARM:   JP      WARMST          ; Jump in for warm start (0393H)
+COLD:   JP      STARTB          ; Jump in for cold start (0340H)
+WARM:   JP      WARMST          ; Jump in for warm start (0343H)
 STARTB: 
         LD      IX,0            ; Flag cold start
         JP      CSTART          ; Jump to initialise
@@ -427,7 +427,7 @@ PRITAB: .BYTE   79H             ; Precedence value
         .WORD   PSUB            ; FPREG = <last> - FPREG
 
         .BYTE   7CH             ; Precedence value
-        .WORD   MULT            ; PPREG = <last> * FPREG
+        .WORD   MULT            ; FPREG = <last> * FPREG
 
         .BYTE   7CH             ; Precedence value
         .WORD   DIV             ; FPREG = <last> / FPREG
@@ -3452,12 +3452,8 @@ STAKFP: EX      DE,HL           ; Save code string address
         RET
 
 PHLTFP: CALL    LOADFP          ; Number at HL to BCDE
-FPBCDE: EX      DE,HL           ; Save code string address
-        LD      (FPREG),HL      ; Save LSB,NLSB of number
-        LD      H,B             ; Exponent of number
-        LD      L,C             ; MSB of number
-        LD      (FPREG+2),HL    ; Save MSB and exponent
-        EX      DE,HL           ; Restore code string address
+FPBCDE: LD      (FPREG),DE      ; Save LSB,NLSB of number
+        LD      (FPREG+2),BC    ; Save MSB and exponent
         RET
 
 BCDEFP: LD      HL,FPREG        ; Point to FPREG

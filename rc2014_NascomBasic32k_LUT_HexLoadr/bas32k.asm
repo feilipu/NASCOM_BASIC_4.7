@@ -37,7 +37,7 @@ DEL     .EQU    7FH             ; Delete
 
 ; BASIC WORK SPACE LOCATIONS
 
-WRKSPC  .EQU    2220H           ; <<<< BASIC Work space ** Rx buffer & Tx buffer located from 2100H **
+WRKSPC  .EQU    8220H           ; <<<< BASIC Work space ** Rx buffer & Tx buffer located from 8100H **
 USR     .EQU    WRKSPC+3H       ; "USR (x)" jump
 OUTSUB  .EQU    WRKSPC+6H       ; "OUT p,n"
 OTPORT  .EQU    WRKSPC+7H       ; Port (p)
@@ -2802,6 +2802,7 @@ GSTRDE: CALL    BAKTMP          ; Was it last tmp-str?
         LD      B,A             ; Clear B (A=0)
         ADD     HL,BC           ; Remove string from str' area
         LD      (STRBOT),HL     ; Save new bottom of str' area
+POPHRT:
 POPHL:  POP     HL              ; Restore string
         RET
 
@@ -3239,57 +3240,139 @@ FPMULT: CALL    TSTSGN          ; Test sign of FPREG
         LD      L,0             ; Flag add exponents
         CALL    ADDEXP          ; Add exponents
         LD      A,C             ; Get MSB of multiplier
-        LD      (MULVAL),A      ; Save MSB of multiplier
-        EX      DE,HL
-        LD      (MULVAL+1),HL   ; Save rest of multiplier
-        LD      BC,0            ; Partial product (BCDE) = zero
-        LD      D,B
-        LD      E,B
-        LD      HL,BNORM        ; Address of normalise
-        PUSH    HL              ; Save for return
-        LD      HL,MULT8        ; Address of 8 bit multiply
-        PUSH    HL              ; Save for NMSB,MSB
-        PUSH    HL              ; 
-        LD      HL,FPREG        ; Point to number
-MULT8:  LD      A,(HL)          ; Get LSB of number
-        INC     HL              ; Point to NMSB
-        OR      A               ; Test LSB
-        JP      Z,BYTSFT        ; Zero - shift to next byte
-        PUSH    HL              ; Save address of number
-        LD      L,8             ; 8 bits to multiply by
-MUL8LP: RRA                     ; Shift LSB right
-        LD      H,A             ; Save LSB
-        LD      A,C             ; Get MSB
-        JP      NC,NOMADD       ; Bit was zero - Don't add
-        PUSH    HL              ; Save LSB and count
-        LD      HL,(MULVAL+1)   ; Get LSB and NMSB
-        ADD     HL,DE           ; Add NMSB and LSB
-        EX      DE,HL           ; Leave sum in DE
-        POP     HL              ; Restore MSB and count
-        LD      A,(MULVAL)      ; Get MSB of multiplier
-        ADC     A,C             ; Add MSB
-NOMADD: RRA                     ; Shift MSB right
-        LD      C,A             ; Re-save MSB
-        LD      A,D             ; Get NMSB
-        RRA                     ; Shift NMSB right
-        LD      D,A             ; Re-save NMSB
-        LD      A,E             ; Get LSB
-        RRA                     ; Shift LSB right
-        LD      E,A             ; Re-save LSB
-        LD      A,B             ; Get VLSB
-        RRA                     ; Shift VLSB right
-        LD      B,A             ; Re-save VLSB
-        DEC     L               ; Count bits multiplied
-        LD      A,H             ; Get LSB of multiplier
-        JP      NZ,MUL8LP       ; More - Do it
-POPHRT: POP     HL              ; Restore address of number
-        RET
+        LD      (MULVAL+2),A    ; Save MSB of multiplier
+        LD      (MULVAL),DE     ; Save rest of multiplier
 
-BYTSFT: LD      B,E             ; Shift partial product left
-        LD      E,D
-        LD      D,C
-        LD      C,A
-        RET
+; abc * def
+; = (a*d)*2^32 +
+;   (a*e + b*d)*2^24 +
+;   (b*e + a*f + c*d)*2^16 +
+;   (b*f + c*e)*2^8
+
+        ld      b,e             ; c preparation
+;       ld      a,(MULVAL+1)    ; b is already in d
+;       ld      d,a
+        ld      a,(FPREG)       ; f
+        ld      c,040h          ; LUT Base
+        out     (c),a           ; b*f 2^8
+        in      e,(c)           ; LSB
+        inc     c
+        in      d,(c)           ; MSB
+        
+        ex      de,hl
+
+;       ld      a,(MULVAL)      ; c is already in d
+        ld      b,d
+        ld      a,(FPREG+1)     ; e
+        dec     c               ; LUT Base
+        out     (c),a           ; c*e 2^8
+        in      e,(c)           ; LSB
+        inc     c
+        in      d,(c)           ; MSB
+
+        xor     a
+        add     hl,de
+        adc     a,a
+
+        ld      l,h             ; put 2^8 in hl
+        ld      h,a
+
+        ld      a,(MULVAL)      ; c
+        ld      b,a
+        ld      a,(FPREG+2)     ; d
+        dec     c               ; LUT Base
+        out     (c),a           ; c*d 2^16
+        in      e,(c)           ; LSB
+        inc     c
+        in      d,(c)           ; MSB
+        
+        xor     a
+        add     hl,de
+        adc     a,a
+        ex      af,af'
+
+        ld      a,(MULVAL+2)    ; a
+        ld      b,a
+        ld      a,(FPREG)       ; f
+        dec     c               ; LUT Base
+        out     (c),a           ; a*f 2^16
+        in      e,(c)           ; LSB
+        inc     c
+        in      d,(c)           ; MSB
+
+        ex      af,af'
+        add     hl,de
+        adc     a,0
+        ex      af,af'
+
+        ld      a,(MULVAL+1)    ; b
+        ld      b,a
+        ld      a,(FPREG+1)     ; e
+        dec     c               ; LUT Base
+        out     (c),a           ; b*e 2^16
+        in      e,(c)           ; LSB
+        inc     c
+        in      d,(c)           ; MSB
+
+        ex      af,af'
+        add     hl,de
+        adc     a,0
+
+        ld      b,l
+        push    bc              ; VLSB on stack in b
+
+        ld      l,h             ; put 2^16 in hlb
+        ld      h,a
+
+        ld      a,(MULVAL+1)    ; b
+        ld      b,a
+        ld      a,(FPREG+2)     ; d
+        dec     c               ; LUT Base
+        out     (c),a           ; b*d 2^24
+        in      e,(c)           ; LSB
+        inc     c
+        in      d,(c)           ; MSB
+
+        xor     a
+        add     hl,de
+        adc     a,a
+        ex      af,af'
+
+        ld      a,(MULVAL+2)    ; a
+        ld      b,a
+        ld      a,(FPREG+1)     ; e
+        dec     c               ; LUT Base
+        out     (c),a           ; a*e 2^24
+        in      e,(c)           ; LSB
+        inc     c
+        in      d,(c)           ; MSB
+
+        ex      af,af'
+        add     hl,de
+        adc     a,0
+
+        pop     bc              ; VLSB in b
+        ld      c,l             ; LSB in c
+        push    bc              ; preserve VLSB,LSB
+
+        ld      l,h             ; put 2^24 in hlcb
+        ld      h,a
+
+        ld      a,(MULVAL+2)    ; a
+        ld      b,a
+        ld      a,(FPREG+2)     ; d
+        ld      c,040h          ; LUT Base
+        out     (c),a           ; a*d 2^32
+        in      e,(c)           ; LSB
+        inc     c
+        in      d,(c)           ; MSB
+
+        add     hl,de           ; MSB,NMSB
+        pop     bc              ; VLSB,LSB
+        ld      e,c
+        ld      d,l
+        ld      c,h             ; CDEB  = 32-bit product
+        jp      BNORM           ; Normalise
 
 DIV10:  CALL    STAKFP          ; Save FPREG on stack
         LD      BC,8420H        ; BCDE = 10.

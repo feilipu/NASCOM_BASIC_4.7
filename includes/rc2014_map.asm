@@ -42,9 +42,9 @@ SECTION     z80_hexloadr
 ORG         0x0190
 
 SECTION     z80_init
-ORG         0x0240
+ORG         0x0220
 
 SECTION     z80_init_strings
-ORG         0x02D0
+ORG         0x02A0
 
 ;==============================================================================

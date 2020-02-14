@@ -144,7 +144,7 @@ RXA:
 rxa_clean_up:
         push hl                     ; store HL so we don't clobber it
 
-        ld hl,serRxBufUsed
+        ld hl, serRxBufUsed
         di
         dec (hl)                    ; atomically decrement Rx count
         ld hl, (serRxOutPtr)        ; get the pointer to place where we pop the Rx byte
@@ -301,7 +301,7 @@ HEX_READ_NIBBLE:
         ret
 
 ;------------------------------------------------------------------------------
-SECTION        z80_init             ; ORG $0240
+SECTION        z80_init             ; ORG $0220
 
 PUBLIC  INIT
 
@@ -363,7 +363,7 @@ CORW:
 COLDSTART:
         LD A,'Y'                    ; Set the BASIC STARTED flag
         LD (basicStarted),A
-        JP $0390                    ; <<<< Start Basic COLD:
+        JP $0340                    ; <<<< Start Basic COLD:
 CHECKWARM:
         CP 'W'
         JR NZ, CORW
@@ -373,13 +373,13 @@ CHECKWARM:
         LD A,LF
         RST 08H
 WARMSTART:
-        JP $0393                    ; <<<< Start Basic WARM:
+        JP $0343                    ; <<<< Start Basic WARM:
 
 ;==============================================================================
 ;
 ; STRINGS
 ;
-SECTION         z80_init_strings    ; ORG $02D0
+SECTION         z80_init_strings    ; ORG $02A0
 
 SIGNON1:        DEFM    CR,LF
                 DEFM    "SBC - Grant Searle",CR,LF

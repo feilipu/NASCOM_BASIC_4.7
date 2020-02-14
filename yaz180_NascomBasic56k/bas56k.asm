@@ -427,7 +427,7 @@ PRITAB: .BYTE   79H             ; Precedence value
         .WORD   PSUB            ; FPREG = <last> - FPREG
 
         .BYTE   7CH             ; Precedence value
-        .WORD   MULT            ; PPREG = <last> * FPREG
+        .WORD   MULT            ; FPREG = <last> * FPREG
 
         .BYTE   7CH             ; Precedence value
         .WORD   DIV             ; FPREG = <last> / FPREG
