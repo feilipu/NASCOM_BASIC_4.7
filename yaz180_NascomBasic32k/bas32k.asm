@@ -3987,10 +3987,10 @@ RND1:   CALL    BCDEFP          ; Move FPREG to BCDE
         LD      E,C             ; LSB = MSB
         XOR     01001111B       ; Fiddle around
         LD      C,A             ; New MSB
-        LD      (HL),80H        ; Set exponent
-        DEC     HL              ; Point to MSB
-        LD      B,(HL)          ; Get MSB
-        LD      (HL),80H        ; Make value -0.5
+        LD      (HL),80H        ; Set saved signed bit to positive
+        DEC     HL              ; Point to Exponent
+        LD      B,(HL)          ; Get Exponent to BCDE
+        LD      (HL),80H        ; Makes Exponent 1
         LD      HL,SEED         ; Random number seed
         INC     (HL)            ; Count seed
         LD      A,(HL)          ; Get seed
