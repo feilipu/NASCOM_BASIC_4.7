@@ -4,12 +4,7 @@
 ; You have permission to use this for NON COMMERCIAL USE ONLY
 ; If you wish to use it elsewhere, please include an acknowledgement to myself.
 ;
-; http://searle.hostei.com/grant/index.html
-;
-; eMail: home.micros01@btinternet.com
-;
-; If the above don't work, please perform an Internet search to see if I have
-; updated the web page hosting service.
+; http://searle.wales/
 ;
 ;==================================================================================
 
@@ -28,7 +23,7 @@ LF      .EQU    0AH             ; Line feed
 CS      .EQU    0CH             ; Clear screen
 CR      .EQU    0DH             ; Carriage return
 CTRLO   .EQU    0FH             ; Control "O"
-CTRLQ	.EQU	11H             ; Control "Q"
+CTRLQ   .EQU    11H             ; Control "Q"
 CTRLR   .EQU    12H             ; Control "R"
 CTRLS   .EQU    13H             ; Control "S"
 CTRLU   .EQU    15H             ; Control "U"
@@ -61,7 +56,7 @@ CHKSUM  .EQU    WRKSPC+4AH      ; Array load/save check sum
 NMIFLG  .EQU    WRKSPC+4CH      ; Flag for NMI break routine
 BRKFLG  .EQU    WRKSPC+4DH      ; Break flag
 RINPUT  .EQU    WRKSPC+4EH      ; Input reflection
-POINT   .EQU    WRKSPC+51H      ; "POINT" reflection (unused)
+POINT   .EQU    WRKSPC+51H      ; "POINT" reflection
 PSET    .EQU    WRKSPC+54H      ; "SET"   reflection
 RESET   .EQU    WRKSPC+57H      ; "RESET" reflection
 STRSPC  .EQU    WRKSPC+5AH      ; Bottom of string space
@@ -140,7 +135,8 @@ STARTB:
 
 CSTART: LD      HL,WRKSPC       ; Start of workspace RAM
         LD      SP,HL           ; Set up a temporary stack
-        JP      INITST          ; Go to initialise
+        XOR     A               ; Clear break flag
+        LD      (BRKFLG),A
 
 INIT:   LD      DE,INITAB       ; Initialise workspace
         LD      B,INITBE-INITAB+3; Bytes to copy
@@ -504,9 +500,9 @@ INITAB: JP      WARMST          ; Warm start jump
         .BYTE   0               ; Break not by NMI
         .BYTE   0               ; Break flag
         JP      TTYLIN          ; Input reflection (set to TTY)
-        JP      $0000           ; POINT reflection unused
+        JP      $0000           ; POINT reflection
         JP      $0000           ; SET reflection
-        JP      $0000          	; RESET reflection
+        JP      $0000           ; RESET reflection
         .WORD   STLOOK          ; Temp string space
         .WORD   -2              ; Current line number (cold)
         .WORD   PROGST+1        ; Start of program text
@@ -1020,10 +1016,13 @@ INCLEN: INC     A               ; Move on one character
         LD      (CURPOS),A      ; Save new position
 DINPOS: POP     AF              ; Restore character
         POP     BC              ; Restore buffer length
-        CALL    MONOUT          ; Send it
+        RST     08H             ; Send it
         RET
 
-CLOTST: CALL    GETINP          ; Get input character
+OUTNCR: CALL    OUTC            ; Output character in A
+        JP      PRNTCRLF        ; Output CRLF
+
+CLOTST: RST     10H             ; Get input character
         AND     01111111B       ; Strip bit 7
         CP      CTRLO           ; Is it control "O"?
         RET     NZ              ; No don't flip flag
@@ -1101,7 +1100,7 @@ COUNT:  PUSH    HL              ; Save code string address
         PUSH    HL              ; Save code string address
         LD      HL,(LINESN)     ; Get LINES number
         LD      (LINESC),HL     ; Reset LINES counter
-        CALL    GETINP          ; Get input character
+        RST     10H             ; Get input character
         CP      CTRLC           ; Is it control "C"?
         JP      Z,RSLNBK        ; Yes - Reset LINES and break
         POP     HL              ; Restore code string address
@@ -1921,8 +1920,8 @@ OPRND:  XOR     A               ; Get operand routine
         JP      C,ASCTFP        ; Number - Get value
         CALL    CHKLTR          ; See if a letter
         JP      NC,CONVAR       ; Letter - Find variable
-        CP	'&'		; &H = HEX, &B = BINARY
-        JR	NZ, NOTAMP
+        CP      '&'             ; &H = HEX, &B = BINARY
+        JR      NZ, NOTAMP
         CALL    GETCHR          ; Get next character
         CP      'H'             ; Hex number indicated? [function added]
         JP      Z,HEXTFP        ; Convert Hex to FPREG
@@ -2428,7 +2427,7 @@ DEF:    CALL    CHEKFN          ; Get "FN" and name
         PUSH    BC              ; Save address for RETurn
         PUSH    DE              ; Save address of function ptr
         CALL    CHKSYN          ; Make sure "(" follows
-        .BYTE      "("
+        .BYTE   "("
         CALL    GETVAR          ; Get argument variable name
         PUSH    HL              ; Save code string address
         EX      DE,HL           ; Argument address to HL
@@ -2441,7 +2440,7 @@ DEF:    CALL    CHEKFN          ; Get "FN" and name
         CALL    CHKSYN          ; Make sure ")" follows
         .BYTE      ")"
         CALL    CHKSYN          ; Make sure "=" follows
-        .BYTE      ZEQUAL          ; "=" token
+        .BYTE   ZEQUAL          ; "=" token
         LD      B,H             ; Code string address to BC
         LD      C,L
         EX      (SP),HL         ; Save code str , Get FN ptr
@@ -2502,7 +2501,7 @@ IDTEST: PUSH    HL              ; Save code string address
         JP      ERROR
 
 CHEKFN: CALL    CHKSYN          ; Make sure FN follows
-        .BYTE      ZFN             ; "FN" token
+        .BYTE   ZFN             ; "FN" token
         LD      A,80H
         LD      (FORFLG),A      ; Flag FN name to find
         OR      (HL)            ; FN name has bit 7 set
@@ -2935,14 +2934,14 @@ VAL:    CALL    GETLEN          ; Get length of string
         EX      (SP),HL         ; Save string end,get start
         PUSH    BC              ; Save end+1 byte
         LD      A,(HL)          ; Get starting byte
-    CP	'$'		; Hex number indicated? [function added]
-    JP	NZ,VAL1
-    CALL	HEXTFP		; Convert Hex to FPREG
-    JR	VAL3
-VAL1:	CP	'%'		; Binary number indicated? [function added]
-    JP	NZ,VAL2
-    CALL	BINTFP		; Convert Bin to FPREG
-    JR	VAL3
+        CP      '$'             ; Hex number indicated? [function added]
+        JP      NZ,VAL1
+        CALL    HEXTFP          ; Convert Hex to FPREG
+        JR      VAL3
+VAL1:   CP      '%'             ; Binary number indicated? [function added]
+        JP      NZ,VAL2
+        CALL    BINTFP          ; Convert Bin to FPREG
+        JR      VAL3
 VAL2:   CALL    ASCTFP          ; Convert ASCII string to FP
 VAL3:   POP     BC              ; Restore end+1 byte
         POP     HL              ; Restore end+1 address
@@ -2951,7 +2950,7 @@ VAL3:   POP     BC              ; Restore end+1 byte
 
 LFRGNM: EX      DE,HL           ; Code string address to HL
         CALL    CHKSYN          ; Make sure ")" follows
-        .BYTE      ")"
+        .BYTE   ")"
 MIDNUM: POP     BC              ; Get return address
         POP     DE              ; Get number supplied
         PUSH    BC              ; Re-save return address
@@ -2973,7 +2972,7 @@ WAIT:   CALL    SETIO           ; Set up port number
         CALL    GETCHR          ; Get next character
         JP      Z,NOXOR         ; No XOR byte given
         CALL    CHKSYN          ; Make sure ',' follows
-        .BYTE      ','
+        .BYTE   ','
         CALL    GETINT          ; Get integer 0-255 to XOR with
 NOXOR:  POP     BC              ; Restore AND mask
 WAITLP: CALL    INPSUB          ; Get input
@@ -3413,7 +3412,7 @@ TSTSGN: LD      A,(FPEXP)       ; Get sign of FPREG
         OR      A
         RET     Z               ; RETurn if number is zero
         LD      A,(FPREG+2)     ; Get MSB of FPREG
-        .BYTE      0FEH            ; Test sign
+        .BYTE   0FEH            ; Test sign
 RETREL: CPL                     ; Invert sign
         RLA                     ; Sign bit to carry
 FLGDIF: SBC     A,A             ; Carry to all bits of A
@@ -3468,13 +3467,11 @@ INCHL:  INC     HL              ; Used for conditional "INC HL"
         RET
 
 FPTHL:  LD      DE,FPREG        ; Point to FPREG
-DETHL4: LD      B,4             ; 4 bytes to move
-DETHLB: LD      A,(DE)          ; Get source
-        LD      (HL),A          ; Save destination
-        INC     DE              ; Next source
-        INC     HL              ; Next destination
-        DEC     B               ; Count bytes
-        JP      NZ,DETHLB       ; Loop if more
+DETHL4: EX      DE,HL           ; Swap source destination
+        LDI                     ; 4 bytes to move
+        LDI
+        LDI
+        LDI
         RET
 
 SIGNS:  LD      HL,FPREG+2      ; Point to MSB of FPREG
@@ -3964,7 +3961,7 @@ RND:    CALL    TSTSGN          ; Test sign of FPREG
         LD      C,A             ; BC = Offset into table
         ADD     HL,BC           ; Point to coefficient
         CALL    LOADFP          ; Coefficient to BCDE
-        CALL    FPMULT  ;       ; Multiply FPREG by coefficient
+        CALL    FPMULT          ; Multiply FPREG by coefficient
         LD      A,(SEED+1)      ; Get (SEED+1)
         INC     A               ; Add 1
         AND     00000011B       ; 0 to 3
@@ -4007,7 +4004,7 @@ RESEED: LD      (HL),A          ; Re-seed random numbers
         LD      (HL),A
         JP      RND1            ; Return RND seed
 
-RNDTAB: .BYTE   068H,0B1H,046H,068H     ; Table used by RND
+RNDTAB: .BYTE   068H,0B1H,046H,068H ; Table used by RND
         .BYTE   099H,0E9H,092H,069H
         .BYTE   010H,0D1H,075H,068H
 
@@ -4091,15 +4088,12 @@ ATNTAB: .BYTE   9                       ; Table used by ATN
         .BYTE   06CH,0AAH,0AAH,07FH     ;-1/3
         .BYTE   000H,000H,000H,081H     ; 1/1
 
+MONITR: JP      $0000           ; Restart (Normally Monitor Start)
 
+CLS:    LD      A,CS            ; ASCII Clear screen
+        RST     08H             ; Output character
 ARET:   RET                     ; A RETurn instruction
-
-GETINP: RST	    10H             ;input a character
-        RET
-
-CLS: 
-        LD      A,CS            ; ASCII Clear screen
-        JP      MONOUT          ; Output character
+ARETN:  RETN                    ; A RETurN from NMI
 
 WIDTH:  CALL    GETINT          ; Get integer 0-255
         LD      A,E             ; Width to A
@@ -4137,29 +4131,29 @@ DOKE:   CALL    GETNUM          ; Get a number
 
 ; HEX$(nn) Convert 16 bit number to Hexadecimal string
 
-HEX: 	CALL	TSTNUM          ; Verify it's a number
-        CALL	DEINT           ; Get integer -32768 to 32767
-        PUSH	BC              ; Save contents of BC
-        LD	    HL,PBUFF
-        LD	    A,D             ; Get high order into A
+HEX:    CALL    TSTNUM          ; Verify it's a number
+        CALL    DEINT           ; Get integer -32768 to 32767
+        PUSH    BC              ; Save contents of BC
+        LD      HL,PBUFF
+        LD      A,D             ; Get high order into A
         CP      $0
-		JR      Z,HEX2          ; Skip output if both high digits are zero
+        JR      Z,HEX2          ; Skip output if both high digits are zero
         CALL    BYT2ASC         ; Convert D to ASCII
-		LD      A,B
-		CP      '0'
-		JR      Z,HEX1          ; Don't store high digit if zero
-        LD	    (HL),B          ; Store it to PBUFF
-        INC	    HL              ; Next location
-HEX1:   LD	    (HL),C          ; Store C to PBUFF+1
+        LD      A,B
+        CP      '0'
+        JR      Z,HEX1          ; Don't store high digit if zero
+        LD      (HL),B          ; Store it to PBUFF
         INC     HL              ; Next location
-HEX2:   LD	    A,E             ; Get lower byte
+HEX1:   LD      (HL),C          ; Store C to PBUFF+1
+        INC     HL              ; Next location
+HEX2:   LD      A,E             ; Get lower byte
         CALL    BYT2ASC         ; Convert E to ASCII
-		LD      A,D
+        LD      A,D
         CP      $0
-		JR      NZ,HEX3         ; If upper byte was not zero then always print lower byte
-		LD      A,B
-		CP      '0'             ; If high digit of lower byte is zero then don't print
-		JR      Z,HEX4
+        JR      NZ,HEX3         ; If upper byte was not zero then always print lower byte
+        LD      A,B
+        CP      '0'             ; If high digit of lower byte is zero then don't print
+        JR      Z,HEX4
 HEX3:   LD      (HL),B          ; to PBUFF+2
         INC     HL              ; Next location
 HEX4:   LD      (HL),C          ; to PBUFF+3
@@ -4172,12 +4166,12 @@ HEX4:   LD      (HL),C          ; to PBUFF+3
         LD      HL,PBUFF        ; Reset to start of PBUFF
         JP      STR1            ; Convert the PBUFF to a string and return it
 
-BYT2ASC	LD      B,A             ; Save original value
+BYT2ASC:LD      B,A             ; Save original value
         AND     $0F             ; Strip off upper nybble
         CP      $0A             ; 0-9?
         JR      C,ADD30         ; If A-F, add 7 more
         ADD     A,$07           ; Bring value up to ASCII A-F
-ADD30	ADD     A,$30           ; And make ASCII
+ADD30:  ADD     A,$30           ; And make ASCII
         LD      C,A             ; Save converted char to C
         LD      A,B             ; Retrieve original value
         RRCA                    ; and Rotate it right
@@ -4188,21 +4182,21 @@ ADD30	ADD     A,$30           ; And make ASCII
         CP      $0A             ; 0-9? < A hex?
         JR      C,ADD301        ; Skip Add 7
         ADD     A,$07           ; Bring it up to ASCII A-F
-ADD301	ADD     A,$30           ; And make it full ASCII
+ADD301: ADD     A,$30           ; And make it full ASCII
         LD      B,A             ; Store high order byte
-        RET	
+        RET
 
 ; Convert "&Hnnnn" to FPREG
 ; Gets a character from (HL) checks for Hexadecimal ASCII numbers "&Hnnnn"
 ; Char is in A, NC if char is ;<=>?@ A-z, CY is set if 0-9
-HEXTFP  EX      DE,HL           ; Move code string pointer to DE
+HEXTFP: EX      DE,HL           ; Move code string pointer to DE
         LD      HL,$0000        ; Zero out the value
         CALL    GETHEX          ; Check the number for valid hex
         JP      C,HXERR         ; First value wasn't hex, HX error
         JR      HEXLP1          ; Convert first character
-HEXLP   CALL    GETHEX          ; Get second and addtional characters
+HEXLP:  CALL    GETHEX          ; Get second and addtional characters
         JR      C,HEXIT         ; Exit if not a hex character
-HEXLP1  ADD     HL,HL           ; Rotate 4 bits to the left
+HEXLP1: ADD     HL,HL           ; Rotate 4 bits to the left
         ADD     HL,HL
         ADD     HL,HL
         ADD     HL,HL
@@ -4210,7 +4204,7 @@ HEXLP1  ADD     HL,HL           ; Rotate 4 bits to the left
         LD      L,A             ; Save new value
         JR      HEXLP           ; And continue until all hex characters are in
 
-GETHEX  INC     DE              ; Next location
+GETHEX: INC     DE              ; Next location
         LD      A,(DE)          ; Load character at pointer
         CP      ' '
         JP      Z,GETHEX        ; Skip spaces
@@ -4221,11 +4215,11 @@ GETHEX  INC     DE              ; Next location
         SUB     $07             ; Reduce to A-F
         CP      $0A             ; Value should be $0A-$0F at this point
         RET     C               ; CY set if was :            ; < = > ? @
-NOSUB7  CP      $10             ; > Greater than "F"?
+NOSUB7: CP      $10             ; > Greater than "F"?
         CCF
         RET                     ; CY set if it wasn't valid hex
     
-HEXIT   EX      DE,HL           ; Value into DE, Code string into HL
+HEXIT:  EX      DE,HL           ; Value into DE, Code string into HL
         LD      A,D             ; Load DE into AC
         LD      C,E             ; For prep to 
         PUSH    HL
@@ -4302,36 +4296,6 @@ CHKBIN: INC     DE
 
 BINERR: LD      E,BN            ; ?BIN Error
         JP      ERROR
-
-
-JJUMP1: 
-        LD      IX,-1           ; Flag cold start
-        JP      CSTART          ; Go and initialise
-
-MONOUT: 
-        JP      $0008           ; output a char
-
-
-MONITR: 
-        JP      $0000           ; Restart (Normally Monitor Start)
-
-
-INITST: LD      A,0             ; Clear break flag
-        LD      (BRKFLG),A
-        JP      INIT
-
-ARETN:  RETN                    ; Return from NMI
-
-
-TSTBIT: PUSH    AF              ; Save bit mask
-        AND     B               ; Get common bits
-        POP     BC              ; Restore bit mask
-        CP      B               ; Same bit set?
-        LD      A,0             ; Return 0 in A
-        RET
-
-OUTNCR: CALL    OUTC            ; Output character in A
-        JP      PRNTCRLF        ; Output CRLF
 
 .end
 
