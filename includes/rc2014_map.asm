@@ -9,7 +9,7 @@
 ; https://feilipu.me/
 ;
 
-INCLUDE     "rc2014.h"
+INCLUDE     "rc2014.inc"
 
 SECTION     z80_vector_rst
 ORG         0x0000

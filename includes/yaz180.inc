@@ -47,7 +47,7 @@ DEFC    APU_PTR_BUFSIZE     =   $100    ; FIXED DATA POINTER buffer size, 128 PO
 ; INCLUDES SECTION
 ;
 
-INCLUDE "yaz180_config.h"
+INCLUDE "yaz180_config.inc"
 
 ;==============================================================================
 ;

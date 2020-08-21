@@ -9,7 +9,7 @@
 ; https://feilipu.me/
 ;
 
-INCLUDE     "yaz180.h"
+INCLUDE     "yaz180.inc"
 
 SECTION     z80_vector_rst
 ORG         0x0000

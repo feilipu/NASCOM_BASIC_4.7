@@ -14,9 +14,9 @@
 ; REQUIRES
 ;
 ; Z180_VECTOR_BASE  .EQU   RAM vector address for Z180 Vectors
-; INCLUDE       "yaz180.h"
+; INCLUDE       "yaz180.inc"
 
-INCLUDE         "yaz180.h"
+INCLUDE         "yaz180.inc"
 
 ;==============================================================================
 ;
