@@ -3268,6 +3268,7 @@ DETHL4: EX      DE,HL           ; Swap source destination
         LDI
         LDI
         LDI
+        EX      DE,HL           ; Swap source destination
         RET
 
 
