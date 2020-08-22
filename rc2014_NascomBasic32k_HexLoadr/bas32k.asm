@@ -2014,7 +2014,7 @@ SGNEXP: DEC     D               ; Dee to flag negative exponent
         DEC     HL              ; DEC 'cos GETCHR INCs
         RET                     ; Return "NZ"
 
-POR:    .BYTE      0F6H            ; Flag "OR"
+POR:    .BYTE   0F6H            ; Flag "OR"
 PAND:   XOR     A               ; Flag "AND"
         PUSH    AF              ; Save "AND" / "OR" flag
         CALL    TSTNUM          ; Make sure it's a number
