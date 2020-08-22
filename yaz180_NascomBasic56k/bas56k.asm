@@ -2014,7 +2014,7 @@ SGNEXP: DEC     D               ; Dee to flag negative exponent
         DEC     HL              ; DEC 'cos GETCHR INCs
         RET                     ; Return "NZ"
 
-POR:    .BYTE      0F6H            ; Flag "OR"
+POR:    .BYTE   0F6H            ; Flag "OR"
 PAND:   XOR     A               ; Flag "AND"
         PUSH    AF              ; Save "AND" / "OR" flag
         CALL    TSTNUM          ; Make sure it's a number
@@ -3018,7 +3018,7 @@ ADDPHL: CALL    LOADFP          ; Load FP at (HL) to BCDE
         JP      FPADD           ; Add BCDE to FPREG
 
 SUBPHL: CALL    LOADFP          ; FPREG = -FPREG + number at HL
-        .BYTE      21H             ; Skip "POP BC" and "POP DE"
+        .BYTE   21H             ; Skip "POP BC" and "POP DE"
 PSUB:   POP     BC              ; Get FP number from stack
         POP     DE
 SUBCDE: CALL    INVSGN          ; Negate FPREG

@@ -2866,6 +2866,7 @@ GSTRDE: CALL    BAKTMP          ; Was it last tmp-str?
         LD      B,A             ; Clear B (A=0)
         ADD     HL,BC           ; Remove string from str' area
         LD      (STRBOT),HL     ; Save new bottom of str' area
+POPHRT:                         ; Restore address of number
 POPHL:  POP     HL              ; Restore string
         RET
 
@@ -3261,9 +3262,6 @@ FPMULT: LD      A,(FPEXP)       ; Get exponent of FPREG
         LD      A,IO_APU_OP_FMUL
         OUT     (IO_APU_CONTROL),A
         JP      am9511_popf_fpreg
-
-POPHRT: POP     HL              ; Restore address of number
-        RET
 
 DIV10:  CALL    STAKFP          ; Save FPREG on stack
         LD      BC,8420H        ; BCDE = 10.
@@ -3864,12 +3862,12 @@ am9511_pushf_fpreg:
 
 am9511_pushf_bcde:
         ld a,b                  ; capture exponent
-        sub 80h                 ; remove bias
         jr Z,pushf_bcde_zero    ; check for zero
-        cp +63                  ; check for overflow
+        cp 80+63                ; check for overflow
         jp NC,OVERR             ; overflow error
-        cp -64                  ; check for underflow
+        cp 80-64                ; check for underflow
         jr C,pushf_bcde_zero
+        sub 80h                 ; remove bias
 
         rla                     ; align exponent for sign
         sla c                   ; get sign
