@@ -3861,9 +3861,9 @@ am9511_pushf_fpreg:
 am9511_pushf_bcde:
         ld a,b                  ; capture exponent
         jr Z,pushf_bcde_zero    ; check for zero
-        cp 80+63                ; check for overflow
+        cp 80h+63               ; check for overflow
         jp NC,OVERR             ; overflow error
-        cp 80-64                ; check for underflow
+        cp 80h-64               ; check for underflow
         jr C,pushf_bcde_zero
         sub 80h                 ; remove bias
 
