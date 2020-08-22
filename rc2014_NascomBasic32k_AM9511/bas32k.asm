@@ -3709,7 +3709,6 @@ NEGAFT: LD  HL,INVSGN           ; Negate result
         EX      (SP),HL         ; To be done after caller
         JP      (HL)            ; Return to caller
 
-
 RND:    CALL    TSTSGN          ; Test sign of FPREG
         LD      HL,SEED+2       ; Random number seed
         JP      M,RESEED        ; Negative - Re-seed
@@ -3835,11 +3834,10 @@ EXP:    CALL    am9511_pushf_fpreg  ; load FPREG to APU
         OUT     (IO_APU_CONTROL),A
         JP      am9511_popf_fpreg
 
-POWER:  CALL    TSTSGN          ; Get sign of FPREG
-        INC     A
-        JP      Z,DZERR         ; Error if power negative
+POWER:  POP     BC              ; Get base from stack
+        POP     DE
         CALL    am9511_pushf_bcde
-        CALL    am9511_pushf_fpreg  ; load FPREG to APU
+        CALL    am9511_pushf_fpreg  ; load exponent in FPREG to APU
         LD      A,IO_APU_OP_PWR
         OUT     (IO_APU_CONTROL),A
         JP      am9511_popf_fpreg
@@ -3851,8 +3849,8 @@ POWER:  CALL    TSTSGN          ; Get sign of FPREG
         ; uses  : af, bc, de
     
 am9511_pushf_fpreg:
-        ld bc,(FPREG+2)         ; store mantissa MSW in BC 
         ld de,(FPREG)           ; store mantissa LSW in DE
+        ld bc,(FPREG+2)         ; store mantissa MSW in BC 
 
         ; push MBF32 floating point in BCDE into Am9511 stack.
         ;
@@ -3878,9 +3876,9 @@ am9511_pushf_bcde:
         rr c                    ; restore mantissa with leading 1
 
 pushf_bcde_rejoin:
-        in a,(IO_APU_STATUS)    ; read the APU status register
-        rlca                    ; busy? IO_APU_STATUS_BUSY
-        jr C,pushf_bcde_rejoin
+ ;      in a,(IO_APU_STATUS)    ; read the APU status register
+ ;      rlca                    ; busy? IO_APU_STATUS_BUSY
+ ;      jr C,pushf_bcde_rejoin
 
         ld a,e
         out (IO_APU_DATA),a     ; load mantissa into APU
@@ -3931,8 +3929,8 @@ am9511_popf_fpreg:
         ld b,a
 
 popf_fpreg_rejoin:
-        ld (FPREG+2),bc         ; store mantissa MSB  
         ld (FPREG),de           ; store mantissa LSW
+        ld (FPREG+2),bc         ; store mantissa MSB and exponent
         ret
 
 popf_fpreg_errors:

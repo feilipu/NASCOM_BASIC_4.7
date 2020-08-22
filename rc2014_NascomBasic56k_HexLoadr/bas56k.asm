@@ -2801,6 +2801,7 @@ GSTRDE: CALL    BAKTMP          ; Was it last tmp-str?
         LD      B,A             ; Clear B (A=0)
         ADD     HL,BC           ; Remove string from str' area
         LD      (STRBOT),HL     ; Save new bottom of str' area
+POPHRT:                         ; Restore address of number
 POPHL:  POP     HL              ; Restore string
         RET
 
@@ -3281,7 +3282,7 @@ NOMADD: RRA                     ; Shift MSB right
         DEC     L               ; Count bits multiplied
         LD      A,H             ; Get LSB of multiplier
         JP      NZ,MUL8LP       ; More - Do it
-POPHRT: POP     HL              ; Restore address of number
+        POP     HL              ; Restore address of number
         RET
 
 BYTSFT: LD      B,E             ; Shift partial product left
@@ -3330,7 +3331,7 @@ DIVLP:  PUSH    HL              ; Save divisor
         POP     AF              ; Scrap divisor
         POP     AF
         SCF                     ; Set carry to
-        .BYTE      0D2H            ; Skip "POP BC" and "POP HL"
+        .BYTE   0D2H            ; Skip "POP BC" and "POP HL"
 
 RESDIV: POP     BC              ; Restore divisor
         POP     HL
@@ -4010,7 +4011,7 @@ RNDTAB: .BYTE   068H,0B1H,046H,068H ; Table used by RND
         .BYTE   010H,0D1H,075H,068H
 
 COS:    LD      HL,HALFPI       ; Point to PI/2
-        CALL    ADDPHL          ; Add it to PPREG
+        CALL    ADDPHL          ; Add it to FPREG
 SIN:    CALL    STAKFP          ; Put angle on stack
         LD      BC,8349H        ; BCDE = 2 PI
         LD      DE,0FDBH
