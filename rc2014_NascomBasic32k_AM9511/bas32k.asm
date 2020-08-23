@@ -292,14 +292,16 @@ FNCTAB: .WORD   SGN
         .WORD   FRE
         .WORD   INP
         .WORD   POS
-        .WORD   SQR
         .WORD   RND
-        .WORD   LN
+        .WORD   LOG
         .WORD   EXP
         .WORD   COS
         .WORD   SIN
         .WORD   TAN
-        .WORD   ATN
+        .WORD   ACOS
+        .WORD   ASIN
+        .WORD   ATAN
+        .WORD   SQRT
         .WORD   PEEK
         .WORD   DEEK
         .WORD   POINT
@@ -379,14 +381,16 @@ WORDS:  .BYTE   'E'+80H,"ND"
         .BYTE   'F'+80H,"RE"
         .BYTE   'I'+80H,"NP"
         .BYTE   'P'+80H,"OS"
-        .BYTE   'S'+80H,"QR"
         .BYTE   'R'+80H,"ND"
         .BYTE   'L'+80H,"OG"
         .BYTE   'E'+80H,"XP"
         .BYTE   'C'+80H,"OS"
         .BYTE   'S'+80H,"IN"
         .BYTE   'T'+80H,"AN"
-        .BYTE   'A'+80H,"TN"
+        .BYTE   'A'+80H,"COS"
+        .BYTE   'A'+80H,"SIN"
+        .BYTE   'A'+80H,"TAN"
+        .BYTE   'S'+80H,"QRT"
         .BYTE   'P'+80H,"EEK"
         .BYTE   'D'+80H,"EEK"
         .BYTE   'P'+80H,"OINT"
@@ -629,10 +633,10 @@ CHKSTK: PUSH    HL              ; Save code string address
         ADD     HL,BC
         .BYTE   3EH             ; Skip "PUSH HL"
 ENFMEM: PUSH    HL              ; Save code string address
-        LD      A,0D0H ;LOW -48 ; 48 Bytes minimum RAM
+        LD      A,0D0H          ; 48 Bytes minimum RAM
         SUB     L
         LD      L,A
-        LD      A,0FFH; HIGH (-48) ; 48 Bytes minimum RAM
+        LD      A,0FFH          ; 48 Bytes minimum RAM
         SBC     A,H
         JP      C,OMERR         ; Not enough - ?OM Error
         LD      H,A
@@ -3783,18 +3787,8 @@ POWERS: .BYTE   0A0H,086H,001H  ; 100000
         .BYTE   001H,000H,000H  ;      1
 
 
-SQR:    CALL    PUSHF_FPREG     ; Load FPREG to APU
-        LD      A,IO_APU_OP_SQRT
-        OUT     (IO_APU_CONTROL),A
-        JP      POPF_FPREG
-
-LN:     CALL    PUSHF_FPREG     ; Load FPREG to APU
-        LD      A,IO_APU_OP_LN
-        OUT     (IO_APU_CONTROL),A
-        JP      POPF_FPREG
-
 LOG:    CALL    PUSHF_FPREG     ; Load FPREG to APU
-        LD      A,IO_APU_OP_LOG
+        LD      A,IO_APU_OP_LN
         OUT     (IO_APU_CONTROL),A
         JP      POPF_FPREG
 
@@ -3828,8 +3822,13 @@ ASIN:   CALL    PUSHF_FPREG     ; Load FPREG to APU
         OUT     (IO_APU_CONTROL),A
         JP      POPF_FPREG
 
-ATN:    CALL    PUSHF_FPREG     ; Load FPREG to APU
+ATAN:   CALL    PUSHF_FPREG     ; Load FPREG to APU
         LD      A,IO_APU_OP_ATAN
+        OUT     (IO_APU_CONTROL),A
+        JP      POPF_FPREG
+
+SQRT:   CALL    PUSHF_FPREG     ; Load FPREG to APU
+        LD      A,IO_APU_OP_SQRT
         OUT     (IO_APU_CONTROL),A
         JP      POPF_FPREG
 

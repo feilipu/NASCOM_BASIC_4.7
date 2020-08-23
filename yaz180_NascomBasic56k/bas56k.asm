@@ -572,10 +572,10 @@ CHKSTK: PUSH    HL              ; Save code string address
         ADD     HL,BC
         .BYTE   3EH             ; Skip "PUSH HL"
 ENFMEM: PUSH    HL              ; Save code string address
-        LD      A,0D0H ;LOW -48 ; 48 Bytes minimum RAM
+        LD      A,0D0H          ; 48 Bytes minimum RAM
         SUB     L
         LD      L,A
-        LD      A,0FFH; HIGH (-48) ; 48 Bytes minimum RAM
+        LD      A,0FFH          ; 48 Bytes minimum RAM
         SBC     A,H
         JP      C,OMERR         ; Not enough - ?OM Error
         LD      H,A
