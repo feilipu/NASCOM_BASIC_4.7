@@ -1,10 +1,13 @@
 ;==================================================================================
 ;
-; NASCOM ROM BASIC Ver 4.7, (C) 1978 Microsoft
-; Scanned from source published in 80-BUS NEWS from Vol 2, Issue 3
-; (May-June 1983) to Vol 3, Issue 3 (May-June 1984)
-; Adapted for the freeware Zilog Macro Assembler 2.10 to produce
-; the original ROM code (checksum A934H). PA
+;  The rework to support the Am9511 APU and the Z80 instruction tuning are
+;  copyright (c) 2020 Phillip Stevens
+;
+;  This Source Code Form is subject to the terms of the Mozilla Public
+;  License, v. 2.0. If a copy of the MPL was not distributed with this
+;  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+;
+;  feilipu, August 2020
 ;
 ;==================================================================================
 ;
@@ -17,16 +20,14 @@
 ;
 ;==================================================================================
 ;
-;  The rework to support the Am9511 APU and the Z80 instruction tuning are
-;  copyright (c) 2020 Phillip Stevens
-;
-;  This Source Code Form is subject to the terms of the Mozilla Public
-;  License, v. 2.0. If a copy of the MPL was not distributed with this
-;  file, You can obtain one at http://mozilla.org/MPL/2.0/.
-;
-;  feilipu, August 2020
+; NASCOM ROM BASIC Ver 4.7, (C) 1978 Microsoft
+; Scanned from source published in 80-BUS NEWS from Vol 2, Issue 3
+; (May-June 1983) to Vol 3, Issue 3 (May-June 1984)
+; Adapted for the freeware Zilog Macro Assembler 2.10 to produce
+; the original ROM code (checksum A934H). PA
 ;
 ;==================================================================================
+
 
 ; GENERAL EQUATES
 
@@ -276,7 +277,7 @@ BRKRET: CALL    CLREG           ; Clear registers and stack
 
 BFREE:  .BYTE   " Bytes free",CR,LF,0,0
 
-SIGNON: .BYTE   "Z80 BASIC Ver 4.7b",CR,LF
+SIGNON: .BYTE   "Z80 BASIC Ver 4.7c",CR,LF
         .BYTE   "Copyright ",40,"C",41
         .BYTE   " 1978 by Microsoft",CR,LF,0,0
 
@@ -352,7 +353,6 @@ WORDS:  .BYTE   'E'+80H,"ND"
         .BYTE   'C'+80H,"LOAD"
         .BYTE   'C'+80H,"SAVE"
         .BYTE   'N'+80H,"EW"
-
         .BYTE   'T'+80H,"AB("
         .BYTE   'T'+80H,"O"
         .BYTE   'F'+80H,"N"
@@ -524,8 +524,10 @@ ERRORS: .BYTE   "NF"            ; NEXT without FOR
 
 INITAB: JP      WARMST          ; Warm start jump
         JP      FCERR           ; "USR (X)" jump (Set to Error)
+
         OUT     (0),A           ; "OUT p,n" skeleton
         RET
+
         SUB     0               ; Division support routine
         LD      L,A
         LD      A,H
@@ -536,7 +538,9 @@ INITAB: JP      WARMST          ; Warm start jump
         LD      B,A
         LD      A,0
         RET
-        .BYTE   0,0,0                   ; Random number seed table used by RND
+
+        .BYTE   0,0,0                   ; Random number seed
+                                        ; table used by RND
         .BYTE   035H,04AH,0CAH,099H     ;-2.65145E+07
         .BYTE   039H,01CH,076H,098H     ; 1.61291E+07
         .BYTE   022H,095H,0B3H,098H     ;-1.17691E+07
@@ -546,22 +550,28 @@ INITAB: JP      WARMST          ; Warm start jump
         .BYTE   065H,0BCH,0CDH,098H     ;-1.34831E+07
         .BYTE   0D6H,077H,03EH,098H     ; 1.24825E+07
         .BYTE   052H,0C7H,04FH,080H     ; Last random number
+
         IN      A,(0)           ; INP (x) skeleton
         RET
+
         .BYTE   1               ; POS (x) number (1)
         .BYTE   255             ; Terminal width (255 = no auto CRLF)
         .BYTE   28              ; Width for commas (3 columns)
         .BYTE   0               ; No nulls after input bytes
         .BYTE   0               ; Output enabled (^O off)
+
         .WORD   20              ; Initial lines counter
         .WORD   20              ; Initial lines number
         .WORD   0               ; Array load/save check sum
+
         .BYTE   0               ; Break not by NMI
         .BYTE   0               ; Break flag
+
         JP      TTYLIN          ; Input reflection (set to TTY)
         JP      $0000           ; POINT reflection
         JP      $0000           ; SET reflection
         JP      $0000           ; RESET reflection
+
         .WORD   STLOOK          ; Temp string space
         .WORD   -2              ; Current line number (cold)
         .WORD   PROGST+1        ; Start of program text
@@ -1436,7 +1446,7 @@ CLEAR:  JP      Z,INTVAR        ; Just "CLEAR" Keep parameters
         JP      Z,STORED        ; No value given - Use stored
         POP     HL              ; Restore code string address
         CALL    CHKSYN          ; Check for comma
-        .BYTE      ','
+        .BYTE   ','
         PUSH    DE              ; Save number
         CALL    POSINT          ; Get integer 0 to 32767
         DEC     HL              ; Cancel increment
@@ -1515,10 +1525,10 @@ RETURN: RET     NZ              ; Return if not just RETURN
         JP      NZ,POPNOK       ; Yes - Go to command mode
 RETLIN: LD      HL,RUNCNT       ; Execution driver loop
         EX      (SP),HL         ; Into stack - Code string out
-        .BYTE      3EH             ; Skip "POP HL"
+        .BYTE   3EH             ; Skip "POP HL"
 NXTDTA: POP     HL              ; Restore code string address
 
-DATA:   .BYTE      01H,3AH         ; ':' End of statement
+DATA:   .BYTE   01H,3AH         ; ':' End of statement
 REM:    LD      C,0             ; 00  End of statement
         LD      B,0
 NXTSTL: LD      A,C             ; Statement and byte
@@ -1536,7 +1546,7 @@ NXTSTT: LD      A,(HL)          ; Get byte
 
 LET:    CALL    GETVAR          ; Get variable name
         CALL    CHKSYN          ; Make sure "=" follows
-        .BYTE      ZEQUAL          ; "=" token
+        .BYTE   ZEQUAL          ; "=" token
         PUSH    DE              ; Save address of variable
         LD      A,(TYPE)        ; Get data type
         PUSH    AF              ; Save type
@@ -1604,7 +1614,7 @@ IF:     CALL    EVAL            ; Evaluate expression
         CP      ZGOTO           ; "GOTO" token?
         JP      Z,IFGO          ; Yes - Get line
         CALL    CHKSYN          ; Make sure it's "THEN"
-        .BYTE      ZTHEN           ; "THEN" token
+        .BYTE   ZTHEN           ; "THEN" token
         DEC     HL              ; Cancel increment
 IFGO:   CALL    TSTNUM          ; Make sure it's numeric
         CALL    TSTSGN          ; Test state of expression
@@ -1754,7 +1764,7 @@ NXTITM: XOR     A               ; Flag "INPUT"
         JP      GTVLUS          ; Get values
 
 NEDMOR: CALL    CHKSYN          ; Check for comma between items
-        .BYTE      ','
+        .BYTE   ','
 GTVLUS: CALL    GETVAR          ; Get variable name
         EX      (SP),HL         ; Save code str" , Get pointer
         PUSH    DE              ; Save variable address
@@ -2036,7 +2046,7 @@ FNOFST: LD      B,0             ; Get address of function
         JP      C,FNVAL         ; No - Do function
         CALL    OPNPAR          ; Evaluate expression  (X,...
         CALL    CHKSYN          ; Make sure ',' follows
-        .BYTE      ','
+        .BYTE   ','
         CALL    TSTSTR          ; Make sure it's a string
         EX      DE,HL           ; Save code string address
         LD      HL,(FPREG)      ; Get address of string
@@ -2189,10 +2199,10 @@ DIMRET: DEC     HL              ; DEC 'cos GETCHR INCs
         CALL    GETCHR          ; Get next character
         RET     Z               ; End of DIM statement
         CALL    CHKSYN          ; Make sure ',' follows
-        .BYTE      ','
+        .BYTE   ','
 DIM:    LD      BC,DIMRET       ; Return to "DIMRET"
         PUSH    BC              ; Save on stack
-        .BYTE      0F6H            ; Flag "Create" variable
+        .BYTE   0F6H            ; Flag "Create" variable
 GETVAR: XOR     A               ; Find variable address,to DE
         LD      (LCRFLG),A      ; Set locate / create flag
         LD      B,(HL)          ; Get First byte of name
@@ -2315,18 +2325,18 @@ SCPTLP: PUSH    DE              ; Save number of dimensions
         CP      ','             ; Comma (more to come)?
         JP      Z,SCPTLP        ; Yes - More subscripts
         CALL    CHKSYN          ; Make sure ")" follows
-        .BYTE      ")"
+        .BYTE   ")"
         LD      (NXTOPR),HL     ; Save code string address
         POP     HL              ; Get LCRFLG and TYPE
         LD      (LCRFLG),HL     ; Restore Locate/create & type
         LD      E,0             ; Flag not CSAVE* or CLOAD*
         PUSH    DE              ; Save number of dimensions (D)
-        .BYTE      11H             ; Skip "PUSH HL" and "PUSH AF'
+        .BYTE   11H             ; Skip "PUSH HL" and "PUSH AF'
 
 ARLDSV: PUSH    HL              ; Save code string address
         PUSH    AF              ; A = 00 , Flags set = Z,N
         LD      HL,(VAREND)     ; Start of arrays
-        .BYTE      3EH             ; Skip "ADD HL,DE"
+        .BYTE   3EH             ; Skip "ADD HL,DE"
 FNDARY: ADD     HL,DE           ; Move to next array start
         EX      DE,HL
         LD      HL,(ARREND)     ; End of arrays
@@ -2423,7 +2433,7 @@ FINDEL: LD      B,A             ; Find array element
         LD      C,A
         LD      A,(HL)          ; Number of dimensions
         INC     HL
-        .BYTE      16H             ; Skip "POP HL"
+        .BYTE   16H             ; Skip "POP HL"
 FNDELP: POP     HL              ; Address of next dim' size
         LD      E,(HL)          ; Get LSB of dim'n size
         INC     HL
@@ -2497,7 +2507,7 @@ DEF:    CALL    CHEKFN          ; Get "FN" and name
         POP     HL              ; Restore code string address
         CALL    TSTNUM          ; Make sure numeric argument
         CALL    CHKSYN          ; Make sure ")" follows
-        .BYTE      ")"
+        .BYTE   ")"
         CALL    CHKSYN          ; Make sure "=" follows
         .BYTE   ZEQUAL          ; "=" token
         LD      B,H             ; Code string address to BC
@@ -2653,7 +2663,7 @@ PRSLP:  DEC     E               ; Count characters
         JP      PRSLP           ; More characters to output
 
 TESTR:  OR      A               ; Test if enough room
-        .BYTE      0EH             ; No garbage collection done
+        .BYTE   0EH             ; No garbage collection done
 GRBDON: POP     AF              ; Garbage collection done
         PUSH    AF              ; Save status
         LD      HL,(STRSPC)     ; Bottom of string space in use
@@ -2915,7 +2925,7 @@ MID1:   PUSH    HL              ; Save string block address
         CP      B               ; Compare with number given
         JP      C,ALLFOL        ; All following bytes required
         LD      A,B             ; Get new length
-        .BYTE      11H             ; Skip "LD C,0"
+        .BYTE   11H             ; Skip "LD C,0"
 ALLFOL: LD      C,0             ; First byte of string
         PUSH    BC              ; Save position in string
         CALL    TESTR           ; See if enough string space
@@ -2957,10 +2967,10 @@ MID:    EX      DE,HL           ; Get code string address
         CP      ')'             ; Any length given?
         JP      Z,RSTSTR        ; No - Rest of string
         CALL    CHKSYN          ; Make sure ',' follows
-        .BYTE      ','
+        .BYTE   ','
         CALL    GETINT          ; Get integer 0-255
 RSTSTR: CALL    CHKSYN          ; Make sure ")" follows
-        .BYTE      ")"
+        .BYTE   ")"
         POP     AF              ; Restore starting position
         EX      (SP),HL         ; Get string,8ave code string
         LD      BC,MID1         ; Continuation of MID$ routine
@@ -3045,7 +3055,7 @@ SETIO:  CALL    GETINT          ; Get integer 0-255
         LD      (INPORT),A      ; Set input port
         LD      (OTPORT),A      ; Set output port
         CALL    CHKSYN          ; Make sure ',' follows
-        .BYTE      ','
+        .BYTE   ','
         JP      GETINT          ; Get integer 0-255 and return
 
 FNDNUM: CALL    GETCHR          ; Get next character
@@ -3067,7 +3077,7 @@ POKE:   CALL    GETNUM          ; Get memory address
         CALL    DEINT           ; Get integer -32768 to 3276
         PUSH    DE              ; Save memory address
         CALL    CHKSYN          ; Make sure ',' follows
-        .BYTE      ','
+        .BYTE   ','
         CALL    GETINT          ; Get integer 0-255
         POP     DE              ; Restore memory address
         LD      (DE),A          ; Load it into memory
@@ -3967,7 +3977,7 @@ DOKE:   CALL    GETNUM          ; Get a number
         CALL    DEINT           ; Get integer -32768 to 32767
         PUSH    DE              ; Save address
         CALL    CHKSYN          ; Make sure ',' follows
-        .BYTE      ','
+        .BYTE   ','
         CALL    GETNUM          ; Get a number
         CALL    DEINT           ; Get integer -32768 to 32767
         EX      (SP),HL         ; Save value,get address
