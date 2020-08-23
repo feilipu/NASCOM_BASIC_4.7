@@ -1831,7 +1831,7 @@ KILFOR: LD      SP,HL           ; Remove "FOR" block
 ; < will not RETurn to here , Exit to RUNCNT or Loop >
 
 GETNUM: CALL    EVAL            ; Get a numeric expression
-TSTNUM: .BYTE      0F6H            ; Clear carry (numeric)
+TSTNUM: .BYTE   0F6H            ; Clear carry (numeric)
 TSTSTR: SCF                     ; Set carry (string)
 CHKTYP: LD      A,(TYPE)        ; Check types match
         ADC     A,A             ; Expected + actual
@@ -2467,7 +2467,7 @@ DOFN:   CALL    CHEKFN          ; Make sure FN follows
         LD      L,A             ; HL = Arg variable address
         PUSH    HL              ; Save it
         LD      HL,(FNRGNM)     ; Get old argument name
-        EX      (SP),HL ;       ; Save old , Get new
+        EX      (SP),HL         ; Save old , Get new
         LD      (FNRGNM),HL     ; Set new argument name
         LD      HL,(FNARG+2)    ; Get LSB,NLSB of old arg value
         PUSH    HL              ; Save it
@@ -3533,12 +3533,21 @@ STAKFP: EX      DE,HL           ; Save code string address
         EX      DE,HL           ; Restore code string address
         RET
 
-PHLTFP: CALL    LOADFP          ; Number at HL to BCDE
+PHLTFP: LD      DE,FPREG        ; Number at HL to FPREG
+        LDI                     ; 4 bytes to move
+        LDI
+        LDI
+        LDI
+        RET
+
 FPBCDE: LD      (FPREG),DE      ; Save LSB,NLSB of number
         LD      (FPREG+2),BC    ; Save MSB and exponent
         RET
 
-BCDEFP: LD      HL,FPREG        ; Point to FPREG
+BCDEFP: LD      DE,(FPREG)      ; Get LSB,NLSB of number
+        LD      BC,(FPREG+2)    ; Get MSB and exponent
+        RET
+
 LOADFP: LD      E,(HL)          ; Get LSB of number
         INC     HL
         LD      D,(HL)          ; Get NMSB of number
