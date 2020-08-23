@@ -1,4 +1,13 @@
 ;==================================================================================
+;
+; NASCOM ROM BASIC Ver 4.7, (C) 1978 Microsoft
+; Scanned from source published in 80-BUS NEWS from Vol 2, Issue 3
+; (May-June 1983) to Vol 3, Issue 3 (May-June 1984)
+; Adapted for the freeware Zilog Macro Assembler 2.10 to produce
+; the original ROM code (checksum A934H). PA
+;
+;==================================================================================
+;
 ; The updates to the original BASIC within this file are copyright Grant Searle
 ;
 ; You have permission to use this for NON COMMERCIAL USE ONLY
@@ -7,12 +16,17 @@
 ; http://searle.wales/
 ;
 ;==================================================================================
-
-; NASCOM ROM BASIC Ver 4.7, (C) 1978 Microsoft
-; Scanned from source published in 80-BUS NEWS from Vol 2, Issue 3
-; (May-June 1983) to Vol 3, Issue 3 (May-June 1984)
-; Adapted for the freeware Zilog Macro Assembler 2.10 to produce
-; the original ROM code (checksum A934H). PA
+;
+;  The rework to support the Am9511 APU and the Z80 instruction tuning are
+;  copyright (c) 2020 Phillip Stevens
+;
+;  This Source Code Form is subject to the terms of the Mozilla Public
+;  License, v. 2.0. If a copy of the MPL was not distributed with this
+;  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+;
+;  feilipu, August 2020
+;
+;==================================================================================
 
 ; GENERAL EQUATES
 
@@ -136,8 +150,6 @@ IO_APU_STATUS_UNDFL .EQU    004h
 IO_APU_STATUS_OVRFL .EQU    002h
 IO_APU_STATUS_CARRY .EQU    001h
 
-IO_APU_STATUS_ERROR .EQU    01Eh
-
 IO_APU_OP_SADD      .EQU    06Ch
 IO_APU_OP_SSUB      .EQU    06Dh
 IO_APU_OP_SMUL      .EQU    06Eh
@@ -167,24 +179,6 @@ IO_APU_OP_LN        .EQU    009h
 IO_APU_OP_EXP       .EQU    00Ah
 IO_APU_OP_PWR       .EQU    00Bh
 
-IO_APU_OP_NOP       .EQU    000h
-IO_APU_OP_FIXS      .EQU    01Fh
-IO_APU_OP_FIXD      .EQU    01Eh
-IO_APU_OP_FLTS      .EQU    01Dh
-IO_APU_OP_FLTD      .EQU    01Ch
-IO_APU_OP_CHSS      .EQU    074h
-IO_APU_OP_CHSD      .EQU    034h
-IO_APU_OP_CHSF      .EQU    015h
-IO_APU_OP_PTOS      .EQU    077h
-IO_APU_OP_PTOD      .EQU    037h
-IO_APU_OP_PTOF      .EQU    017h
-IO_APU_OP_POPS      .EQU    078h
-IO_APU_OP_POPD      .EQU    038h
-IO_APU_OP_POPF      .EQU    018h
-IO_APU_OP_XCHS      .EQU    079h
-IO_APU_OP_XCHD      .EQU    039h
-IO_APU_OP_XCHF      .EQU    019h
-IO_APU_OP_PUPI      .EQU    01Ah
 
         .ORG    0340H           ; <<<< Modified to allow for Z80 Tx/Rx interrupt & HexLoadr
 
@@ -299,7 +293,7 @@ FNCTAB: .WORD   SGN
         .WORD   POS
         .WORD   SQR
         .WORD   RND
-        .WORD   LOG
+        .WORD   LN
         .WORD   EXP
         .WORD   COS
         .WORD   SIN
@@ -1896,7 +1890,7 @@ KILFOR: LD      SP,HL           ; Remove "FOR" block
 ; < will not RETurn to here , Exit to RUNCNT or Loop >
 
 GETNUM: CALL    EVAL            ; Get a numeric expression
-TSTNUM: .BYTE      0F6H            ; Clear carry (numeric)
+TSTNUM: .BYTE   0F6H            ; Clear carry (numeric)
 TSTSTR: SCF                     ; Set carry (string)
 CHKTYP: LD      A,(TYPE)        ; Check types match
         ADC     A,A             ; Expected + actual
@@ -2532,7 +2526,7 @@ DOFN:   CALL    CHEKFN          ; Make sure FN follows
         LD      L,A             ; HL = Arg variable address
         PUSH    HL              ; Save it
         LD      HL,(FNRGNM)     ; Get old argument name
-        EX      (SP),HL ;       ; Save old , Get new
+        EX      (SP),HL         ; Save old , Get new
         LD      (FNRGNM),HL     ; Set new argument name
         LD      HL,(FNARG+2)    ; Get LSB,NLSB of old arg value
         PUSH    HL              ; Save it
@@ -3092,11 +3086,11 @@ FPSUB:  LD      A,B             ; Get FP exponent
         OR      A               ; Is this number zero?
         JP      Z,FPBCDE        ; Yes - Move BCDE to FPREG
 
-        CALL    am9511_pushf_bcde
-        CALL    am9511_pushf_fpreg  ; load FPREG to APU
+        CALL    PUSHF_BCDE      ; Load BCDE to APU
+        CALL    PUSHF_FPREG     ; Load FPREG to APU
         LD      A,IO_APU_OP_FSUB
         OUT     (IO_APU_CONTROL),A
-        JP      am9511_popf_fpreg
+        JP      POPF_FPREG
 
 PADD:   POP     BC              ; Get FP number from stack
         POP     DE
@@ -3107,26 +3101,12 @@ FPADD:  LD      A,B             ; Get FP exponent
         OR      A               ; Is this number zero?
         JP      Z,FPBCDE        ; Yes - Move BCDE to FPREG
 
-        CALL    am9511_pushf_bcde
-        CALL    am9511_pushf_fpreg  ; load FPREG to APU
+        CALL    PUSHF_BCDE      ; Load BCDE to APU
+        CALL    PUSHF_FPREG     ; Load FPREG to APU
         LD      A,IO_APU_OP_FADD
         OUT     (IO_APU_CONTROL),A
-        JP      am9511_popf_fpreg
+        JP      POPF_FPREG
 
-MINCDE: XOR     A               ; Clear A and carry
-        SUB     B               ; Negate exponent
-        LD      B,A             ; Re-save exponent
-        LD      A,(HL)          ; Get LSB of FPREG
-        SBC     A, E            ; Subtract LSB of BCDE
-        LD      E,A             ; Save LSB of BCDE
-        INC     HL
-        LD      A,(HL)          ; Get NMSB of FPREG
-        SBC     A,D             ; Subtract NMSB of BCDE
-        LD      D,A             ; Save NMSB of BCDE
-        INC     HL
-        LD      A,(HL)          ; Get MSB of FPREG
-        SBC     A,C             ; Subtract MSB of BCDE
-        LD      C,A             ; Save MSB of BCDE
 CONPOS: CALL    C,COMPL         ; Overflow - Make it positive
 
 BNORM:  LD      L,B             ; L = Exponent
@@ -3257,11 +3237,11 @@ FPMULT: LD      A,(FPEXP)       ; Get exponent of FPREG
         OR      A
         RET     Z               ; RETurn if number is zero
 
-        CALL    am9511_pushf_bcde
-        CALL    am9511_pushf_fpreg  ; load FPREG to APU
+        CALL    PUSHF_BCDE      ; Load BCDE to APU
+        CALL    PUSHF_FPREG     ; Load FPREG to APU
         LD      A,IO_APU_OP_FMUL
         OUT     (IO_APU_CONTROL),A
-        JP      am9511_popf_fpreg
+        JP      POPF_FPREG
 
 DIV10:  CALL    STAKFP          ; Save FPREG on stack
         LD      BC,8420H        ; BCDE = 10.
@@ -3274,11 +3254,11 @@ FPDIV:  LD      A,(FPEXP)       ; Get exponent of FPREG
         OR      A
         JP      Z,DZERR         ; Error if division by zero
 
-        CALL    am9511_pushf_bcde
-        CALL    am9511_pushf_fpreg  ; load FPREG to APU
+        CALL    PUSHF_BCDE      ; Load BCDE to APU
+        CALL    PUSHF_FPREG     ; Load FPREG to APU
         LD      A,IO_APU_OP_FDIV
         OUT     (IO_APU_CONTROL),A
-        JP      am9511_popf_fpreg
+        JP      POPF_FPREG
 
 MLSP10: CALL    BCDEFP          ; Move FPREG to BCDE
         LD      A,B             ; Get exponent
@@ -3335,12 +3315,21 @@ STAKFP: EX      DE,HL           ; Save code string address
         EX      DE,HL           ; Restore code string address
         RET
 
-PHLTFP: CALL    LOADFP          ; Number at HL to BCDE
+PHLTFP: LD      DE,FPREG        ; Number at HL to FPREG
+        LDI                     ; 4 bytes to move
+        LDI
+        LDI
+        LDI
+        RET
+
 FPBCDE: LD      (FPREG),DE      ; Save LSB,NLSB of number
         LD      (FPREG+2),BC    ; Save MSB and exponent
         RET
 
-BCDEFP: LD      HL,FPREG        ; Point to FPREG
+BCDEFP: LD      DE,(FPREG)      ; Get LSB,NLSB of number
+        LD      BC,(FPREG+2)    ; Get MSB and exponent
+        RET
+
 LOADFP: LD      E,(HL)          ; Get LSB of number
         INC     HL
         LD      D,(HL)          ; Get NMSB of number
@@ -3784,87 +3773,85 @@ POWERS: .BYTE   0A0H,086H,001H  ; 100000
         .BYTE   001H,000H,000H  ;      1
 
 
-SQR:    CALL    am9511_pushf_fpreg  ; load FPREG to APU
+SQR:    CALL    PUSHF_FPREG     ; Load FPREG to APU
         LD      A,IO_APU_OP_SQRT
         OUT     (IO_APU_CONTROL),A
-        JP      am9511_popf_fpreg
+        JP      POPF_FPREG
 
-COS:    CALL    am9511_pushf_fpreg  ; load FPREG to APU
-        LD      A,IO_APU_OP_COS
-        OUT     (IO_APU_CONTROL),A
-        JP      am9511_popf_fpreg
-        
-ACOS:   CALL    am9511_pushf_fpreg  ; load FPREG to APU
-        LD      A,IO_APU_OP_ACOS
-        OUT     (IO_APU_CONTROL),A
-        JP      am9511_popf_fpreg
-
-SIN:    CALL    am9511_pushf_fpreg  ; load FPREG to APU
-        LD      A,IO_APU_OP_SIN
-        OUT     (IO_APU_CONTROL),A
-        JP      am9511_popf_fpreg
-
-ASIN:   CALL    am9511_pushf_fpreg  ; load FPREG to APU
-        LD      A,IO_APU_OP_ASIN
-        OUT     (IO_APU_CONTROL),A
-        JP      am9511_popf_fpreg
-
-TAN:    CALL    am9511_pushf_fpreg  ; load FPREG to APU
-        LD      A,IO_APU_OP_TAN
-        OUT     (IO_APU_CONTROL),A
-        JP      am9511_popf_fpreg
-
-ATN:    CALL    am9511_pushf_fpreg  ; load FPREG to APU
-        LD      A,IO_APU_OP_ATAN
-        OUT     (IO_APU_CONTROL),A
-        JP      am9511_popf_fpreg
-
-LOG:    CALL    am9511_pushf_fpreg  ; load FPREG to APU
+LN:     CALL    PUSHF_FPREG     ; Load FPREG to APU
         LD      A,IO_APU_OP_LN
         OUT     (IO_APU_CONTROL),A
-        JP      am9511_popf_fpreg
+        JP      POPF_FPREG
 
-LOG10:  CALL    am9511_pushf_fpreg  ; load FPREG to APU
+LOG:    CALL    PUSHF_FPREG     ; Load FPREG to APU
         LD      A,IO_APU_OP_LOG
         OUT     (IO_APU_CONTROL),A
-        JP      am9511_popf_fpreg
-        
-EXP:    CALL    am9511_pushf_fpreg  ; load FPREG to APU
+        JP      POPF_FPREG
+
+EXP:    CALL    PUSHF_FPREG     ; Load FPREG to APU
         LD      A,IO_APU_OP_EXP
         OUT     (IO_APU_CONTROL),A
-        JP      am9511_popf_fpreg
+        JP      POPF_FPREG
+
+COS:    CALL    PUSHF_FPREG     ; Load FPREG to APU
+        LD      A,IO_APU_OP_COS
+        OUT     (IO_APU_CONTROL),A
+        JP      POPF_FPREG
+
+SIN:    CALL    PUSHF_FPREG     ; Load FPREG to APU
+        LD      A,IO_APU_OP_SIN
+        OUT     (IO_APU_CONTROL),A
+        JP      POPF_FPREG
+
+TAN:    CALL    PUSHF_FPREG     ; Load FPREG to APU
+        LD      A,IO_APU_OP_TAN
+        OUT     (IO_APU_CONTROL),A
+        JP      POPF_FPREG
+
+ACOS:   CALL    PUSHF_FPREG     ; Load FPREG to APU
+        LD      A,IO_APU_OP_ACOS
+        OUT     (IO_APU_CONTROL),A
+        JP      POPF_FPREG
+
+ASIN:   CALL    PUSHF_FPREG     ; Load FPREG to APU
+        LD      A,IO_APU_OP_ASIN
+        OUT     (IO_APU_CONTROL),A
+        JP      POPF_FPREG
+
+ATN:    CALL    PUSHF_FPREG     ; Load FPREG to APU
+        LD      A,IO_APU_OP_ATAN
+        OUT     (IO_APU_CONTROL),A
+        JP      POPF_FPREG
 
 POWER:  POP     BC              ; Get base from stack
         POP     DE
-        CALL    am9511_pushf_bcde
-        CALL    am9511_pushf_fpreg  ; load exponent in FPREG to APU
+        CALL    PUSHF_BCDE      ; Load BCDE to APU
+        CALL    PUSHF_FPREG     ; Load FPREG to APU
         LD      A,IO_APU_OP_PWR
         OUT     (IO_APU_CONTROL),A
-        JP      am9511_popf_fpreg
+        JP      POPF_FPREG
 
         ; push MBF32 floating point in FPREG into Am9511 stack.
-        ;
         ; Convert from MBF32_float to am9511_float.
         ; 
         ; uses  : af, bc, de
     
-am9511_pushf_fpreg:
+PUSHF_FPREG:
         ld de,(FPREG)           ; store mantissa LSW in DE
         ld bc,(FPREG+2)         ; store mantissa MSW in BC 
 
         ; push MBF32 floating point in BCDE into Am9511 stack.
-        ;
         ; Convert from MBF32_float to am9511_float.
         ; 
         ; uses  : af, bc, de
 
-am9511_pushf_bcde:
+PUSHF_BCDE:
         ld a,b                  ; capture exponent
-        jr Z,pushf_bcde_zero    ; check for zero
+        jr Z,PUSHF_BCDE_ZERO    ; check for zero
         cp 80h+63               ; check for overflow
         jp NC,OVERR             ; overflow error
         cp 80h-64               ; check for underflow
-        jr C,pushf_bcde_zero
+        jr C,PUSHF_BCDE_ZERO
         sub 80h                 ; remove bias
 
         rla                     ; align exponent for sign
@@ -3875,10 +3862,12 @@ am9511_pushf_bcde:
         scf                     ; set mantissa leading 1
         rr c                    ; restore mantissa with leading 1
 
-pushf_bcde_rejoin:
- ;      in a,(IO_APU_STATUS)    ; read the APU status register
- ;      rlca                    ; busy? IO_APU_STATUS_BUSY
- ;      jr C,pushf_bcde_rejoin
+PUSHF_BCDE_REJOIN:
+;       Assuming we are the only ones to use the APU
+;       it is likely to be ready when we start.
+;       in a,(IO_APU_STATUS)    ; read the APU status register
+;       rlca                    ; busy? IO_APU_STATUS_BUSY
+;       jr C,PUSHF_BCDE_REJOIN
 
         ld a,e
         out (IO_APU_DATA),a     ; load mantissa into APU
@@ -3890,26 +3879,25 @@ pushf_bcde_rejoin:
         out (IO_APU_DATA),a     ; load exponent into APU
         ret
 
-pushf_bcde_zero:
+PUSHF_BCDE_ZERO:
         ld bc,0                 ; no signed zero available
         ld d,b
         ld e,c
-        jp pushf_bcde_rejoin
+        jp PUSHF_BCDE_REJOIN
 
         ; float primitive
         ; pop a MBF32 floating point from the Am9511 stack.
-        ;
         ; Convert from am9511_float to MBF32_float.
         ; 
         ; uses  : af, bc, de
 
-am9511_popf_fpreg:
+POPF_FPREG:
         in a,(IO_APU_STATUS)    ; read the APU status register
         rlca                    ; busy? IO_APU_STATUS_BUSY
-        jr C,am9511_popf_fpreg
+        jr C,POPF_FPREG
 
         and 07ch                ; errors from status register
-        jr NZ,popf_fpreg_errors
+        jr NZ,POPF_FPREG_ERRORS
 
         in a,(IO_APU_DATA)      ; read the APU data register
         ld b,a                  ; load MSW from APU
@@ -3928,53 +3916,25 @@ am9511_popf_fpreg:
         add a,80h               ; add bias
         ld b,a
 
-popf_fpreg_rejoin:
+POPF_FPREG_REJOIN:
         ld (FPREG),de           ; store mantissa LSW
         ld (FPREG+2),bc         ; store mantissa MSB and exponent
         ret
 
-popf_fpreg_errors:
+POPF_FPREG_ERRORS:
         rrca                    ; relocate status bits (just for convenience)
-        bit 5,a
-        jr NZ,popf_fpreg_zero   ; zero
         bit 4,a
         jp NZ,DZERR             ; division by zero
-        bit 2,a
-        jr NZ,popf_fpreg_zero   ; underflow error
+        bit 3,a
+        jp NZ,FCERR             ; parameter out of range
         bit 1,a
-        jp NZ,OVERR             ; overflow error
-        jp FCERR                ; other function errors
+        jp NZ,OVERR             ; overflow
 
-popf_fpreg_zero:                ; zero or underflow
+POPF_FPREG_ZERO:                ; zero or underflow
         ld bc,0
         ld d,b
         ld e,c
-        jp popf_fpreg_rejoin
-
-
-        ; float primitive
-        ; pop a long from the Am9511 stack.
-        ;
-        ; enter : stack = ret0
-        ;
-        ; exit  : fpreg = long
-        ; 
-        ; uses  : af, bc, de
-
-am9511_popl_fpreg:
-        in a,(IO_APU_STATUS)    ; read the APU status register
-        rlca                    ; busy? IO_APU_STATUS_BUSY
-        jr C,am9511_popl_fpreg
-
-        in a,(IO_APU_DATA)      ; read the APU data register
-        ld b,a                  ; load MSW from APU
-        in a,(IO_APU_DATA)
-        ld c,a
-        in a,(IO_APU_DATA)
-        ld d,a                  ; load LSW from APU
-        in a,(IO_APU_DATA)
-        ld e,a
-        jp popf_fpreg_rejoin
+        jp POPF_FPREG_REJOIN
 
 
 MONITR: JP      $0000           ; Restart (Normally Monitor Start)
