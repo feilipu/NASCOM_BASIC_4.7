@@ -76,7 +76,7 @@ LINEAT  .EQU    WRKSPC+053H     ; Current line number
 BASTXT  .EQU    WRKSPC+055H     ; Pointer to start of program
 BUFFER  .EQU    WRKSPC+058H     ; Input buffer
 STACK   .EQU    WRKSPC+05DH     ; Initial stack
-CURPOS  .EQU    WRKSPC+0A2H     ; <<<< Character position on line ** Top of TEMPSTACK **
+CURPOS  .EQU    WRKSPC+0A2H     ; <<<< Character position on line ** Top of Loader TEMPSTACK **
 LCRFLG  .EQU    WRKSPC+0A3H     ; Locate/Create flag
 TYPE    .EQU    WRKSPC+0A4H     ; Data type flag
 DATFLG  .EQU    WRKSPC+0A5H     ; Literal statement flag
