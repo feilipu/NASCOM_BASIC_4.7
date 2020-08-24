@@ -1,5 +1,7 @@
 # HexLoadr
 
+__NOTE__ `HLOAD` has been integrated inside MS Basic, so now this needs to be rewritten.
+
 The goal of this extension to the standard RC2014 boot ROM sequence is to load an arbitrary program in Intel HEX format into an arbitrary location in the Z80 address space, and allow you to start and use your program from Nascom Basic. Your program can be created in assembler, or in C, provided the code is available in Intel HEX format.
 
 There are are several stages to this process.
@@ -75,15 +77,19 @@ The `RC2014_LABELS.TXT` file is provided to advise of all the relevant RAM and R
 
 1. Select the preferred origin `.ORG` for your arbitrary program, and assemble a HEX file using your preferred assembler.
 
-2. Start your 32k RAM RC2014 with the `Memory top?` set to 36863 (`0x8FFF`) or lower. This leaves space for your program from `0x9000` through to `0xFFFF`. Adjust this if needed to suit your individual needs.
+2. ~~Start your 32k RAM RC2014 with the `Memory top?` set to 36863 (`0x8FFF`) or lower. This leaves space for your program from `0x9000` through to `0xFFFF`. Adjust this if needed to suit your individual needs.~~
 
-3. Reset the RC2014 and type `H` when offered the `(C|W|H)` option when booting. `HexLoadr:` will wait for Intel HEX formatted data on the ACIA serial interface.
+3. ~~Reset the RC2014 and type `H` when offered the `(C|W|H)` option when booting. `HexLoadr:` will wait for Intel HEX formatted data on the ACIA serial interface.~~
 
-4. Using a serial terminal, upload the HEX file for your arbitrary program that you prepared in Step 1, using the Linux `cat` utility or similar. If desired the python `slowprint.py` program can also be used for this purpose. `python slowprint.py > /dev/ttyUSB0 < myprogram.hex` or `cat > /dev/ttyUSB0 < myprogram.hex`.
 
-5. When HexLoadr has finished, and you are back at the Basic `ok` prompt, use the `DOKE` command relocate the address for the Basic `USR(x)` command to point to `.ORG` of your arbitrary program. For the RC2014 the `USR(x)` jump address is located at `0x8224`. If your arbitrary program is located at `0x9000` then the Basic command is `DOKE &h8224, &h9000`, for example.
+2. Give the `HLOAD` command within Basic.
 
-6. Start your program by typing `PRINT USR(0)`, or other variant if you have a parameter to pass to your program.
+3. Using a serial terminal, upload the HEX file for your arbitrary program that you prepared in Step 1, using the Linux `cat` utility or similar. If desired the python `slowprint.py` program can also be used for this purpose. `python slowprint.py > /dev/ttyUSB0 < myprogram.hex` or `cat > /dev/ttyUSB0 < myprogram.hex`.
+
+
+5. ~~When HexLoadr has finished, and you are back at the Basic `ok` prompt, use the `DOKE` command relocate the address for the Basic `USR(x)` command to point to `.ORG` of your arbitrary program. For the RC2014 the `USR(x)` jump address is located at `0x8224`. If your arbitrary program is located at `0x9000` then the Basic command is `DOKE &h8224, &h9000`, for example.~~
+
+6. Start your program by typing `PRINT USR(0)`, or `? USR(0)`, or other variant if you have a parameter to pass to your program.
 
 7. Profit.
 

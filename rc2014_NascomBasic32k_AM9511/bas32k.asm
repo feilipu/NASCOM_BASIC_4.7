@@ -181,10 +181,10 @@ IO_APU_OP_EXP       .EQU    00Ah
 IO_APU_OP_PWR       .EQU    00Bh
 
 
-        .ORG    0340H           ; <<<< Modified to allow for Z80 Tx/Rx interrupt & HexLoadr
+        .ORG    0250H           ; <<<< Modified to allow for Z80 Tx/Rx interrupt & HexLoadr
 
-COLD:   JP      STARTB          ; Jump in for cold start (0340H)
-WARM:   JP      WARMST          ; Jump in for warm start (0343H)
+COLD:   JP      STARTB          ; Jump in for cold start (0250H)
+WARM:   JP      WARMST          ; Jump in for warm start (0253H)
 STARTB: 
         LD      IX,0            ; Flag cold start
         JP      CSTART          ; Jump to initialise

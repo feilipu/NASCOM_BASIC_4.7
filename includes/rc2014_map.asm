@@ -38,13 +38,10 @@ ORG         0x0130
 SECTION     z80_acia_print
 ORG         0x0180
 
-SECTION     z80_hexloadr
+SECTION     z80_init
 ORG         0x0190
 
-SECTION     z80_init
-ORG         0x0220
-
 SECTION     z80_init_strings
-ORG         0x02A0
+ORG         0x0200
 
 ;==============================================================================

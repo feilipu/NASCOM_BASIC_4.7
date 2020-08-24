@@ -1,4 +1,16 @@
 ;==================================================================================
+;
+;  The rework to support HLOAD and the Z80 instruction tuning are
+;  copyright (c) 2020 Phillip Stevens
+;
+;  This Source Code Form is subject to the terms of the Mozilla Public
+;  License, v. 2.0. If a copy of the MPL was not distributed with this
+;  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+;
+;  feilipu, August 2020
+;
+;==================================================================================
+;
 ; The updates to the original BASIC within this file are copyright Grant Searle
 ;
 ; You have permission to use this for NON COMMERCIAL USE ONLY
@@ -124,10 +136,10 @@ MO      .EQU    24H             ; Missing operand
 HX      .EQU    26H             ; HEX error
 BN      .EQU    28H             ; BIN error
 
-        .ORG    0340H           ; <<<< Modified to allow for Z80 Tx/Rx interrupt & HexLoadr
+        .ORG    0250H           ; <<<< Modified to allow for Z80 Tx/Rx interrupt & HexLoadr
 
-COLD:   JP      STARTB          ; Jump in for cold start (0340H)
-WARM:   JP      WARMST          ; Jump in for warm start (0343H)
+COLD:   JP      STARTB          ; Jump in for cold start (0250H)
+WARM:   JP      WARMST          ; Jump in for warm start (0253H)
 STARTB: 
         LD      IX,0            ; Flag cold start
         JP      CSTART          ; Jump to initialise
@@ -220,7 +232,7 @@ BRKRET: CALL    CLREG           ; Clear registers and stack
 
 BFREE:  .BYTE   " Bytes free",CR,LF,0,0
 
-SIGNON: .BYTE   "Z80 BASIC Ver 4.7b",CR,LF
+SIGNON: .BYTE   "Z80 BASIC Ver 4.7c",CR,LF
         .BYTE   "Copyright ",40,"C",41
         .BYTE   " 1978 by Microsoft",CR,LF,0,0
 
@@ -259,7 +271,7 @@ FNCTAB: .WORD   SGN
 
 ; RESERVED WORD LIST
 
-WORDS:  .BYTE   'E'+80H,"ND"
+WORDS:  .BYTE   'E'+80H,"ND"    ; 80h
         .BYTE   'F'+80H,"OR"
         .BYTE   'N'+80H,"EXT"
         .BYTE   'D'+80H,"ATA"
@@ -275,14 +287,13 @@ WORDS:  .BYTE   'E'+80H,"ND"
         .BYTE   'R'+80H,"ETURN"
         .BYTE   'R'+80H,"EM"
         .BYTE   'S'+80H,"TOP"
-        .BYTE   'O'+80H,"UT"
+        .BYTE   'O'+80H,"UT"    ; 90h
         .BYTE   'O'+80H,"N"
         .BYTE   'N'+80H,"ULL"
         .BYTE   'W'+80H,"AIT"
         .BYTE   'D'+80H,"EF"
         .BYTE   'P'+80H,"OKE"
         .BYTE   'D'+80H,"OKE"
-        .BYTE   'S'+80H,"CREEN"
         .BYTE   'L'+80H,"INES"
         .BYTE   'C'+80H,"LS"
         .BYTE   'W'+80H,"IDTH"
@@ -292,9 +303,8 @@ WORDS:  .BYTE   'E'+80H,"ND"
         .BYTE   'P'+80H,"RINT"
         .BYTE   'C'+80H,"ONT"
         .BYTE   'L'+80H,"IST"
-        .BYTE   'C'+80H,"LEAR"
-        .BYTE   'C'+80H,"LOAD"
-        .BYTE   'C'+80H,"SAVE"
+        .BYTE   'C'+80H,"LEAR"  ; A0h
+        .BYTE   'H'+80H,"LOAD"
         .BYTE   'N'+80H,"EW"
         .BYTE   'T'+80H,"AB("
         .BYTE   'T'+80H,"O"
@@ -310,7 +320,7 @@ WORDS:  .BYTE   'E'+80H,"ND"
         .BYTE   '/'+80H
         .BYTE   '^'+80H
         .BYTE   'A'+80H,"ND"
-        .BYTE   'O'+80H,"R"
+        .BYTE   'O'+80H,"R"     ; B0h
         .BYTE   '>'+80H
         .BYTE   '='+80H
         .BYTE   '<'+80H
@@ -327,7 +337,7 @@ WORDS:  .BYTE   'E'+80H,"ND"
         .BYTE   'L'+80H,"OG"
         .BYTE   'E'+80H,"XP"
         .BYTE   'C'+80H,"OS"
-        .BYTE   'S'+80H,"IN"
+        .BYTE   'S'+80H,"IN"    ; C0h
         .BYTE   'T'+80H,"AN"
         .BYTE   'A'+80H,"TN"
         .BYTE   'P'+80H,"EEK"
@@ -370,7 +380,6 @@ WORDTB: .WORD   PEND
         .WORD   DEF
         .WORD   POKE
         .WORD   DOKE
-        .WORD   REM
         .WORD   LINES
         .WORD   CLS
         .WORD   WIDTH
@@ -381,8 +390,7 @@ WORDTB: .WORD   PEND
         .WORD   CONT
         .WORD   LIST
         .WORD   CLEAR
-        .WORD   REM
-        .WORD   REM
+        .WORD   HLOAD
         .WORD   NEW
 
 ; RESERVED WORD TOKEN VALUES
@@ -393,28 +401,28 @@ ZDATA   .EQU    083H            ; DATA
 ZGOTO   .EQU    088H            ; GOTO
 ZGOSUB  .EQU    08CH            ; GOSUB
 ZREM    .EQU    08EH            ; REM
-ZPRINT  .EQU    09EH            ; PRINT
-ZNEW    .EQU    0A4H            ; NEW
+ZPRINT  .EQU    09DH            ; PRINT
+ZNEW    .EQU    0A1H            ; NEW
 
-ZTAB    .EQU    0A5H            ; TAB
-ZTO     .EQU    0A6H            ; TO
-ZFN     .EQU    0A7H            ; FN
-ZSPC    .EQU    0A8H            ; SPC
-ZTHEN   .EQU    0A9H            ; THEN
-ZNOT    .EQU    0AAH            ; NOT
-ZSTEP   .EQU    0ABH            ; STEP
+ZTAB    .EQU    0A2H            ; TAB
+ZTO     .EQU    0A3H            ; TO
+ZFN     .EQU    0A4H            ; FN
+ZSPC    .EQU    0A5H            ; SPC
+ZTHEN   .EQU    0A7H            ; THEN
+ZNOT    .EQU    0A8H            ; NOT
+ZSTEP   .EQU    0A9H            ; STEP
 
-ZPLUS   .EQU    0ACH            ; +
-ZMINUS  .EQU    0ADH            ; -
-ZTIMES  .EQU    0AEH            ; *
-ZDIV    .EQU    0AFH            ; /
-ZOR     .EQU    0B2H            ; OR
-ZGTR    .EQU    0B3H            ; >
-ZEQUAL  .EQU    0B4H            ; =
-ZLTH    .EQU    0B5H            ; <
-ZSGN    .EQU    0B6H            ; SGN
+ZPLUS   .EQU    0AAH            ; +
+ZMINUS  .EQU    0ABH            ; -
+ZTIMES  .EQU    0ACH            ; *
+ZDIV    .EQU    0ADH            ; /
+ZOR     .EQU    0B0H            ; OR
+ZGTR    .EQU    0B1H            ; >
+ZEQUAL  .EQU    0B2H            ; =
+ZLTH    .EQU    0B3H            ; <
+ZSGN    .EQU    0B4H            ; SGN
 ZPOINT  .EQU    0C7H            ; POINT
-ZLEFT   .EQU    0CDH +2         ; LEFT$
+ZLEFT   .EQU    0CDH            ; LEFT$
 
 ; ARITHMETIC PRECEDENCE TABLE
 
@@ -4150,8 +4158,89 @@ DOKE:   CALL    GETNUM          ; Get a number
         POP     HL              ; Restore code string address
         RET
 
+        ; Load Intel HEX into program memory.
+        ; uses  : af, bc, de, hl
+        
+HLOAD:
+        call HLD_WAIT_COLON     ; wait for first colon and address data
+        dec de                  ; go one Byte lower
+        ld hl,(LSTRAM)          ; get last ram address       
+        xor a                   ; clear carry flag
+        sbc hl,de
+        jr C,HLD_HIGH_RAM       ; if last ram lower leave it, otherwise
+        ld (LSTRAM),de          ; store new last ram location
+        ld hl,-50               ; reserve 50 bytes for string space
+        add hl,de               ; allocate string space
+        ld (STRSPC),hl          ; save string space location
+HLD_HIGH_RAM:
+        inc de
+        ld (USR+1),de           ; store first address as "USR(x)" location
+        jr HLD_READ_DATA        ; now get the first data
+        
+HLD_WAIT_COLON:
+        rst 10h                 ; Rx byte in A
+        cp ':'                  ; wait for ':'
+        jr NZ, HLD_WAIT_COLON
+        ld c, 0                 ; reset C to compute checksum
+        call HLD_READ_BYTE      ; read byte count
+        ld b, a                 ; store it in B
+        call HLD_READ_BYTE      ; read upper byte of address
+        ld d, a                 ; store in D
+        call HLD_READ_BYTE      ; read lower byte of address
+        ld e, a                 ; store in E
+        call HLD_READ_BYTE      ; read record type
+        dec a                   ; check if record type is 01 (end of file)
+        jr Z, HLD_END_LOAD
+        inc a                   ; check if record type is 00 (data)
+        jp NZ,TMERR             ; if not, type mismatch error
+        ret
 
-; HEX$(nn) Convert 16 bit number to Hexadecimal string
+HLD_READ:
+        call HLD_WAIT_COLON     ; wait for the next colon and address data
+HLD_READ_DATA:
+        call HLD_READ_BYTE
+        ld (de), a              ; write the byte at the RAM address
+        inc de
+        djnz HLD_READ_DATA      ; if b non zero, loop to get more data
+
+HLD_READ_CHKSUM:
+        call HLD_READ_BYTE     ; read checksum, but we don't need to keep it
+        ld a, c                 ; lower byte of C checksum should be 0
+        or a
+        jp NZ, HXERR            ; non zero, we have an issue
+        jp HLD_READ
+
+HLD_END_LOAD:
+        call HLD_READ_BYTE      ; read checksum, but we don't need to keep it
+        ld a, c                 ; lower byte of C checksum should be 0
+        or a
+        jp NZ, HXERR            ; non zero, we have an issue
+        jp BRKRET               ; return to command line
+
+HLD_READ_BYTE:                  ; returns byte in A, checksum in C
+        call HLD_READ_NIBBLE    ; read the first nibble
+        rlca                    ; shift it left by 4 bits
+        rlca
+        rlca
+        rlca
+        ld l, a                 ; temporarily store the first nibble in L
+        call HLD_READ_NIBBLE    ; get the second (low) nibble
+        or l                    ; assemble two nibbles into one byte in A
+        ld l, a                 ; put assembled byte back into L
+        add a, c                ; add the byte read to C (for checksum)
+        ld c, a
+        ld a, l
+        ret                     ; return the byte read in A (L = char received too)  
+
+HLD_READ_NIBBLE:
+        rst 10h                 ; Rx byte in A
+        sub '0'
+        cp 10
+        ret C                   ; if A<10 just return
+        sub 7                   ; else subtract 'A'-'0' (17) and add 10
+        ret
+
+        ; HEX$(nn) Convert 16 bit number to Hexadecimal string
 
 HEX:    CALL    TSTNUM          ; Verify it's a number
         CALL    DEINT           ; Get integer -32768 to 32767

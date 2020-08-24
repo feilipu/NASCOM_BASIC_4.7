@@ -23,13 +23,6 @@
 ;
 ;==============================================================================
 ;
-; HexLoadr option by @feilipu,
-; derived from the work of @fbergama and @foxweb at RC2014
-; https://github.com/RC2014Z80
-;
-
-;==============================================================================
-;
 ; INCLUDES SECTION
 ;
 
@@ -224,84 +217,7 @@ PRINT:
         JR        PRINT             ; Continue until $00
 
 ;------------------------------------------------------------------------------
-SECTION     z80_hexloadr            ; ORG $0190
-HEX_START:
-        ld hl, initString
-        call PRINT
-HEX_WAIT_COLON:
-        call RXA                    ; Rx byte
-        cp ':'                      ; wait for ':'
-        jr NZ, HEX_WAIT_COLON
-        ld c, 0                     ; reset C to compute checksum
-        call HEX_READ_BYTE          ; read byte count
-        ld b, a                     ; store it in B
-        call HEX_READ_BYTE          ; read upper byte of address
-        ld d, a                     ; store in D
-        call HEX_READ_BYTE          ; read lower byte of address
-        ld e, a                     ; store in E
-        call HEX_READ_BYTE          ; read record type
-        dec a                       ; check if record type is 01 (end of file)
-        jr Z, HEX_END_LOAD
-        inc a                       ; check if record type is 00 (data)
-        jr NZ, HEX_INVAL_TYPE       ; if not, error
-HEX_READ_DATA:
-        call HEX_READ_BYTE
-        ld (de), a                  ; write the byte at the RAM address
-        inc de
-        djnz HEX_READ_DATA          ; if b non zero, loop to get more data
-HEX_READ_CHKSUM:
-        call HEX_READ_BYTE          ; read checksum, but we don't need to keep it
-        ld a, c                     ; lower byte of C checksum should be 0
-        or a
-        jr NZ, HEX_BAD_CHK          ; non zero, we have an issue
-        ld a, '#'                   ; "#" per line loaded
-        call TXA                    ; Print it
-        jr HEX_WAIT_COLON
-
-HEX_END_LOAD:
-        call HEX_READ_BYTE          ; read checksum, but we don't need to keep it
-        ld a, c                     ; lower byte of C checksum should be 0
-        or a
-        jr NZ, HEX_BAD_CHK          ; non zero, we have an issue
-        ld hl, LoadOKStr
-        call PRINT
-        jp WARMSTART                ; ready to run our loaded program from Basic
-
-HEX_INVAL_TYPE:
-        ld hl, invalidTypeStr
-        call PRINT
-        jp START                    ; go back to start
-
-HEX_BAD_CHK:
-        ld hl, badCheckSumStr
-        call PRINT
-        jp START                    ; go back to start
-
-HEX_READ_BYTE:                      ; returns byte in A, checksum in C
-        call HEX_READ_NIBBLE        ; read the first nibble
-        rlca                        ; shift it left by 4 bits
-        rlca
-        rlca
-        rlca
-        ld l, a                     ; temporarily store the first nibble in L
-        call HEX_READ_NIBBLE        ; get the second (low) nibble
-        or l                        ; assemble two nibbles into one byte in A
-        ld l, a                     ; put assembled byte back into L
-        add a, c                    ; add the byte read to C (for checksum)
-        ld c, a
-        ld a, l
-        ret                         ; return the byte read in A (L = char received too)  
-
-HEX_READ_NIBBLE:
-        call RXA                    ; Rx byte in A
-        sub '0'
-        cp 10
-        ret C                       ; if A<10 just return
-        sub 7                       ; else subtract 'A'-'0' (17) and add 10
-        ret
-
-;------------------------------------------------------------------------------
-SECTION        z80_init             ; ORG $0220
+SECTION        z80_init             ; ORG $0190
 
 PUBLIC  INIT
 
@@ -351,8 +267,6 @@ START:
 CORW:
         RST 10H
         AND 11011111B               ; lower to uppercase
-        CP 'H'                      ; are we trying to load an Intel HEX program?
-        JP Z, HEX_START             ; then jump to HexLoadr
         CP 'C'
         JR NZ, CHECKWARM
         RST 08H
@@ -363,7 +277,7 @@ CORW:
 COLDSTART:
         LD A,'Y'                    ; Set the BASIC STARTED flag
         LD (basicStarted),A
-        JP $0340                    ; <<<< Start Basic COLD:
+        JP $0250                    ; <<<< Start Basic COLD:
 CHECKWARM:
         CP 'W'
         JR NZ, CORW
@@ -373,29 +287,20 @@ CHECKWARM:
         LD A,LF
         RST 08H
 WARMSTART:
-        JP $0343                    ; <<<< Start Basic WARM:
+        JP $0253                    ; <<<< Start Basic WARM:
 
 ;==============================================================================
 ;
 ; STRINGS
 ;
-SECTION         z80_init_strings    ; ORG $02A0
+SECTION         z80_init_strings    ; ORG $0200
 
 SIGNON1:        DEFM    CR,LF
-                DEFM    "SBC - Grant Searle",CR,LF
-                DEFM    "ACIA - feilipu",CR,LF
-                DEFM    "z88dk",CR,LF,0
+                DEFM    "RC2014 + Am9511 APU",CR,LF
+                DEFM    "z88dk - feilipu",CR,LF,0
 
 SIGNON2:        DEFM    CR,LF
-                DEFM    "Cold or Warm start, "
-                DEFM    "or HexLoadr (C|W|H) ? ",0
-
-initString:     DEFM    CR,LF,"HexLoadr: "
-                DEFM    CR,LF,0
-
-invalidTypeStr: DEFM    CR,LF,"Invalid Type",CR,LF,0
-badCheckSumStr: DEFM    CR,LF,"Checksum Error",CR,LF,0
-LoadOKStr:      DEFM    CR,LF,"Done",CR,LF,0
+                DEFM    "Cold or Warm start (C|W) ? ",0
 
 ;==============================================================================
 ;
