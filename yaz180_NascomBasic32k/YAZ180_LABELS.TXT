@@ -1,8 +1,0 @@
-Label        Value      Label        Value      Label        Value
-------------------      ------------------      ------------------
-
-    FUNCTIONS
-
-RX0           0172      RX0_CHK       016C      TX0           0187
-HEXLOADR      01CB      DEINT         0C50      ABPASS        13C6
-
