@@ -292,6 +292,7 @@ FNCTAB: .WORD   SGN
         .WORD   FRE
         .WORD   INP
         .WORD   POS
+        .WORD   SQR
         .WORD   RND
         .WORD   LOG
         .WORD   EXP
@@ -301,7 +302,6 @@ FNCTAB: .WORD   SGN
         .WORD   ACOS
         .WORD   ASIN
         .WORD   ATAN
-        .WORD   SQRT
         .WORD   PEEK
         .WORD   DEEK
         .WORD   POINT
@@ -351,6 +351,7 @@ WORDS:  .BYTE   'E'+80H,"ND"    ; 80h
         .BYTE   'C'+80H,"ONT"
         .BYTE   'L'+80H,"IST"
         .BYTE   'C'+80H,"LEAR"  ; A0h
+        .BYTE   'H'+80H,"LOAD"
         .BYTE   'N'+80H,"EW"
         .BYTE   'T'+80H,"AB("
         .BYTE   'T'+80H,"O"
@@ -366,8 +367,8 @@ WORDS:  .BYTE   'E'+80H,"ND"    ; 80h
         .BYTE   '/'+80H
         .BYTE   '^'+80H
         .BYTE   'A'+80H,"ND"
-        .BYTE   'O'+80H,"R"
-        .BYTE   '>'+80H         ; B0h
+        .BYTE   'O'+80H,"R"     ; B0h
+        .BYTE   '>'+80H
         .BYTE   '='+80H
         .BYTE   '<'+80H
 
@@ -378,16 +379,16 @@ WORDS:  .BYTE   'E'+80H,"ND"    ; 80h
         .BYTE   'F'+80H,"RE"
         .BYTE   'I'+80H,"NP"
         .BYTE   'P'+80H,"OS"
+        .BYTE   'S'+80H,"QR"
         .BYTE   'R'+80H,"ND"
         .BYTE   'L'+80H,"OG"
         .BYTE   'E'+80H,"XP"
         .BYTE   'C'+80H,"OS"
-        .BYTE   'S'+80H,"IN"
+        .BYTE   'S'+80H,"IN"    ; C0h
         .BYTE   'T'+80H,"AN"
-        .BYTE   'A'+80H,"COS"   ; C0h
+        .BYTE   'A'+80H,"COS"
         .BYTE   'A'+80H,"SIN"
         .BYTE   'A'+80H,"TAN"
-        .BYTE   'S'+80H,"QRT"
         .BYTE   'P'+80H,"EEK"
         .BYTE   'D'+80H,"EEK"
         .BYTE   'P'+80H,"OINT"
@@ -399,8 +400,8 @@ WORDS:  .BYTE   'E'+80H,"ND"    ; 80h
         .BYTE   'H'+80H,"EX$"
         .BYTE   'B'+80H,"IN$"
         .BYTE   'L'+80H,"EFT$"
-        .BYTE   'R'+80H,"IGHT$"
-        .BYTE   'M'+80H,"ID$"   ; D0h
+        .BYTE   'R'+80H,"IGHT$" ; D0h
+        .BYTE   'M'+80H,"ID$"
         .BYTE   80H             ; End of list marker
 
 ; KEYWORD ADDRESS TABLE
@@ -438,6 +439,7 @@ WORDTB: .WORD   PEND
         .WORD   CONT
         .WORD   LIST
         .WORD   CLEAR
+        .WORD   HLOAD
         .WORD   NEW
 
 ; RESERVED WORD TOKEN VALUES
@@ -455,21 +457,21 @@ ZTAB    .EQU    0A2H            ; TAB
 ZTO     .EQU    0A3H            ; TO
 ZFN     .EQU    0A4H            ; FN
 ZSPC    .EQU    0A5H            ; SPC
-ZTHEN   .EQU    0A6H            ; THEN
-ZNOT    .EQU    0A7H            ; NOT
-ZSTEP   .EQU    0A8H            ; STEP
+ZTHEN   .EQU    0A7H            ; THEN
+ZNOT    .EQU    0A8H            ; NOT
+ZSTEP   .EQU    0A9H            ; STEP
 
-ZPLUS   .EQU    0A9H            ; +
-ZMINUS  .EQU    0AAH            ; -
-ZTIMES  .EQU    0ABH            ; *
-ZDIV    .EQU    0ACH            ; /
-ZOR     .EQU    0AFH            ; OR
-ZGTR    .EQU    0B0H            ; >
-ZEQUAL  .EQU    0B1H            ; =
-ZLTH    .EQU    0B2H            ; <
-ZSGN    .EQU    0B3H            ; SGN
-ZPOINT  .EQU    0C6H            ; POINT
-ZLEFT   .EQU    0CDH            ; LEFT$
+ZPLUS   .EQU    0AAH            ; +
+ZMINUS  .EQU    0ABH            ; -
+ZTIMES  .EQU    0ACH            ; *
+ZDIV    .EQU    0ADH            ; /
+ZOR     .EQU    0B0H            ; OR
+ZGTR    .EQU    0B1H            ; >
+ZEQUAL  .EQU    0B2H            ; =
+ZLTH    .EQU    0B3H            ; <
+ZSGN    .EQU    0B4H            ; SGN
+ZPOINT  .EQU    0C7H            ; POINT
+ZLEFT   .EQU    0CFH            ; LEFT$
 
 ; ARITHMETIC PRECEDENCE TABLE
 
@@ -827,7 +829,7 @@ INTVAR: LD      (BRKLIN),HL     ; Initialise RUN variables
         LD      (ARREND),HL     ; Clear arrays
 
 CLREG:  POP     BC              ; Save return address
-        LD      HL,(STRSPC)     ; Get end of working RAN
+        LD      HL,(STRSPC)     ; Get end of working RAM
         LD      SP,HL           ; Set stack
         LD      HL,TMSTPL       ; Temporary string pool
         LD      (TMSTPT),HL     ; Reset temporary string ptr
@@ -3237,6 +3239,12 @@ SHRT1:  RRA                     ; Shift it right
         LD      B,A             ; Re-save underflow
         JP      SHRLP           ; More bits to do
 
+UNITY:  .BYTE   000H,000H,000H,081H     ; 1.00000
+
+LOG:    CALL    PUSHF_FPREG     ; Load FPREG to APU
+        LD      A,IO_APU_OP_LN
+        OUT     (IO_APU_CONTROL),A
+        JP      POPF_FPREG
 
 MULT:   POP     BC              ; Get number from stack
         POP     DE
@@ -3701,9 +3709,36 @@ RNGTST: LD      BC,9474H        ; BCDE = 999999.
         JP      PO,GTSIXD       ; Too big - Divide by ten
         JP      (HL)            ; Otherwise return to caller
 
+HALF:   .BYTE   00H,00H,00H,80H ; 0.5
+
+POWERS: .BYTE   0A0H,086H,001H  ; 100000
+        .BYTE   010H,027H,000H  ;  10000
+        .BYTE   0E8H,003H,000H  ;   1000
+        .BYTE   064H,000H,000H  ;    100
+        .BYTE   00AH,000H,000H  ;     10
+        .BYTE   001H,000H,000H  ;      1
+
 NEGAFT: LD  HL,INVSGN           ; Negate result
         EX      (SP),HL         ; To be done after caller
         JP      (HL)            ; Return to caller
+
+SQR:    CALL    PUSHF_FPREG     ; Load FPREG to APU
+        LD      A,IO_APU_OP_SQRT
+        OUT     (IO_APU_CONTROL),A
+        JP      POPF_FPREG
+
+POWER:  POP     BC              ; Get base from stack
+        POP     DE
+        CALL    PUSHF_BCDE      ; Load BCDE to APU
+        CALL    PUSHF_FPREG     ; Load FPREG to APU
+        LD      A,IO_APU_OP_PWR
+        OUT     (IO_APU_CONTROL),A
+        JP      POPF_FPREG
+
+EXP:    CALL    PUSHF_FPREG     ; Load FPREG to APU
+        LD      A,IO_APU_OP_EXP
+        OUT     (IO_APU_CONTROL),A
+        JP      POPF_FPREG
 
 RND:    CALL    TSTSGN          ; Test sign of FPREG
         LD      HL,SEED+2       ; Random number seed
@@ -3769,27 +3804,6 @@ RNDTAB: .BYTE   068H,0B1H,046H,068H ; Table used by RND
         .BYTE   099H,0E9H,092H,069H
         .BYTE   010H,0D1H,075H,068H
 
-
-HALF:   .BYTE   00H,00H,00H,80H ; 0.5
-
-POWERS: .BYTE   0A0H,086H,001H  ; 100000
-        .BYTE   010H,027H,000H  ;  10000
-        .BYTE   0E8H,003H,000H  ;   1000
-        .BYTE   064H,000H,000H  ;    100
-        .BYTE   00AH,000H,000H  ;     10
-        .BYTE   001H,000H,000H  ;      1
-
-
-LOG:    CALL    PUSHF_FPREG     ; Load FPREG to APU
-        LD      A,IO_APU_OP_LN
-        OUT     (IO_APU_CONTROL),A
-        JP      POPF_FPREG
-
-EXP:    CALL    PUSHF_FPREG     ; Load FPREG to APU
-        LD      A,IO_APU_OP_EXP
-        OUT     (IO_APU_CONTROL),A
-        JP      POPF_FPREG
-
 COS:    CALL    PUSHF_FPREG     ; Load FPREG to APU
         LD      A,IO_APU_OP_COS
         OUT     (IO_APU_CONTROL),A
@@ -3820,18 +3834,45 @@ ATAN:   CALL    PUSHF_FPREG     ; Load FPREG to APU
         OUT     (IO_APU_CONTROL),A
         JP      POPF_FPREG
 
-SQRT:   CALL    PUSHF_FPREG     ; Load FPREG to APU
-        LD      A,IO_APU_OP_SQRT
-        OUT     (IO_APU_CONTROL),A
-        JP      POPF_FPREG
+MONITR: JP      $0000           ; Restart (Normally Monitor Start)
 
-POWER:  POP     BC              ; Get base from stack
-        POP     DE
-        CALL    PUSHF_BCDE      ; Load BCDE to APU
-        CALL    PUSHF_FPREG     ; Load FPREG to APU
-        LD      A,IO_APU_OP_PWR
-        OUT     (IO_APU_CONTROL),A
-        JP      POPF_FPREG
+CLS:    LD      A,CS            ; ASCII Clear screen
+        RST     08H             ; Output character
+ARET:   RET                     ; A RETurn instruction
+ARETN:  RETN                    ; A RETurN from NMI
+
+WIDTH:  CALL    GETINT          ; Get integer 0-255
+        LD      A,E             ; Width to A
+        LD      (LWIDTH),A      ; Set width
+        RET
+
+LINES:  CALL    GETNUM          ; Get a number
+        CALL    DEINT           ; Get integer -32768 to 32767
+        LD      (LINESC),DE     ; Set lines counter
+        LD      (LINESN),DE     ; Set lines number
+        RET
+
+DEEK:   CALL    DEINT           ; Get integer -32768 to 32767
+        PUSH    DE              ; Save number
+        POP     HL              ; Number to HL
+        LD      B,(HL)          ; Get LSB of contents
+        INC     HL
+        LD      A,(HL)          ; Get MSB of contents
+        JP      ABPASS          ; Return integer AB
+
+DOKE:   CALL    GETNUM          ; Get a number
+        CALL    DEINT           ; Get integer -32768 to 32767
+        PUSH    DE              ; Save address
+        CALL    CHKSYN          ; Make sure ',' follows
+        .BYTE   ','
+        CALL    GETNUM          ; Get a number
+        CALL    DEINT           ; Get integer -32768 to 32767
+        EX      (SP),HL         ; Save value,get address
+        LD      (HL),E          ; Save LSB of value
+        INC     HL
+        LD      (HL),D          ; Save MSB of value
+        POP     HL              ; Restore code string address
+        RET
 
         ; push MBF32 floating point in FPREG into Am9511 stack.
         ; Convert from MBF32_float to am9511_float.
@@ -3938,49 +3979,89 @@ POPF_FPREG_ZERO:                ; zero or underflow
         ld e,c
         jp POPF_FPREG_REJOIN
 
+        ; Load Intel HEX into program memory.
+        ; uses  : af, bc, de, hl
+        
+HLOAD:
+        call HLD_WAIT_COLON     ; wait for first colon and address data
+        dec de                  ; go one Byte lower
+        ld hl,(LSTRAM)          ; get last ram address       
+        xor a                   ; clear carry flag
+        sbc hl,de
+        jr C,HLD_HIGH_RAM       ; if last ram lower leave it, otherwise
+        ld (LSTRAM),de          ; store new last ram location
+        ld hl,-50               ; reserve 50 bytes for string space
+        add hl,de               ; allocate string space
+        ld (STRSPC),hl          ; save string space location
+HLD_HIGH_RAM:
+        inc de
+        ld (USR+1),de           ; store first address as "USR(x)" location
+        jr HLD_READ_DATA        ; now get the first data
+        
+HLD_WAIT_COLON:
+        rst 10h                 ; Rx byte in A
+        cp ':'                  ; wait for ':'
+        jr NZ, HLD_WAIT_COLON
+        ld c, 0                 ; reset C to compute checksum
+        call HLD_READ_BYTE      ; read byte count
+        ld b, a                 ; store it in B
+        call HLD_READ_BYTE      ; read upper byte of address
+        ld d, a                 ; store in D
+        call HLD_READ_BYTE      ; read lower byte of address
+        ld e, a                 ; store in E
+        call HLD_READ_BYTE      ; read record type
+        dec a                   ; check if record type is 01 (end of file)
+        jr Z, HLD_END_LOAD
+        inc a                   ; check if record type is 00 (data)
+        jp NZ,TMERR             ; if not, type mismatch error
+        ret
 
-MONITR: JP      $0000           ; Restart (Normally Monitor Start)
+HLD_READ:
+        call HLD_WAIT_COLON     ; wait for the next colon and address data
+HLD_READ_DATA:
+        call HLD_READ_BYTE
+        ld (de), a              ; write the byte at the RAM address
+        inc de
+        djnz HLD_READ_DATA      ; if b non zero, loop to get more data
 
-CLS:    LD      A,CS            ; ASCII Clear screen
-        RST     08H             ; Output character
-ARET:   RET                     ; A RETurn instruction
-ARETN:  RETN                    ; A RETurN from NMI
+HLD_READ_CHKSUM:
+        call HLD_READ_BYTE     ; read checksum, but we don't need to keep it
+        ld a, c                 ; lower byte of C checksum should be 0
+        or a
+        jp NZ, HXERR            ; non zero, we have an issue
+        jp HLD_READ
 
-WIDTH:  CALL    GETINT          ; Get integer 0-255
-        LD      A,E             ; Width to A
-        LD      (LWIDTH),A      ; Set width
-        RET
+HLD_END_LOAD:
+        call HLD_READ_BYTE      ; read checksum, but we don't need to keep it
+        ld a, c                 ; lower byte of C checksum should be 0
+        or a
+        jp NZ, HXERR            ; non zero, we have an issue
+        jp BRKRET               ; return to command line
 
-LINES:  CALL    GETNUM          ; Get a number
-        CALL    DEINT           ; Get integer -32768 to 32767
-        LD      (LINESC),DE     ; Set lines counter
-        LD      (LINESN),DE     ; Set lines number
-        RET
+HLD_READ_BYTE:                  ; returns byte in A, checksum in C
+        call HLD_READ_NIBBLE    ; read the first nibble
+        rlca                    ; shift it left by 4 bits
+        rlca
+        rlca
+        rlca
+        ld l, a                 ; temporarily store the first nibble in L
+        call HLD_READ_NIBBLE    ; get the second (low) nibble
+        or l                    ; assemble two nibbles into one byte in A
+        ld l, a                 ; put assembled byte back into L
+        add a, c                ; add the byte read to C (for checksum)
+        ld c, a
+        ld a, l
+        ret                     ; return the byte read in A (L = char received too)  
 
-DEEK:   CALL    DEINT           ; Get integer -32768 to 32767
-        PUSH    DE              ; Save number
-        POP     HL              ; Number to HL
-        LD      B,(HL)          ; Get LSB of contents
-        INC     HL
-        LD      A,(HL)          ; Get MSB of contents
-        JP      ABPASS          ; Return integer AB
+HLD_READ_NIBBLE:
+        rst 10h                 ; Rx byte in A
+        sub '0'
+        cp 10
+        ret C                   ; if A<10 just return
+        sub 7                   ; else subtract 'A'-'0' (17) and add 10
+        ret
 
-DOKE:   CALL    GETNUM          ; Get a number
-        CALL    DEINT           ; Get integer -32768 to 32767
-        PUSH    DE              ; Save address
-        CALL    CHKSYN          ; Make sure ',' follows
-        .BYTE   ','
-        CALL    GETNUM          ; Get a number
-        CALL    DEINT           ; Get integer -32768 to 32767
-        EX      (SP),HL         ; Save value,get address
-        LD      (HL),E          ; Save LSB of value
-        INC     HL
-        LD      (HL),D          ; Save MSB of value
-        POP     HL              ; Restore code string address
-        RET
-
-
-; HEX$(nn) Convert 16 bit number to Hexadecimal string
+        ; HEX$(nn) Convert 16 bit number to Hexadecimal string
 
 HEX:    CALL    TSTNUM          ; Verify it's a number
         CALL    DEINT           ; Get integer -32768 to 32767
@@ -4037,9 +4118,10 @@ ADD301: ADD     A,$30           ; And make it full ASCII
         LD      B,A             ; Store high order byte
         RET
 
-; Convert "&Hnnnn" to FPREG
-; Gets a character from (HL) checks for Hexadecimal ASCII numbers "&Hnnnn"
-; Char is in A, NC if char is ;<=>?@ A-z, CY is set if 0-9
+        ; Convert "&Hnnnn" to FPREG
+        ; Gets a character from (HL) checks for Hexadecimal ASCII numbers "&Hnnnn"
+        ; Char is in A, NC if char is ;<=>?@ A-z, CY is set if 0-9
+
 HEXTFP: EX      DE,HL           ; Move code string pointer to DE
         LD      HL,$0000        ; Zero out the value
         CALL    GETHEX          ; Check the number for valid hex
@@ -4081,7 +4163,8 @@ HEXIT:  EX      DE,HL           ; Value into DE, Code string into HL
 HXERR:  LD      E,HX            ; ?HEX Error
         JP      ERROR
 
-; BIN$(NN) Convert integer to a 1-16 char binary string
+        ; BIN$(NN) Convert integer to a 1-16 char binary string
+
 BIN:    CALL    TSTNUM          ; Verify it's a number
         CALL    DEINT           ; Get integer -32768 to 32767
 BIN2:   PUSH    BC              ; Save contents of BC
@@ -4114,8 +4197,9 @@ BITOUT2:
         LD      HL,PBUFF
         JP      STR1
 
-; Convert "&Bnnnn" to FPREG
-; Gets a character from (HL) checks for Binary ASCII numbers "&Bnnnn"
+        ; Convert "&Bnnnn" to FPREG
+        ; Gets a character from (HL) checks for Binary ASCII numbers "&Bnnnn"
+
 BINTFP: EX      DE,HL           ; Move code string pointer to DE
         LD      HL,$0000        ; Zero out the value
         CALL    CHKBIN          ; Check the number for valid bin
@@ -4134,7 +4218,8 @@ BINIT:  SUB     '0'
         POP     HL
         RET
 
-; Char is in A, NC if char is 0 or 1
+        ; Char is in A, NC if char is 0 or 1
+
 CHKBIN: INC     DE
         LD      A,(DE)
         CP      ' '

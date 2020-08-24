@@ -772,7 +772,7 @@ INTVAR: LD      (BRKLIN),HL     ; Initialise RUN variables
         LD      (ARREND),HL     ; Clear arrays
 
 CLREG:  POP     BC              ; Save return address
-        LD      HL,(STRSPC)     ; Get end of working RAN
+        LD      HL,(STRSPC)     ; Get end of working RAM
         LD      SP,HL           ; Set stack
         LD      HL,TMSTPL       ; Temporary string pool
         LD      (TMSTPT),HL     ; Reset temporary string ptr
@@ -3037,7 +3037,7 @@ SUBCDE: CALL    INVSGN          ; Negate FPREG
 FPADD:  LD      A,B             ; Get FP exponent
         OR      A               ; Is number zero?
         RET     Z               ; Yes - Nothing to add
-        LD      A,(FPEXP)       ; Get FPREG exponent
+        LD      A,(FPEXP)       ; Get exponent of FPREG
         OR      A               ; Is this number zero?
         JP      Z,FPBCDE        ; Yes - Move BCDE to FPREG
         SUB     B               ; BCDE number larger?
@@ -3860,7 +3860,7 @@ SQR:    CALL    STAKFP          ; Put value on stack
         LD      HL,HALF         ; Set power to 1/2
         CALL    PHLTFP          ; Move 1/2 to FPREG
 
-POWER:  POP     BC              ; Get base
+POWER:  POP     BC              ; Get base from stack
         POP     DE
         CALL    TSTSGN          ; Test sign of power
         LD      A,B             ; Get exponent of base
@@ -4208,9 +4208,10 @@ ADD301: ADD     A,$30           ; And make it full ASCII
         LD      B,A             ; Store high order byte
         RET
 
-; Convert "&Hnnnn" to FPREG
-; Gets a character from (HL) checks for Hexadecimal ASCII numbers "&Hnnnn"
-; Char is in A, NC if char is ;<=>?@ A-z, CY is set if 0-9
+        ; Convert "&Hnnnn" to FPREG
+        ; Gets a character from (HL) checks for Hexadecimal ASCII numbers "&Hnnnn"
+        ; Char is in A, NC if char is ;<=>?@ A-z, CY is set if 0-9
+
 HEXTFP: EX      DE,HL           ; Move code string pointer to DE
         LD      HL,$0000        ; Zero out the value
         CALL    GETHEX          ; Check the number for valid hex
@@ -4252,7 +4253,8 @@ HEXIT:  EX      DE,HL           ; Value into DE, Code string into HL
 HXERR:  LD      E,HX            ; ?HEX Error
         JP      ERROR
 
-; BIN$(NN) Convert integer to a 1-16 char binary string
+        ; BIN$(NN) Convert integer to a 1-16 char binary string
+
 BIN:    CALL    TSTNUM          ; Verify it's a number
         CALL    DEINT           ; Get integer -32768 to 32767
 BIN2:   PUSH    BC              ; Save contents of BC
@@ -4285,8 +4287,9 @@ BITOUT2:
         LD      HL,PBUFF
         JP      STR1
 
-; Convert "&Bnnnn" to FPREG
-; Gets a character from (HL) checks for Binary ASCII numbers "&Bnnnn"
+        ; Convert "&Bnnnn" to FPREG
+        ; Gets a character from (HL) checks for Binary ASCII numbers "&Bnnnn"
+
 BINTFP: EX      DE,HL           ; Move code string pointer to DE
         LD      HL,$0000        ; Zero out the value
         CALL    CHKBIN          ; Check the number for valid bin
@@ -4305,7 +4308,8 @@ BINIT:  SUB     '0'
         POP     HL
         RET
 
-; Char is in A, NC if char is 0 or 1
+        ; Char is in A, NC if char is 0 or 1
+
 CHKBIN: INC     DE
         LD      A,(DE)
         CP      ' '
