@@ -1,25 +1,30 @@
 ;==============================================================================
-; Contents of parts of this file are copyright Grant Searle
+;
+;  The rework to support MS Basic HLOAD and the Z80 instruction tuning are
+;  copyright (C) 2020 Phillip Stevens
+;
+;  This Source Code Form is subject to the terms of the Mozilla Public
+;  License, v. 2.0. If a copy of the MPL was not distributed with this
+;  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+;
+;  feilipu, August 2020
+;
+;==============================================================================
+;
+; The updates to the original BASIC within this file are copyright Grant Searle
 ;
 ; You have permission to use this for NON COMMERCIAL USE ONLY
 ; If you wish to use it elsewhere, please include an acknowledgement to myself.
 ;
-; http://searle.hostei.com/grant/index.html
-;
-; eMail: home.micros01@btinternet.com
-;
-; If the above don't work, please perform an Internet search to see if I have
-; updated the web page hosting service.
+; http://searle.wales/
 ;
 ;==============================================================================
 ;
-; ACIA 6850 interrupt driven serial I/O to run modified NASCOM Basic 4.7.
-; Full input and output buffering with incoming data hardware handshaking.
-; Handshake shows full before the buffer is totally filled to
-; allow run-on from the sender. Transmit and receive are interrupt driven.
-;
-; https://github.com/feilipu/
-; https://feilipu.me/
+; NASCOM ROM BASIC Ver 4.7, (C) 1978 Microsoft
+; Scanned from source published in 80-BUS NEWS from Vol 2, Issue 3
+; (May-June 1983) to Vol 3, Issue 3 (May-June 1984)
+; Adapted for the freeware Zilog Macro Assembler 2.10 to produce
+; the original ROM code (checksum A934H). PA
 ;
 ;==============================================================================
 ;
@@ -32,8 +37,10 @@ INCLUDE "rc2014.inc"
 ;
 ; CODE SECTION
 ;
-SECTION z80_acia_interrupt
+
 ;------------------------------------------------------------------------------
+SECTION z80_acia_interrupt
+
 
 serialInt:
         push af
@@ -296,7 +303,7 @@ WARMSTART:
 SECTION         z80_init_strings    ; ORG $0200
 
 SIGNON1:        DEFM    CR,LF
-                DEFM    "RC2014 + Am9511 APU",CR,LF
+                DEFM    "RC2014 - MS Basic Loader",CR,LF
                 DEFM    "z88dk - feilipu",CR,LF,0
 
 SIGNON2:        DEFM    CR,LF
