@@ -318,7 +318,7 @@ FNCTAB: .WORD   SGN
 
 ; RESERVED WORD LIST
 
-WORDS:  .BYTE   'E'+80H,"ND"
+WORDS:  .BYTE   'E'+80H,"ND"    ; 80h
         .BYTE   'F'+80H,"OR"
         .BYTE   'N'+80H,"EXT"
         .BYTE   'D'+80H,"ATA"
@@ -334,14 +334,13 @@ WORDS:  .BYTE   'E'+80H,"ND"
         .BYTE   'R'+80H,"ETURN"
         .BYTE   'R'+80H,"EM"
         .BYTE   'S'+80H,"TOP"
-        .BYTE   'O'+80H,"UT"
+        .BYTE   'O'+80H,"UT"    ; 90h
         .BYTE   'O'+80H,"N"
         .BYTE   'N'+80H,"ULL"
         .BYTE   'W'+80H,"AIT"
         .BYTE   'D'+80H,"EF"
         .BYTE   'P'+80H,"OKE"
         .BYTE   'D'+80H,"OKE"
-        .BYTE   'S'+80H,"CREEN"
         .BYTE   'L'+80H,"INES"
         .BYTE   'C'+80H,"LS"
         .BYTE   'W'+80H,"IDTH"
@@ -351,9 +350,7 @@ WORDS:  .BYTE   'E'+80H,"ND"
         .BYTE   'P'+80H,"RINT"
         .BYTE   'C'+80H,"ONT"
         .BYTE   'L'+80H,"IST"
-        .BYTE   'C'+80H,"LEAR"
-        .BYTE   'C'+80H,"LOAD"
-        .BYTE   'C'+80H,"SAVE"
+        .BYTE   'C'+80H,"LEAR"  ; A0h
         .BYTE   'N'+80H,"EW"
         .BYTE   'T'+80H,"AB("
         .BYTE   'T'+80H,"O"
@@ -370,7 +367,7 @@ WORDS:  .BYTE   'E'+80H,"ND"
         .BYTE   '^'+80H
         .BYTE   'A'+80H,"ND"
         .BYTE   'O'+80H,"R"
-        .BYTE   '>'+80H
+        .BYTE   '>'+80H         ; B0h
         .BYTE   '='+80H
         .BYTE   '<'+80H
 
@@ -387,7 +384,7 @@ WORDS:  .BYTE   'E'+80H,"ND"
         .BYTE   'C'+80H,"OS"
         .BYTE   'S'+80H,"IN"
         .BYTE   'T'+80H,"AN"
-        .BYTE   'A'+80H,"COS"
+        .BYTE   'A'+80H,"COS"   ; C0h
         .BYTE   'A'+80H,"SIN"
         .BYTE   'A'+80H,"TAN"
         .BYTE   'S'+80H,"QRT"
@@ -403,7 +400,7 @@ WORDS:  .BYTE   'E'+80H,"ND"
         .BYTE   'B'+80H,"IN$"
         .BYTE   'L'+80H,"EFT$"
         .BYTE   'R'+80H,"IGHT$"
-        .BYTE   'M'+80H,"ID$"
+        .BYTE   'M'+80H,"ID$"   ; D0h
         .BYTE   80H             ; End of list marker
 
 ; KEYWORD ADDRESS TABLE
@@ -431,7 +428,6 @@ WORDTB: .WORD   PEND
         .WORD   DEF
         .WORD   POKE
         .WORD   DOKE
-        .WORD   REM
         .WORD   LINES
         .WORD   CLS
         .WORD   WIDTH
@@ -442,8 +438,6 @@ WORDTB: .WORD   PEND
         .WORD   CONT
         .WORD   LIST
         .WORD   CLEAR
-        .WORD   REM
-        .WORD   REM
         .WORD   NEW
 
 ; RESERVED WORD TOKEN VALUES
@@ -454,28 +448,28 @@ ZDATA   .EQU    083H            ; DATA
 ZGOTO   .EQU    088H            ; GOTO
 ZGOSUB  .EQU    08CH            ; GOSUB
 ZREM    .EQU    08EH            ; REM
-ZPRINT  .EQU    09EH            ; PRINT
-ZNEW    .EQU    0A4H            ; NEW
+ZPRINT  .EQU    09DH            ; PRINT
+ZNEW    .EQU    0A1H            ; NEW
 
-ZTAB    .EQU    0A5H            ; TAB
-ZTO     .EQU    0A6H            ; TO
-ZFN     .EQU    0A7H            ; FN
-ZSPC    .EQU    0A8H            ; SPC
-ZTHEN   .EQU    0A9H            ; THEN
-ZNOT    .EQU    0AAH            ; NOT
-ZSTEP   .EQU    0ABH            ; STEP
+ZTAB    .EQU    0A2H            ; TAB
+ZTO     .EQU    0A3H            ; TO
+ZFN     .EQU    0A4H            ; FN
+ZSPC    .EQU    0A5H            ; SPC
+ZTHEN   .EQU    0A6H            ; THEN
+ZNOT    .EQU    0A7H            ; NOT
+ZSTEP   .EQU    0A8H            ; STEP
 
-ZPLUS   .EQU    0ACH            ; +
-ZMINUS  .EQU    0ADH            ; -
-ZTIMES  .EQU    0AEH            ; *
-ZDIV    .EQU    0AFH            ; /
-ZOR     .EQU    0B2H            ; OR
-ZGTR    .EQU    0B3H            ; >
-ZEQUAL  .EQU    0B4H            ; M
-ZLTH    .EQU    0B5H            ; <
-ZSGN    .EQU    0B6H            ; SGN
-ZPOINT  .EQU    0C7H            ; POINT
-ZLEFT   .EQU    0CDH +2         ; LEFT$
+ZPLUS   .EQU    0A9H            ; +
+ZMINUS  .EQU    0AAH            ; -
+ZTIMES  .EQU    0ABH            ; *
+ZDIV    .EQU    0ACH            ; /
+ZOR     .EQU    0AFH            ; OR
+ZGTR    .EQU    0B0H            ; >
+ZEQUAL  .EQU    0B1H            ; =
+ZLTH    .EQU    0B2H            ; <
+ZSGN    .EQU    0B3H            ; SGN
+ZPOINT  .EQU    0C6H            ; POINT
+ZLEFT   .EQU    0CDH            ; LEFT$
 
 ; ARITHMETIC PRECEDENCE TABLE
 
@@ -1222,7 +1216,7 @@ FORFND: EX      DE,HL           ; Code string address to HL
         EX      (SP),HL         ; Save and restore code string
         CALL    TSTNUM          ; Make sure it's a number
         CALL    CHKSYN          ; Make sure "TO" is next
-        .BYTE   ZTO          ; "TO" token
+        .BYTE   ZTO             ; "TO" token
         CALL    GETNUM          ; Get "TO" expression value
         PUSH    HL              ; Save code string address
         CALL    BCDEFP          ; Move "TO" value to BCDE
@@ -1382,7 +1376,6 @@ NULL:   CALL    GETINT          ; Get integer 0-255
         RET     NZ              ; Return if bad value
         LD      (NULLS),A       ; Set nulls number
         RET
-
 
 ACCSUM: PUSH    HL              ; Save address in array
         LD      HL,(CHKSUM)     ; Get check sum
@@ -1993,16 +1986,7 @@ OPRND:  XOR     A               ; Get operand routine
         JP      C,ASCTFP        ; Number - Get value
         CALL    CHKLTR          ; See if a letter
         JP      NC,CONVAR       ; Letter - Find variable
-        CP      '&'             ; &H = HEX, &B = BINARY
-        JR      NZ, NOTAMP
-        CALL    GETCHR          ; Get next character
-        CP      'H'             ; Hex number indicated? [function added]
-        JP      Z,HEXTFP        ; Convert Hex to FPREG
-        CP      'B'             ; Binary number indicated? [function added]
-        JP      Z,BINTFP        ; Convert Bin to FPREG
-        LD      E,SN            ; If neither then a ?SN Error
-        JP      Z,ERROR         ; 
-NOTAMP: CP      ZPLUS           ; '+' Token ?
+        CP      ZPLUS           ; '+' Token ?
         JP      Z,OPRND         ; Yes - Look for operand
         CP      '.'             ; '.' ?
         JP      Z,ASCTFP        ; Yes - Create FP number
@@ -2014,7 +1998,16 @@ NOTAMP: CP      ZPLUS           ; '+' Token ?
         JP      Z,EVNOT         ; Yes - Eval NOT expression
         CP      ZFN             ; "FN" Token ?
         JP      Z,DOFN          ; Yes - Do FN routine
-        SUB     ZSGN            ; Is it a function?
+        CP      '&'             ; &H = HEX, &B = BINARY
+        JR      NZ, NOTAMP
+        CALL    GETCHR          ; Get next character
+        CP      'H'             ; Hex number indicated? [Searle function added]
+        JP      Z,HEXTFP        ; Convert Hex to FPREG
+        CP      'B'             ; Binary number indicated? [Searle function added]
+        JP      Z,BINTFP        ; Convert Bin to FPREG
+        LD      E,SN            ; If neither then a ?SN Error
+        JP      Z,ERROR         ; 
+NOTAMP: SUB     ZSGN            ; Is it a function?
         JP      NC,FNOFST       ; Yes - Evaluate function
 EVLPAR: CALL    OPNPAR          ; Evaluate expression in "()"
         CALL    CHKSYN          ; Make sure ")" follows
@@ -3008,11 +3001,11 @@ VAL:    CALL    GETLEN          ; Get length of string
         EX      (SP),HL         ; Save string end,get start
         PUSH    BC              ; Save end+1 byte
         LD      A,(HL)          ; Get starting byte
-        CP      '$'             ; Hex number indicated? [function added]
+        CP      '$'             ; Hex number indicated? [Searle function added]
         JP      NZ,VAL1
         CALL    HEXTFP          ; Convert Hex to FPREG
         JR      VAL3
-VAL1:   CP      '%'             ; Binary number indicated? [function added]
+VAL1:   CP      '%'             ; Binary number indicated? [Searle function added]
         JP      NZ,VAL2
         CALL    BINTFP          ; Convert Bin to FPREG
         JR      VAL3

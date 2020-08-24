@@ -1,4 +1,6 @@
-# HexLoadr
+# Am9511 & HexLoadr
+
+This modification of the standard MS Basic 4.7 is to support the AMD Am9511 Arithmetic Processor for floating point calculations. The Am9511 was produced prior to this version of MS Basic, and the Microsoft Binary Format for floating point numbers is very closely aligned to the APU floating point format.
 
 The goal of this extension to the standard RC2014 boot ROM sequence is to load an arbitrary program in Intel HEX format into an arbitrary location in the Z80 address space, and allow you to start and use your program from Nascom Basic. Your program can be created in assembler, or in C, provided the code is available in Intel HEX format.
 

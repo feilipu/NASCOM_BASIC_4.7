@@ -410,7 +410,7 @@ ZTIMES  .EQU    0AEH            ; *
 ZDIV    .EQU    0AFH            ; /
 ZOR     .EQU    0B2H            ; OR
 ZGTR    .EQU    0B3H            ; >
-ZEQUAL  .EQU    0B4H            ; M
+ZEQUAL  .EQU    0B4H            ; =
 ZLTH    .EQU    0B5H            ; <
 ZSGN    .EQU    0B6H            ; SGN
 ZPOINT  .EQU    0C7H            ; POINT
@@ -1161,7 +1161,7 @@ FORFND: EX      DE,HL           ; Code string address to HL
         EX      (SP),HL         ; Save and restore code string
         CALL    TSTNUM          ; Make sure it's a number
         CALL    CHKSYN          ; Make sure "TO" is next
-        .BYTE   ZTO          ; "TO" token
+        .BYTE   ZTO             ; "TO" token
         CALL    GETNUM          ; Get "TO" expression value
         PUSH    HL              ; Save code string address
         CALL    BCDEFP          ; Move "TO" value to BCDE
@@ -1321,7 +1321,6 @@ NULL:   CALL    GETINT          ; Get integer 0-255
         RET     NZ              ; Return if bad value
         LD      (NULLS),A       ; Set nulls number
         RET
-
 
 ACCSUM: PUSH    HL              ; Save address in array
         LD      HL,(CHKSUM)     ; Get check sum
@@ -1932,16 +1931,7 @@ OPRND:  XOR     A               ; Get operand routine
         JP      C,ASCTFP        ; Number - Get value
         CALL    CHKLTR          ; See if a letter
         JP      NC,CONVAR       ; Letter - Find variable
-        CP      '&'             ; &H = HEX, &B = BINARY
-        JR      NZ, NOTAMP
-        CALL    GETCHR          ; Get next character
-        CP      'H'             ; Hex number indicated? [function added]
-        JP      Z,HEXTFP        ; Convert Hex to FPREG
-        CP      'B'             ; Binary number indicated? [function added]
-        JP      Z,BINTFP        ; Convert Bin to FPREG
-        LD      E,SN            ; If neither then a ?SN Error
-        JP      Z,ERROR         ; 
-NOTAMP: CP      ZPLUS           ; '+' Token ?
+        CP      ZPLUS           ; '+' Token ?
         JP      Z,OPRND         ; Yes - Look for operand
         CP      '.'             ; '.' ?
         JP      Z,ASCTFP        ; Yes - Create FP number
@@ -1953,7 +1943,16 @@ NOTAMP: CP      ZPLUS           ; '+' Token ?
         JP      Z,EVNOT         ; Yes - Eval NOT expression
         CP      ZFN             ; "FN" Token ?
         JP      Z,DOFN          ; Yes - Do FN routine
-        SUB     ZSGN            ; Is it a function?
+        CP      '&'             ; &H = HEX, &B = BINARY
+        JR      NZ, NOTAMP
+        CALL    GETCHR          ; Get next character
+        CP      'H'             ; Hex number indicated? [Searle function added]
+        JP      Z,HEXTFP        ; Convert Hex to FPREG
+        CP      'B'             ; Binary number indicated? [Searle function added]
+        JP      Z,BINTFP        ; Convert Bin to FPREG
+        LD      E,SN            ; If neither then a ?SN Error
+        JP      Z,ERROR         ; 
+NOTAMP: SUB     ZSGN            ; Is it a function?
         JP      NC,FNOFST       ; Yes - Evaluate function
 EVLPAR: CALL    OPNPAR          ; Evaluate expression in "()"
         CALL    CHKSYN          ; Make sure ")" follows
@@ -2947,11 +2946,11 @@ VAL:    CALL    GETLEN          ; Get length of string
         EX      (SP),HL         ; Save string end,get start
         PUSH    BC              ; Save end+1 byte
         LD      A,(HL)          ; Get starting byte
-        CP      '$'             ; Hex number indicated? [function added]
+        CP      '$'             ; Hex number indicated? [Searle function added]
         JP      NZ,VAL1
         CALL    HEXTFP          ; Convert Hex to FPREG
         JR      VAL3
-VAL1:   CP      '%'             ; Binary number indicated? [function added]
+VAL1:   CP      '%'             ; Binary number indicated? [Searle function added]
         JP      NZ,VAL2
         CALL    BINTFP          ; Convert Bin to FPREG
         JR      VAL3
