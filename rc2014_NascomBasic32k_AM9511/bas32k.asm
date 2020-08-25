@@ -1,6 +1,6 @@
 ;==============================================================================
 ;
-;  The rework to support MS Basic HLOA, the Am9511 APU, and the Z80 instruction
+;  The rework to support MS Basic HLOAD, Am9511 APU, and the Z80 instruction
 ;  tuning are copyright (C) 2020 Phillip Stevens
 ;
 ;  This Source Code Form is subject to the terms of the Mozilla Public
@@ -177,8 +177,7 @@ IO_APU_OP_LN        .EQU    009h
 IO_APU_OP_EXP       .EQU    00Ah
 IO_APU_OP_PWR       .EQU    00Bh
 
-
-        .ORG    0250H           ; <<<< Modified to allow for Z80 Tx/Rx interrupt & HexLoadr
+        .ORG    0250H           ; <<<< Modified to allow for ACIA Tx/Rx IM1
 
 COLD:   JP      STARTB          ; Jump in for cold start (0250H)
 WARM:   JP      WARMST          ; Jump in for warm start (0253H)
@@ -876,7 +875,7 @@ GETNXT: INC     HL              ; Get next reserved word
         OR      (HL)            ; Start of word?
         JP      P,GETNXT        ; No - move on
         INC     B               ; Increment token value
-        LD      A, (HL)         ; Get byte from table
+        LD      A,(HL)          ; Get byte from table
         AND     01111111B       ; Strip bit 7
         RET     Z               ; Return if end of list
         CP      C               ; Same character as in buffer?
@@ -1983,7 +1982,7 @@ OPRND:  XOR     A               ; Get operand routine
         CP      ZFN             ; "FN" Token ?
         JP      Z,DOFN          ; Yes - Do FN routine
         CP      '&'             ; &H = HEX, &B = BINARY
-        JR      NZ, NOTAMP
+        JR      NZ,NOTAMP
         CALL    GETCHR          ; Get next character
         CP      'H'             ; Hex number indicated? [Searle function added]
         JP      Z,HEXTFP        ; Convert Hex to FPREG
@@ -3625,7 +3624,7 @@ DIGTXT: DEC     B               ; Count digits before point
         PUSH    DE              ; Save powers of ten
         CALL    BCDEFP          ; Move FPREG to BCDE
         POP     HL              ; Powers of ten table
-        LD      B, '0'-1        ; ASCII '0' - 1
+        LD      B,'0'-1         ; ASCII '0' - 1
 TRYAGN: INC     B               ; Count subtractions
         LD      A,E             ; Get LSB
         SUB     (HL)            ; Subtract LSB
@@ -3919,10 +3918,14 @@ PUSHF_BCDE_ZERO:
         ; 
         ; uses  : af, bc, de
 
+POPF_FPREG_WAIT:
+        ex (sp),hl
+        ex (sp),hl
+
 POPF_FPREG:
         in a,(IO_APU_STATUS)    ; read the APU status register
         rlca                    ; busy? IO_APU_STATUS_BUSY
-        jr C,POPF_FPREG
+        jr C,POPF_FPREG_WAIT
 
         and 07ch                ; errors from status register
         jr NZ,POPF_FPREG_ERRORS
@@ -3987,17 +3990,17 @@ HLD_HIGH_RAM:
 HLD_WAIT_COLON:
         rst 10h                 ; Rx byte in A
         cp ':'                  ; wait for ':'
-        jr NZ, HLD_WAIT_COLON
-        ld c, 0                 ; reset C to compute checksum
+        jr NZ,HLD_WAIT_COLON
+        ld c,0                  ; reset C to compute checksum
         call HLD_READ_BYTE      ; read byte count
-        ld b, a                 ; store it in B
+        ld b,a                  ; store it in B
         call HLD_READ_BYTE      ; read upper byte of address
-        ld d, a                 ; store in D
+        ld d,a                  ; store in D
         call HLD_READ_BYTE      ; read lower byte of address
-        ld e, a                 ; store in E
+        ld e,a                  ; store in E
         call HLD_READ_BYTE      ; read record type
         dec a                   ; check if record type is 01 (end of file)
-        jr Z, HLD_END_LOAD
+        jr Z,HLD_END_LOAD
         inc a                   ; check if record type is 00 (data)
         jp NZ,TMERR             ; if not, type mismatch error
         ret
@@ -4006,22 +4009,22 @@ HLD_READ:
         call HLD_WAIT_COLON     ; wait for the next colon and address data
 HLD_READ_DATA:
         call HLD_READ_BYTE
-        ld (de), a              ; write the byte at the RAM address
+        ld (de),a               ; write the byte at the RAM address
         inc de
         djnz HLD_READ_DATA      ; if b non zero, loop to get more data
 
 HLD_READ_CHKSUM:
-        call HLD_READ_BYTE     ; read checksum, but we don't need to keep it
-        ld a, c                 ; lower byte of C checksum should be 0
+        call HLD_READ_BYTE      ; read checksum, but we don't need to keep it
+        ld a,c                  ; lower byte of C checksum should be 0
         or a
-        jp NZ, HXERR            ; non zero, we have an issue
+        jp NZ,HXERR             ; non zero, we have an issue
         jp HLD_READ
 
 HLD_END_LOAD:
         call HLD_READ_BYTE      ; read checksum, but we don't need to keep it
-        ld a, c                 ; lower byte of C checksum should be 0
+        ld a,c                  ; lower byte of C checksum should be 0
         or a
-        jp NZ, HXERR            ; non zero, we have an issue
+        jp NZ,HXERR             ; non zero, we have an issue
         jp BRKRET               ; return to command line
 
 HLD_READ_BYTE:                  ; returns byte in A, checksum in C
@@ -4030,13 +4033,13 @@ HLD_READ_BYTE:                  ; returns byte in A, checksum in C
         rlca
         rlca
         rlca
-        ld l, a                 ; temporarily store the first nibble in L
+        ld l,a                  ; temporarily store the first nibble in L
         call HLD_READ_NIBBLE    ; get the second (low) nibble
         or l                    ; assemble two nibbles into one byte in A
-        ld l, a                 ; put assembled byte back into L
-        add a, c                ; add the byte read to C (for checksum)
-        ld c, a
-        ld a, l
+        ld l,a                  ; put assembled byte back into L
+        add a,c                 ; add the byte read to C (for checksum)
+        ld c,a
+        ld a,l
         ret                     ; return the byte read in A (L = char received too)  
 
 HLD_READ_NIBBLE:
