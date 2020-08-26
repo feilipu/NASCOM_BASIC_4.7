@@ -1201,9 +1201,7 @@ FORFND: EX      DE,HL           ; Code string address to HL
         CALL    CHKSYN          ; Make sure "TO" is next
         .BYTE   ZTO             ; "TO" token
         CALL    GETNUM          ; Get "TO" expression value
-        PUSH    HL              ; Save code string address
         CALL    BCDEFP          ; Move "TO" value to BCDE
-        POP     HL              ; Restore code string address
         PUSH    BC              ; Save "TO" value in block
         PUSH    DE
         LD      BC,8100H        ; BCDE - 1 (default STEP)
@@ -1215,10 +1213,8 @@ FORFND: EX      DE,HL           ; Code string address to HL
         JP      NZ,SAVSTP       ; No STEP given - Default to 1
         CALL    GETCHR          ; Jump over "STEP" token
         CALL    GETNUM          ; Get step value
-        PUSH    HL              ; Save code string address
         CALL    BCDEFP          ; Move STEP to BCDE
         CALL    TSTSGN          ; Test sign of FPREG
-        POP     HL              ; Restore code string address
 SAVSTP: PUSH    BC              ; Save the STEP value in block
         PUSH    DE
         PUSH    AF              ; Save sign of STEP
@@ -3312,7 +3308,7 @@ STAKFP: EX      DE,HL           ; Save code string address
         RET
 
 PHLTFP: LD      DE,FPREG        ; Number at HL to FPREG
-        LDI                     ; 4 bytes to move
+        LDI                     ; 4 bytes to move (HL++)->(DE++)
         LDI
         LDI
         LDI
@@ -3336,9 +3332,9 @@ LOADFP: LD      E,(HL)          ; Get LSB of number
 INCHL:  INC     HL              ; Used for conditional "INC HL"
         RET
 
-FPTHL:  LD      DE,FPREG        ; Point to FPREG
+FPTHL:  LD      DE,FPREG        ; Point to FPREG source
 DETHL4: EX      DE,HL           ; Swap source destination
-        LDI                     ; 4 bytes to move
+        LDI                     ; 4 bytes to move (HL++)->(DE++)
         LDI
         LDI
         LDI
@@ -3355,7 +3351,7 @@ SIGNS:  LD      HL,FPREG+2      ; Point to MSB of FPREG
         RRA                     ; Old sign to carry
         INC     HL
         INC     HL
-        LD      (HL),A          ; Set sign of result
+        LD      (HL),A          ; Set sign of result SGNRES
         LD      A,C             ; Get MSB
         RLCA                    ; Old sign to carry
         SCF                     ; Set MSBit
@@ -3621,9 +3617,8 @@ DIGTXT: DEC     B               ; Count digits before point
         CALL    Z,INCHL         ; Last digit - move on
         PUSH    BC              ; Save digits before point
         PUSH    HL              ; Save buffer address
-        PUSH    DE              ; Save powers of ten
+        EX      DE,HL           ; Save powers of ten table
         CALL    BCDEFP          ; Move FPREG to BCDE
-        POP     HL              ; Powers of ten table
         LD      B,'0'-1         ; ASCII '0' - 1
 TRYAGN: INC     B               ; Count subtractions
         LD      A,E             ; Get LSB
@@ -3954,6 +3949,10 @@ POPF_FPREG_REJOIN:
 
 POPF_FPREG_ERRORS:
         rrca                    ; relocate status bits (just for convenience)
+        ld b,a
+        or 01000000b            ; make visible ascii
+        rst 08h                 ; output errors
+        ld a,b
         bit 4,a
         jp NZ,DZERR             ; division by zero
         bit 3,a
