@@ -806,7 +806,7 @@ CRNCLP: LD      A,(HL)          ; Get byte
         LD      A,(HL)          ; Get byte again
         CP      '0'             ; Is it less than '0'
         JP      C,FNDWRD        ; Yes - Look for reserved words
-        CP      60; ";"+1           ; Is it "0123456789:;" ?
+        CP      60              ; ';'+1 Is it "0123456789:;" ?
         JP      C,MOVDIR        ; Yes - copy it direct
 FNDWRD: PUSH    DE              ; Look for reserved words
         LD      DE,WORDS-1      ; Point to table
@@ -1566,7 +1566,7 @@ PRNTLP: RET     Z               ; End of list - Exit
         PUSH    HL              ; Save code string address
         CP      ','             ; Comma?
         JP      Z,DOCOM         ; Yes - Move to next zone
-        CP      59 ;";"         ; Semi-colon?
+        CP      59              ; ';' Semi-colon?
         JP      Z,NEXITM        ; Do semi-colon routine
         POP     BC              ; Code string address to BC
         CALL    EVAL            ; Evaluate expression
