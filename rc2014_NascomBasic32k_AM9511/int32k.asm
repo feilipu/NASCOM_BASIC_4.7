@@ -1,13 +1,18 @@
 ;==============================================================================
 ;
-;  The rework to support MS Basic HLOAD and the Z80 instruction tuning are
-;  copyright (C) 2020 Phillip Stevens
+; The rework to support MS Basic HLOAD and the Z80 instruction tuning are
+; copyright (C) 2020 Phillip Stevens
 ;
-;  This Source Code Form is subject to the terms of the Mozilla Public
-;  License, v. 2.0. If a copy of the MPL was not distributed with this
-;  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+; This Source Code Form is subject to the terms of the Mozilla Public
+; License, v. 2.0. If a copy of the MPL was not distributed with this
+; file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ;
-;  feilipu, August 2020
+; ACIA 6850 interrupt driven serial I/O to run modified NASCOM Basic 4.7.
+; Full input and output buffering with incoming data hardware handshaking.
+; Handshake shows full before the buffer is totally filled to allow run-on
+; from the sender. Transmit and receive are interrupt driven.
+;
+; feilipu, August 2020
 ;
 ;==============================================================================
 ;

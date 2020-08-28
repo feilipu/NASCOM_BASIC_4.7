@@ -1,13 +1,19 @@
 ;==============================================================================
 ;
-;  The rework to support MS Basic HLOAD and the Z80 instruction tuning are
-;  copyright (C) 2020 Phillip Stevens
+; The rework to support MS Basic HLOAD and the Z80 instruction tuning are
+; copyright (C) 2020 Phillip Stevens
 ;
-;  This Source Code Form is subject to the terms of the Mozilla Public
-;  License, v. 2.0. If a copy of the MPL was not distributed with this
-;  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+; This Source Code Form is subject to the terms of the Mozilla Public
+; License, v. 2.0. If a copy of the MPL was not distributed with this
+; file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ;
-;  feilipu, August 2020
+:; The HLOAD function supports Intel HEX encoded program upload.
+; Updates LSTRAM and STRSPC, adds program origin address to USR+1.
+; It resets and clears runtime variables.
+;
+; The RESET function returns to cold start status.
+;
+; feilipu, August 2020
 ;
 ;==============================================================================
 ;
@@ -135,16 +141,15 @@ BN      .EQU    28H             ; BIN error
 
         .ORG    0250H           ; <<<< Modified to allow for ACIA Tx/Rx IM1
 
-COLD:   JP      STARTB          ; Jump in for cold start (0250H)
-WARM:   JP      WARMST          ; Jump in for warm start (0253H)
-STARTB: 
-        LD      IX,0            ; Flag cold start
-        JP      CSTART          ; Jump to initialise
+COLD:   JP      CSTART          ; Jump in for cold start (0x0250)
+WARM:   JP      WARMST          ; Jump in for warm start (0x0253)
 
-        .WORD   DEINT           ; Get integer -32768 to 32767
-        .WORD   ABPASS          ; Return integer in AB
+        .FILL   5               ; pad so DEINT is 0x025B, ABPASS is 0x025D
 
+        .WORD   DEINT           ; 0x025B Get integer -32768 to 32767
+        .WORD   ABPASS          ; 0x025D Return integer in AB
 
+RESET:                          ; RESET key word
 CSTART: LD      HL,WRKSPC       ; Start of workspace RAM
         LD      SP,HL           ; Set up a temporary stack
         XOR     A               ; Clear break flag
@@ -290,12 +295,14 @@ WORDS:  .BYTE   'E'+80H,"ND"    ; 80h
         .BYTE   'C'+80H,"LS"
         .BYTE   'W'+80H,"IDTH"
         .BYTE   'M'+80H,"ONITOR"
+        .BYTE   'R'+80H,"ESET"
         .BYTE   'P'+80H,"RINT"
         .BYTE   'C'+80H,"ONT"
         .BYTE   'L'+80H,"IST"
         .BYTE   'C'+80H,"LEAR"
-        .BYTE   'H'+80H,"LOAD"
-        .BYTE   'N'+80H,"EW"    ; A0h
+        .BYTE   'H'+80H,"LOAD"  ; A0h
+        .BYTE   'N'+80H,"EW"
+
         .BYTE   'T'+80H,"AB("
         .BYTE   'T'+80H,"O"
         .BYTE   'F'+80H,"N"
@@ -311,8 +318,8 @@ WORDS:  .BYTE   'E'+80H,"ND"    ; 80h
         .BYTE   '^'+80H
         .BYTE   'A'+80H,"ND"
         .BYTE   'O'+80H,"R"
-        .BYTE   '>'+80H
-        .BYTE   '='+80H         ; B0h
+        .BYTE   '>'+80H         ; B0h
+        .BYTE   '='+80H
         .BYTE   '<'+80H
 
         .BYTE   'S'+80H,"GN"
@@ -328,8 +335,8 @@ WORDS:  .BYTE   'E'+80H,"ND"    ; 80h
         .BYTE   'E'+80H,"XP"
         .BYTE   'C'+80H,"OS"
         .BYTE   'S'+80H,"IN"
-        .BYTE   'T'+80H,"AN"
-        .BYTE   'A'+80H,"TN"    ; C0h
+        .BYTE   'T'+80H,"AN"    ; C0h
+        .BYTE   'A'+80H,"TN"
         .BYTE   'P'+80H,"EEK"
         .BYTE   'D'+80H,"EEK"
         .BYTE   'L'+80H,"EN"
@@ -373,6 +380,7 @@ WORDTB: .WORD   PEND
         .WORD   CLS
         .WORD   WIDTH
         .WORD   MONITR
+        .WORD   RESET
         .WORD   PRINT
         .WORD   CONT
         .WORD   LIST
@@ -388,27 +396,27 @@ ZDATA   .EQU    083H            ; DATA
 ZGOTO   .EQU    088H            ; GOTO
 ZGOSUB  .EQU    08CH            ; GOSUB
 ZREM    .EQU    08EH            ; REM
-ZPRINT  .EQU    09BH            ; PRINT
-ZNEW    .EQU    0A0H            ; NEW
+ZPRINT  .EQU    09CH            ; PRINT
+ZNEW    .EQU    0A1H            ; NEW
 
-ZTAB    .EQU    0A1H            ; TAB
-ZTO     .EQU    0A2H            ; TO
-ZFN     .EQU    0A3H            ; FN
-ZSPC    .EQU    0A4H            ; SPC
-ZTHEN   .EQU    0A5H            ; THEN
-ZNOT    .EQU    0A6H            ; NOT
-ZSTEP   .EQU    0A7H            ; STEP
+ZTAB    .EQU    0A2H            ; TAB
+ZTO     .EQU    0A3H            ; TO
+ZFN     .EQU    0A4H            ; FN
+ZSPC    .EQU    0A5H            ; SPC
+ZTHEN   .EQU    0A6H            ; THEN
+ZNOT    .EQU    0A7H            ; NOT
+ZSTEP   .EQU    0A8H            ; STEP
 
-ZPLUS   .EQU    0A8H            ; +
-ZMINUS  .EQU    0A9H            ; -
-ZTIMES  .EQU    0AAH            ; *
-ZDIV    .EQU    0ABH            ; /
-ZOR     .EQU    0AEH            ; OR
-ZGTR    .EQU    0AFH            ; >
-ZEQUAL  .EQU    0B0H            ; =
-ZLTH    .EQU    0B1H            ; <
-ZSGN    .EQU    0B2H            ; SGN
-ZLEFT   .EQU    0CAH            ; LEFT$
+ZPLUS   .EQU    0A9H            ; +
+ZMINUS  .EQU    0AAH            ; -
+ZTIMES  .EQU    0ABH            ; *
+ZDIV    .EQU    0ACH            ; /
+ZOR     .EQU    0AFH            ; OR
+ZGTR    .EQU    0B0H            ; >
+ZEQUAL  .EQU    0B1H            ; =
+ZLTH    .EQU    0B2H            ; <
+ZSGN    .EQU    0B3H            ; SGN
+ZLEFT   .EQU    0CBH            ; LEFT$
 
 ; ARITHMETIC PRECEDENCE TABLE
 
@@ -509,7 +517,8 @@ INITAB: JP      WARMST          ; Warm start jump
         .WORD   STLOOK          ; Temp string space
         .WORD   -2              ; Current line number (cold)
         .WORD   PROGST+1        ; Start of program text
-INITBE:                         
+INITBE:
+        .FILL   3               ; Fill 3 Bytes for copy
 
 ; END OF INITIALISATION TABLE ---------------------------------------------------
 
@@ -1153,7 +1162,8 @@ FORFND: EX      DE,HL           ; Code string address to HL
         CALL    CHKSYN          ; Make sure "TO" is next
         .BYTE   ZTO             ; "TO" token
         CALL    GETNUM          ; Get "TO" expression value
-        CALL    BCDEFP          ; Move "TO" value to BCDE
+        LD      DE,(FPREG)      ; Move "TO" value to BCDE
+        LD      BC,(FPREG+2)
         PUSH    BC              ; Save "TO" value in block
         PUSH    DE
         LD      BC,8100H        ; BCDE - 1 (default STEP)
@@ -1165,7 +1175,8 @@ FORFND: EX      DE,HL           ; Code string address to HL
         JP      NZ,SAVSTP       ; No STEP given - Default to 1
         CALL    GETCHR          ; Jump over "STEP" token
         CALL    GETNUM          ; Get step value
-        CALL    BCDEFP          ; Move STEP to BCDE
+        LD      DE,(FPREG)      ; Move STEP to BCDE
+        LD      BC,(FPREG+2)
         CALL    TSTSGN          ; Test sign of FPREG
 SAVSTP: PUSH    BC              ; Save the STEP value in block
         PUSH    DE
@@ -2021,7 +2032,8 @@ PAND:   XOR     A               ; Flag "AND"
         POP     BC              ; <-  value
         EX      (SP),HL         ; <-  from
         EX      DE,HL           ; <-  stack
-        CALL    FPBCDE          ; Move last value to FPREG
+        LD      (FPREG),DE      ; Move last value to FPREG
+        LD      (FPREG+2),BC
         PUSH    AF              ; Save "AND" / "OR" flag
         CALL    DEINT           ; Get integer -32768 to 32767
         POP     AF              ; Restore "AND" / "OR" flag
@@ -3033,7 +3045,8 @@ FPADD:  LD      A,B             ; Get FP exponent
         EX      DE,HL
         CALL    STAKFP          ; Put FPREG on stack
         EX      DE,HL
-        CALL    FPBCDE          ; Move BCDE to FPREG
+        LD      (FPREG),DE      ; Move BCDE to FPREG
+        LD      (FPREG+2),BC
         POP     BC              ; Restore number from stack
         POP     DE
 NOSWAP: CP      24+1            ; Second number insignificant?
@@ -3119,7 +3132,9 @@ RONDB:  LD      HL,FPEXP        ; Point to exponent
         AND     10000000B       ; Only bit 7 needed
         XOR     C               ; Set correct sign
         LD      C,A             ; Save correct sign in number
-        JP      FPBCDE          ; Move BCDE to FPREG
+FPBCDE: LD      (FPREG),DE      ; Move BCDE to FPREG
+        LD      (FPREG+2),BC
+        RET
 
 FPROND: INC     E               ; Round LSB
         RET     NZ              ; Return if ok
@@ -3291,7 +3306,8 @@ BYTSFT: LD      B,E             ; Shift partial product left
 DIV10:  CALL    STAKFP          ; Save FPREG on stack
         LD      BC,8420H        ; BCDE = 10.
         LD      DE,0000H
-        CALL    FPBCDE          ; Move 10 to FPREG
+        LD      (FPREG),DE      ; Move 10 to FPREG
+        LD      (FPREG+2),BC
 
 DIV:    POP     BC              ; Get number from stack
         POP     DE
@@ -3393,7 +3409,8 @@ OVTST3: POP     HL              ; Clear off return address
         JP      P,RESZER        ; Result zero
         JP      OVERR           ; Overflow error
 
-MLSP10: CALL    BCDEFP          ; Move FPREG to BCDE
+MLSP10: LD      DE,(FPREG)      ; Move FPREG to BCDE
+        LD      BC,(FPREG+2)
         LD      A,B             ; Get exponent
         OR      A               ; Is it zero?
         RET     Z               ; Yes - Result is zero
@@ -3453,14 +3470,6 @@ PHLTFP: LD      DE,FPREG        ; Number at HL to FPREG
         LDI
         LDI
         LDI
-        RET
-
-FPBCDE: LD      (FPREG),DE      ; Save LSB,NLSB of number
-        LD      (FPREG+2),BC    ; Save MSB and exponent
-        RET
-
-BCDEFP: LD      DE,(FPREG)      ; Get LSB,NLSB of number
-        LD      BC,(FPREG+2)    ; Get MSB and exponent
         RET
 
 LOADFP: LD      E,(HL)          ; Get LSB of number
@@ -3546,7 +3555,8 @@ FPINT:  LD      B,A             ; <- Move
         OR      A               ; Test exponent
         RET     Z               ; Zero - Return zero
         PUSH    HL              ; Save pointer to number
-        CALL    BCDEFP          ; Move FPREG to BCDE
+        LD      DE,(FPREG)      ; Move FPREG to BCDE
+        LD      BC,(FPREG+2)
         CALL    SIGNS           ; Set MSBs & sign of result
         XOR     (HL)            ; Combine with sign of FPREG
         LD      H,A             ; Save combined signs
@@ -3732,7 +3742,8 @@ GTSIXD: CALL    DIV10           ; Divide by 10
 INRNG:  CALL    ROUND           ; Add 0.5 to FPREG
         INC     A
         CALL    FPINT           ; F.P to integer
-        CALL    FPBCDE          ; Move BCDE to FPREG
+        LD      (FPREG),DE      ; Move BCDE to FPREG
+        LD      (FPREG+2),BC
         LD      BC,0306H        ; 1E+06 to 1E-03 range
         POP     AF              ; Restore count
         ADD     A,C             ; 6 digits before point
@@ -3761,7 +3772,8 @@ DIGTXT: DEC     B               ; Count digits before point
         PUSH    BC              ; Save digits before point
         PUSH    HL              ; Save buffer address
         EX      DE,HL           ; Save powers of ten table
-        CALL    BCDEFP          ; Move FPREG to BCDE
+        LD      DE,(FPREG)      ; Move FPREG to BCDE
+        LD      BC,(FPREG+2)
         LD      B,'0'-1         ; ASCII '0' - 1
 TRYAGN: INC     B               ; Count subtractions
         LD      A,E             ; Get LSB
@@ -3780,7 +3792,8 @@ TRYAGN: INC     B               ; Count subtractions
         JP      NC,TRYAGN       ; No overflow - Try again
         CALL    PLUCDE          ; Restore number
         INC     HL              ; Start of next number
-        CALL    FPBCDE          ; Move BCDE to FPREG
+        LD      (FPREG),DE      ; Angle to FPREG
+        LD      (FPREG+2),BC
         EX      DE,HL           ; Save point in table
         POP     HL              ; Restore buffer address
         LD      (HL),B          ; Save digit in buffer
@@ -3859,7 +3872,8 @@ POWER1: OR      A               ; Base zero?
         PUSH    BC
         LD      A,C             ; Get MSB of base
         OR      01111111B       ; Get sign status
-        CALL    BCDEFP          ; Move power to BCDE
+        LD      DE,(FPREG)      ; Move power to BCDE
+        LD      BC,(FPREG+2)
         JP      P,POWER2        ; Positive base - Ok
         PUSH    DE              ; Save power
         PUSH    BC
@@ -3926,7 +3940,8 @@ SUMSER: CALL    STAKFP          ; Put FPREG on stack
         LD      DE,MULT         ; Multiply by "X"
         PUSH    DE              ; To be done after
         PUSH    HL              ; Save address of table
-        CALL    BCDEFP          ; Move FPREG to BCDE
+        LD      DE,(FPREG)      ; Move FPREG to BCDE
+        LD      BC,(FPREG+2)
         CALL    FPMULT          ; Square the value
         POP     HL              ; Restore address of table
 SMSER1: CALL    STAKFP          ; Put value on stack
@@ -3982,11 +3997,13 @@ RND:    CALL    TSTSGN          ; Test sign of FPREG
         LD      C,A             ; BC = Offset into table
         ADD     HL,BC           ; Point to value
         CALL    ADDPHL          ; Add value to FPREG
-RND1:   CALL    BCDEFP          ; Move FPREG to BCDE
+RND1:   LD      DE,(FPREG)      ; Move FPREG to BCDE
+        LD      BC,(FPREG+2)
         LD      A,E             ; Get LSB
         LD      E,C             ; LSB = MSB
         XOR     01001111B       ; Fiddle around
         LD      C,A             ; New MSB
+        LD      HL,SGNRES
         LD      (HL),80H        ; Set saved signed bit to positive
         DEC     HL              ; Point to Exponent
         LD      B,(HL)          ; Get Exponent to BCDE
@@ -4020,7 +4037,8 @@ COS:    LD      HL,HALFPI       ; Point to PI/2
 SIN:    CALL    STAKFP          ; Put angle on stack
         LD      BC,8349H        ; BCDE = 2 PI
         LD      DE,0FDBH
-        CALL    FPBCDE          ; Move 2 PI to FPREG
+        LD      (FPREG),DE      ; Move 2 PI to FPREG
+        LD      (FPREG+2),BC
         POP     BC              ; Restore angle
         POP     DE
         CALL    DVBCDE          ; Divide angle by 2 PI
@@ -4063,7 +4081,8 @@ TAN:    CALL    STAKFP          ; Put angle on stack
         POP     HL
         CALL    STAKFP          ; Save SIN of angle
         EX      DE,HL           ; BCDE = Angle
-        CALL    FPBCDE          ; Angle to FPREG
+        LD      (FPREG),DE      ; Angle to FPREG
+        LD      (FPREG+2),BC
         CALL    COS             ; Get COS of angle
         JP      DIV             ; TAN = SIN / COS
 

@@ -17,7 +17,7 @@ http://searle.wales/
 
 ==============================================================================
 
-The rework to support MS Basic HLOAD and the Z80 instruction tuning are copyright (C) 2020 Phillip Stevens
+The rework to support MS Basic HLOAD, RESET, and the Z80 instruction tuning are copyright (C) 2020 Phillip Stevens
 
 This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
@@ -47,7 +47,6 @@ The 56k version utilises the full 56k RAM memory space of the RC2014, starting a
 This ROM provides both Intel HexLoadr functions and a `RST`, `INT0`, and `NMI` JumP Table.
 This allows you to upload Assembly or compiled C programs, and then run them as described below.
 
-
 # 32k Basic with integrated HexLoadr
 
 This ROM works with the most basic default version of the RC2014, with 32k of RAM.
@@ -61,7 +60,12 @@ This allows you to upload Assembly or compiled C programs, and then run them as 
 # 32k Basic with integrated HexLoadr using LUT Multiply Module
 
 This ROM works with the most basic default version of the RC2014, with 32k of RAM.
-This is the ROM to choose if you want fast I/O from a standard RC2014, and you have installed a LUT (Multiply) module.
+This is the ROM to choose if you want fast I/O from a standard RC2014, and you have installed a LUT (Multiply) Module.
+
+# 32k Basic with integrated HexLoadr using AM9511A APU Module
+
+This ROM works with the most basic default version of the RC2014, with 32k of RAM.
+This is the ROM to choose if you want fast I/O from a standard RC2014, and you have installed an AM9511A APU Module.
 
 ==============================================================================
 
@@ -109,7 +113,7 @@ There are a number of important Z180 addresses or origins that need to be manage
 
 Your program (the one that you're doing all this for) needs to start in RAM located somewhere.
 
-If you're using the RC2014 or YAZ180 with 32kB Nascom Basic, then all of the RAM between `0x3000` and `0x7FFF` is available for your assembly programs, without limitation. In the YAZ180 the area between `0x2000` and `0x2FFF` is reserved for system calls, buffers, and stack space. For the RC2014 the area from `0x8000` is reserved for these uses.
+If you're using the YAZ180 with 32kB Nascom Basic, then all of the RAM between `0x3000` and `0x7FFF` is available for your assembly programs, without limitation. In the YAZ180 the area between `0x2000` and `0x2FFF` is reserved for system calls, buffers, and stack space. For the RC2014 the area from `0x8000` is reserved for these uses.
 
 In the YAZ180 32kB Basic, the area from `0x4000` to `0x7FFF` is the Banked memory area, and this RAM can be managed by the HexLoadr program to write to all of the physical RAM space using ESA Records.
 
