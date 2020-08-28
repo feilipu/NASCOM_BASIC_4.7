@@ -3531,9 +3531,7 @@ ADDIG:  PUSH    DE              ; Save sign of exponent
 
 RSCALE: CALL    STAKFP          ; Put number on stack
         CALL    FLGREL          ; Digit to add to FPREG
-PADD:   POP     BC              ; Restore number
-        POP     DE
-        JP      FPADD           ; Add BCDE to FPREG and return
+        JP      PADD            ; Add stack to FPREG and return
 
 EDIGIT: LD      A,E             ; Get digit
         RLCA                    ; Times 2
@@ -3871,7 +3869,8 @@ PUSHF_FPREG:
 
 PUSHF_BCDE:
         ld a,b                  ; capture exponent
-        jr Z,PUSHF_BCDE_ZERO    ; check for zero
+        or a                    ; check for zero
+        jr Z,PUSHF_BCDE_ZERO
         cp 80h+63               ; check for overflow
         jp NC,OVERR             ; overflow error
         cp 80h-64               ; check for underflow
@@ -3952,10 +3951,6 @@ POPF_FPREG_REJOIN:
 
 POPF_FPREG_ERRORS:
         rrca                    ; relocate status bits (for convenience)
-        ld b,a
-        or 01000000b            ; make visible ascii
-        rst 08h                 ; output errors
-        ld a,b
         bit 4,a
         jp NZ,DZERR             ; division by zero
         bit 3,a
