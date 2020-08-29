@@ -7,7 +7,7 @@
 ; License, v. 2.0. If a copy of the MPL was not distributed with this
 ; file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ;
-: The HLOAD function supports Intel HEX encoded program upload.
+; The HLOAD function supports Intel HEX encoded program upload.
 ; Updates LSTRAM and STRSPC, adds program origin address to USR+1.
 ; It resets and clears runtime variables.
 ;
