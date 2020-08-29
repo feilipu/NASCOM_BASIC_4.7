@@ -292,9 +292,9 @@ FNCTAB: .WORD   SGN
         .WORD   COS
         .WORD   SIN
         .WORD   TAN
-        .WORD   ACOS
-        .WORD   ASIN
-        .WORD   ATAN
+        .WORD   ACS
+        .WORD   ASN
+        .WORD   ATN
         .WORD   PEEK
         .WORD   DEEK
         .WORD   LEN
@@ -378,9 +378,9 @@ WORDS:  .BYTE   'E'+80H,"ND"    ; 80h
         .BYTE   'C'+80H,"OS"
         .BYTE   'S'+80H,"IN"
         .BYTE   'T'+80H,"AN"    ; C0h
-        .BYTE   'A'+80H,"COS"
-        .BYTE   'A'+80H,"SIN"
-        .BYTE   'A'+80H,"TAN"
+        .BYTE   'A'+80H,"CS"
+        .BYTE   'A'+80H,"SN"
+        .BYTE   'A'+80H,"TN"
         .BYTE   'P'+80H,"EEK"
         .BYTE   'D'+80H,"EEK"
         .BYTE   'L'+80H,"EN"
@@ -3796,17 +3796,17 @@ TAN:    CALL    PUSHF_FPREG     ; Load FPREG to APU
         OUT     (IO_APU_CONTROL),A
         JP      POPF_FPREG
 
-ACOS:   CALL    PUSHF_FPREG     ; Load FPREG to APU
+ACS:    CALL    PUSHF_FPREG     ; Load FPREG to APU
         LD      A,IO_APU_OP_ACOS
         OUT     (IO_APU_CONTROL),A
         JP      POPF_FPREG
 
-ASIN:   CALL    PUSHF_FPREG     ; Load FPREG to APU
+ASN:    CALL    PUSHF_FPREG     ; Load FPREG to APU
         LD      A,IO_APU_OP_ASIN
         OUT     (IO_APU_CONTROL),A
         JP      POPF_FPREG
 
-ATAN:   CALL    PUSHF_FPREG     ; Load FPREG to APU
+ATN:    CALL    PUSHF_FPREG     ; Load FPREG to APU
         LD      A,IO_APU_OP_ATAN
         OUT     (IO_APU_CONTROL),A
         JP      POPF_FPREG
