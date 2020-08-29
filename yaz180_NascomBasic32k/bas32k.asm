@@ -149,7 +149,7 @@ WARM:   JP      WARMST          ; Jump in for warm start (039CH)
         .WORD   DEINT           ; Get integer -32768 to 32767
         .WORD   ABPASS          ; Return integer in AB
 
-RESET:                          ; RESET key word
+RESET:  RET     NZ              ; Return if any more on line
 CSTART: LD      HL,WRKSPC       ; Start of workspace RAM
         LD      SP,HL           ; Set up a temporary stack
         XOR     A               ; Clear break flag
@@ -4159,6 +4159,7 @@ DOKE:   CALL    GETNUM          ; Get a number
         ; (C) feilipu
         
 HLOAD:
+        ret NZ                  ; Return if any more on line
         call HLD_WAIT_COLON     ; wait for first colon and address data
         dec de                  ; go one Byte lower
         ld hl,(LSTRAM)          ; get last ram address       
