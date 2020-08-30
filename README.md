@@ -37,7 +37,7 @@ Receive buffer is 255 bytes, to allow efficient pasting of Basic into the editor
 Transmit buffer is 15 bytes, because the RC2014 is too slow to fill the buffer.
 Receive buffer overflows are silently discarded.
 
-# Mini, Micro, Classic: 32kB MS Basic
+## Mini, Micro, Classic: 32kB MS Basic
 
 This ROM works with the most basic default versions of the RC2014, with 32k of RAM.
 This is the ROM to choose if you want fast I/O from a standard RC2014.
@@ -45,7 +45,7 @@ This is the ROM to choose if you want fast I/O from a standard RC2014.
 This ROM provides both Intel `HLOAD` function and a `RST`, `INT0`, and `NMI` JumP Table.
 This allows you to upload Assembly or compiled C programs, and then run them as described.
 
-# Plus: 64kB MS Basic
+## Plus: 64kB MS Basic
 
 This version requires a 64k/56k RAM module.
 The 56k version utilises the full 56k RAM memory space of the RC2014, starting at `0x2000`.
@@ -53,12 +53,12 @@ The 56k version utilises the full 56k RAM memory space of the RC2014, starting a
 This ROM provides both Intel `HLOAD` function and a `RST`, `INT0`, and `NMI` JumP Table.
 This allows you to upload Assembly or compiled C programs, and then run them as described.
 
-# Mini, Micro, Classic: 32kB MS Basic using AM9511A APU Module
+## Mini, Micro, Classic: 32kB MS Basic using AM9511A APU Module
 
 This ROM works with the most basic default versions of the RC2014, with 32k of RAM.
 This is the ROM to choose if you want fast I/O from a standard RC2014, and you have installed an AM9511A APU Module.
 
-# Mini, Micro, Classic: 32kB MS Basic using LUT Multiply Module
+## Mini, Micro, Classic: 32kB MS Basic using LUT Multiply Module
 
 This ROM works with the most basic default version of the RC2014, with 32k of RAM.
 This is the ROM to choose if you want fast I/O from a standard RC2014, and you have installed a LUT (Multiply) Module.
@@ -77,7 +77,7 @@ HexLoadr supports the Extended Segment Address Record Type, and will store the M
 
 Two versions of initialisation routines NASCOM Basic are provided.
 
-# 56k Basic with integrated HexLoadr
+## 56k Basic with integrated HexLoadr
 
 The 56k version utilises the full 56k RAM memory space of the YAZ180, starting at `0x2000`.
 
@@ -89,7 +89,7 @@ Receive buffer overflows are silently discarded.
 Transmit buffer is 255 bytes, because the YAZ180 is 36.864MHz CPU.
 Transmit function busy waits when buffer is full. No Tx characters lost.
 
-# 32k Basic with integrated HexLoadr
+## 32k Basic with integrated HexLoadr
 
 The 32k version uses the CA0 space for buffers and the CA1 space for Basic.
 This leaves the Bank RAM / Flash space in `0x4000` to `0x7FFF` available for other usage.
