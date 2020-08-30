@@ -37,41 +37,43 @@ Receive buffer is 255 bytes, to allow efficient pasting of Basic into the editor
 Transmit buffer is 15 bytes, because the RC2014 is too slow to fill the buffer.
 Receive buffer overflows are silently discarded.
 
-Two versions of initialisation routines for NASCOM Basic are provided.
+# Mini, Micro, Classic: 32kB MS Basic
 
-# 56k Basic with integrated HexLoadr
+This ROM works with the most basic default versions of the RC2014, with 32k of RAM.
+This is the ROM to choose if you want fast I/O from a standard RC2014.
+
+This ROM provides both Intel `HLOAD` function and a `RST`, `INT0`, and `NMI` JumP Table.
+This allows you to upload Assembly or compiled C programs, and then run them as described.
+
+# Plus: 64kB MS Basic
 
 This version requires a 64k/56k RAM module.
 The 56k version utilises the full 56k RAM memory space of the RC2014, starting at `0x2000`.
 
-This ROM provides both Intel HexLoadr functions and a `RST`, `INT0`, and `NMI` JumP Table.
-This allows you to upload Assembly or compiled C programs, and then run them as described below.
+This ROM provides both Intel `HLOAD` function and a `RST`, `INT0`, and `NMI` JumP Table.
+This allows you to upload Assembly or compiled C programs, and then run them as described.
 
-# 32k Basic with integrated HexLoadr
+# Mini, Micro, Classic: 32kB MS Basic using AM9511A APU Module
 
-This ROM works with the most basic default version of the RC2014, with 32k of RAM.
-This is the ROM to choose if you want fast I/O from a standard RC2014.
+This ROM works with the most basic default versions of the RC2014, with 32k of RAM.
+This is the ROM to choose if you want fast I/O from a standard RC2014, and you have installed an AM9511A APU Module.
 
-It can be used to simply provide accelerated I/O over the standard ROM, and it provides Basic programming space from `0x8000` RAM address.
-
-Also, this ROM provides both Intel HexLoadr functions and a `RST`, `INT0`, and `NMI` JumP Table.
-This allows you to upload Assembly or compiled C programs, and then run them as described below.
-
-# 32k Basic with integrated HexLoadr using LUT Multiply Module
+# Mini, Micro, Classic: 32kB MS Basic using LUT Multiply Module
 
 This ROM works with the most basic default version of the RC2014, with 32k of RAM.
 This is the ROM to choose if you want fast I/O from a standard RC2014, and you have installed a LUT (Multiply) Module.
-
-# 32k Basic with integrated HexLoadr using AM9511A APU Module
-
-This ROM works with the most basic default version of the RC2014, with 32k of RAM.
-This is the ROM to choose if you want fast I/O from a standard RC2014, and you have installed an AM9511A APU Module.
 
 ==============================================================================
 
 # YAZ180
 
 ASCI0 interrupt driven serial I/O to run modified NASCOM Basic 4.7.
+
+If you're using the YAZ180 with 32kB Nascom Basic, then all of the RAM between `0x3000` and `0x7FFF` is available for your assembly programs, without limitation. In the YAZ180 the area between `0x2000` and `0x2FFF` is reserved for system calls, buffers, and stack space. For the RC2014 the area from `0x8000` is reserved for these uses.
+
+In the YAZ180 32kB Basic, the area from `0x4000` to `0x7FFF` is the Banked memory area, and this RAM can be managed by the HexLoadr program to write to all of the physical RAM space using ESA Records.
+
+HexLoadr supports the Extended Segment Address Record Type, and will store the MSB of the ESA in the Z180 BBR Register. The LSB of the ESA is silently abandoned. When HexLoadr terminates the BBR is returned to the original value.
 
 Two versions of initialisation routines NASCOM Basic are provided.
 
@@ -105,23 +107,15 @@ Transmit function busy waits when buffer is full. No Tx characters lost.
 
 https://feilipu.me/2016/05/23/another-z80-project/
 
+==============================================================================
+
 # Important Addresses
 
-There are a number of important Z180 addresses or origins that need to be managed within your assembly program.
-
-## Arbitrary Program Origin
-
-Your program (the one that you're doing all this for) needs to start in RAM located somewhere.
-
-If you're using the YAZ180 with 32kB Nascom Basic, then all of the RAM between `0x3000` and `0x7FFF` is available for your assembly programs, without limitation. In the YAZ180 the area between `0x2000` and `0x2FFF` is reserved for system calls, buffers, and stack space. For the RC2014 the area from `0x8000` is reserved for these uses.
-
-In the YAZ180 32kB Basic, the area from `0x4000` to `0x7FFF` is the Banked memory area, and this RAM can be managed by the HexLoadr program to write to all of the physical RAM space using ESA Records.
-
-HexLoadr supports the Extended Segment Address Record Type, and will store the MSB of the ESA in the Z180 BBR Register. The LSB of the ESA is silently abandoned. When HexLoadr terminates the BBR is returned to the original value.
+There are a number of important Z80 addresses or origins that need to be managed within your assembly program.
 
 ## RST locations
 
-For convenience, because we can't easily change the ROM code interrupt routines already present in the YAZ180, the ASCI serial Tx and Rx routines are reachable by calling `RST` instructions from your program.
+For convenience, because we can't easily change the ROM code interrupt routines already present in the RC2014, the ACIA serial Tx and Rx routines are reachable by calling `RST` instructions from your program.
 
 * Tx: `RST 08H` expects a byte to transmit in the `a` register.
 * Rx: `RST 10H` returns a received byte in the `a` register, and will block (loop) until it has a byte to return.
@@ -133,7 +127,7 @@ For the RC2014 with 32k Basic the location for `USR(x)` is `0x8224`, and with 56
 
 # Program Usage
 
-1. Select the preferred origin `.ORG` for your arbitrary program, and assemble a HEX file using your preferred assembler, or compile a C program using z88dk.
+1. Select the preferred origin `.ORG` for your arbitrary program, and assemble a HEX file using your preferred assembler, or compile a C program using z88dk. For the RC2014 32kB, suitable origins commence from `0x8400`, and the default z88dk origin for RC2014 is `0x9000`.
 
 2. Give the `HLOAD` command within Basic.
 
@@ -145,7 +139,8 @@ For the RC2014 with 32k Basic the location for `USR(x)` is `0x8224`, and with 56
 
 ## Workflow Notes
 
+Note that your program and the `USR(x)` jump address setting will remain in place through a RC2014 Warm Reset, provided you prevent Basic from initialising the RAM locations you have used. Also, you can reload your assembly program to the same RAM location through multiple Warm Resets, without reprogramming the `USR(x)` jump.
 
-Note that your program and the `USR(x)` jump address setting will remain in place through a RC2014 Cold or Warm RESET, provided you prevent Basic from initialising the RAM locations you have used. Also, you can reload your assembly program to the same RAM location through multiple Warm and HexLoadr RESETs, without reprogramming the `USR(x)` jump.
+Any Basic programs loaded will also remain in place during a Warm Reset.
 
-Any Basic programs loaded will also remain in place during a Warm RESET.
+Issuing the `RESET` keyword will clear the RC2014 RAM, and return the original memory contents.
