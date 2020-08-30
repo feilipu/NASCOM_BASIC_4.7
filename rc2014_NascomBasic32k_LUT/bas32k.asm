@@ -3679,6 +3679,9 @@ INT:    LD      HL,FPEXP        ; Point to exponent
         RET
 
 MLDEBC: LD      HL,0            ; Clear partial product
+        LD      A,B             ; Test multiplier
+        OR      C
+        RET     Z               ; Return zero if zero
         LD      A,B
         LD      B,16            ; 16 bits (iterations)
 MLDBLP: ADD     HL,HL           ; Shift P.P left
