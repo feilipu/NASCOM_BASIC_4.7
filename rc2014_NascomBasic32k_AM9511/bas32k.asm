@@ -2369,7 +2369,7 @@ DEFSIZ: LD      (HL),C          ; Save LSB of dimension size
         INC     HL
         PUSH    AF              ; Save num' of dim'ns an status
         PUSH    HL              ; Save address of dim'n size
-        CALL    MLDEBC          ; Multiply DE by BC to find
+        CALL    MLDEBC          ; Multiply DE by BC to HL
         EX      DE,HL           ; amount of mem needed (to DE)
         POP     HL              ; Restore address of dimension
         POP     AF              ; Restore number of dimensions
@@ -3442,20 +3442,16 @@ INT:    LD      HL,FPEXP        ; Point to exponent
         RET
 
 MLDEBC: LD      HL,0            ; Clear partial product
-        LD      A,B             ; Test multiplier
-        OR      C
-        RET     Z               ; Return zero if zero
-        LD      A,16            ; 16 bits
+        LD      A,B
+        LD      B,16            ; 16 bits (iterations)
 MLDBLP: ADD     HL,HL           ; Shift P.P left
         JP      C,BSERR         ; ?BS Error if overflow
-        EX      DE,HL
-        ADD     HL,HL           ; Shift multiplier left
-        EX      DE,HL
+        RL      C
+        RLA
         JP      NC,NOMLAD       ; Bit was zero - No add
-        ADD     HL,BC           ; Add multiplicand
+        ADD     HL,DE
         JP      C,BSERR         ; ?BS Error if overflow
-NOMLAD: DEC     A               ; Count bits
-        JP      NZ,MLDBLP       ; More
+NOMLAD: DJNZ    MLDBLP
         RET
 
 ASCTFP: CP      '-'             ; Negative?
