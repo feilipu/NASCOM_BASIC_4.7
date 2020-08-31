@@ -1205,9 +1205,7 @@ RUNCNT: CALL    TSTBRK          ; Execution driver - Test break
         LD      E,(HL)          ; Get LSB of line number
         INC     HL
         LD      D,(HL)          ; Get MSB of line number
-        EX      DE,HL           ; Line number to HL
-        LD      (LINEAT),HL     ; Save as current line number
-        EX      DE,HL           ; Line number back to DE
+        LD      (LINEAT),DE     ; Save as current line number
 EXCUTE: CALL    GETCHR          ; Get key word
         LD      DE,RUNCNT       ; Where to RETurn to
         PUSH    DE              ; Save for RETurn
@@ -1521,12 +1519,21 @@ CRESTR: POP     DE              ; Restore address of string
         CALL    SAVSTR          ; Save string in string area
 MVSTPT: CALL    BAKTMP          ; Back to last tmp-str entry
         POP     HL              ; Get string pointer
-        CALL    DETHL4          ; Move string pointer to var
+        EX      DE,HL           ; Move string pointer to var
+        LDI                     ; 4 bytes to move (HL++)->(DE++)
+        LDI
+        LDI
+        LDI
         POP     HL              ; Restore code string address
         RET
 
 LETNUM: PUSH    HL              ; Save address of variable
-        CALL    FPTHL           ; Move value to variable
+        LD      DE,FPREG        ; Move FPREG to variable
+        EX      DE,HL
+        LDI                     ; 4 bytes to move (HL++)->(DE++)
+        LDI
+        LDI
+        LDI
         POP     DE              ; Restore address of variable
         POP     HL              ; Restore code string address
         RET
@@ -1751,7 +1758,12 @@ STRENT: CALL    DTSTR           ; Get string terminated by D
 INPBIN: CALL    GETCHR          ; Get next character
         CALL    ASCTFP          ; Convert ASCII to FP number
         EX      (SP),HL         ; Save input ptr, Get var addr
-        CALL    FPTHL           ; Move FPREG to variable
+        LD      DE,FPREG        ; Move FPREG to variable
+        EX      DE,HL
+        LDI                     ; 4 bytes to move (HL++)->(DE++)
+        LDI
+        LDI
+        LDI
         POP     HL              ; Restore input pointer
 LTSTND: DEC     HL              ; DEC 'cos GETCHR INCs
         CALL    GETCHR          ; Get next character
@@ -1789,9 +1801,7 @@ FDTLP:  CALL    DATA            ; Get next statement
         LD      E,(HL)          ; LSB of line number
         INC     HL
         LD      D,(HL)          ; MSB of line number
-        EX      DE,HL
-        LD      (DATLIN),HL     ; Set line of current DATA item
-        EX      DE,HL
+        LD      (DATLIN),DE     ; Set line of current DATA item
 FANDT:  CALL    GETCHR          ; Get next character
         CP      ZDATA           ; "DATA" token
         JP      NZ,FDTLP        ; No "DATA" - Keep looking
@@ -1808,12 +1818,20 @@ NEXT1:  CALL    NZ,GETVAR       ; Get index address
         INC     HL
         PUSH    AF              ; Save sign of STEP
         PUSH    DE              ; Save index address
-        CALL    PHLTFP          ; Move index value to FPREG
+        LD      DE,FPREG        ; Move index value to FPREG
+        LDI                     ; 4 bytes to move (HL++)->(DE++)
+        LDI
+        LDI
+        LDI
         EX      (SP),HL         ; Save address of TO value
         PUSH    HL              ; Save address of index
         CALL    ADDPHL          ; Add STEP to index value
-        POP     HL              ; Restore address of index
-        CALL    FPTHL           ; Move value to index variable
+        POP     DE              ; Restore address of index
+        LD      HL,FPREG        ; Move FPREG to index variable
+        LDI                     ; 4 bytes to move (HL++)->(DE++)
+        LDI
+        LDI
+        LDI
         POP     HL              ; Restore address of TO value
         CALL    LOADFP          ; Move TO value to BCDE
         PUSH    HL              ; Save address of line of FOR
@@ -1907,11 +1925,10 @@ FOPRND: LD      A,D             ; < = > found ?
 STKTHS: PUSH    BC              ; Save last precedence & token
         LD      BC,EVAL3        ; Where to go on prec' break
         PUSH    BC              ; Save on stack for return
-        LD      B,E             ; Save operator
-        LD      C,D             ; Save precedence
-        CALL    STAKFP          ; Move value to stack
-        LD      E,B             ; Restore operator
-        LD      D,C             ; Restore precedence
+        LD      BC,(FPREG)      ; LSB,NLSB of FPREG
+        PUSH    BC              ; Stack them
+        LD      BC,(FPREG+2)    ; MSB and exponent of FPREG
+        PUSH    BC              ; Stack them
         LD      C,(HL)          ; Get LSB of routine address
         INC     HL
         LD      B,(HL)          ; Get MSB of routine address
@@ -2278,9 +2295,7 @@ ARLDSV: PUSH    HL              ; Save code string address
         LD      HL,(VAREND)     ; Start of arrays
         .BYTE   3EH             ; Skip "ADD HL,DE"
 FNDARY: ADD     HL,DE           ; Move to next array start
-        EX      DE,HL
-        LD      HL,(ARREND)     ; End of arrays
-        EX      DE,HL           ; Current array pointer
+        LD      DE,(ARREND)     ; End of arrays
         CALL    CPDEHL          ; End of arrays found?
         JP      Z,CREARY        ; Yes - Create array
         LD      A,(HL)          ; Get second byte of name
@@ -2482,9 +2497,13 @@ DOFN:   CALL    CHEKFN          ; Make sure FN follows
         PUSH    HL              ; Save it
         LD      HL,(FNARG)      ; Get MSB,EXP of old arg value
         PUSH    HL              ; Save it
-        LD      HL,FNARG        ; HL = Value of argument
         PUSH    DE              ; Save FN code string address
-        CALL    FPTHL           ; Move FPREG to argument
+        LD      DE,FNARG        ; DE = Value of argument
+        LD      HL,FPREG        ; Move FPREG to argument
+        LDI                     ; 4 bytes to move (HL++)->(DE++)
+        LDI
+        LDI
+        LDI
         POP     HL              ; Get FN code string address
         CALL    GETNUM          ; Get value from function
         DEC     HL              ; DEC 'cos GETCHR INCs
@@ -2579,7 +2598,12 @@ TSTOPL: LD      DE,TMPSTR       ; Temporary string
         LD      (FPREG),HL      ; Save address of string ptr
         LD      A,1
         LD      (TYPE),A        ; Set type to string
-        CALL    DETHL4          ; Move string to pool
+        EX      DE,HL           ; Move string to pool
+        LDI                     ; 4 bytes to move (HL++)->(DE++)
+        LDI
+        LDI
+        LDI
+        EX      DE,HL           ; Swap source destination
         CALL    CPDEHL          ; Out of string pool?
         LD      (TMSTPT),HL     ; Save new pointer
         POP     HL              ; Restore code string address
@@ -2636,16 +2660,12 @@ GARBLP: LD      (STRBOT),HL     ; Reset string pointer
         LD      HL,(STRSPC)     ; Get bottom of string space
         PUSH    HL              ; Save bottom of string space
         LD      HL,TMSTPL       ; Temporary string pool
-GRBLP:  EX      DE,HL
-        LD      HL,(TMSTPT)     ; Temporary string pool pointer
-        EX      DE,HL
+GRBLP:  LD      DE,(TMSTPT)     ; Temporary string pool pointer
         CALL    CPDEHL          ; Temporary string pool done?
         LD      BC,GRBLP        ; Loop until string pool done
         JP      NZ,STPOOL       ; No - See if in string area
         LD      HL,(PROGND)     ; Start of simple variables
-SMPVAR: EX      DE,HL
-        LD      HL,(VAREND)     ; End of simple variables
-        EX      DE,HL
+SMPVAR: LD      DE,(VAREND)     ; End of simple variables
         CALL    CPDEHL          ; All simple strings done?
         JP      Z,ARRLP         ; Yes - Do string arrays
         LD      A,(HL)          ; Get type of variable
@@ -2656,9 +2676,7 @@ SMPVAR: EX      DE,HL
         JP      SMPVAR          ; Loop until simple ones done
 
 GNXARY: POP     BC              ; Scrap address of this array
-ARRLP:  EX      DE,HL
-        LD      HL,(ARREND)     ; End of string arrays
-        EX      DE,HL
+ARRLP:  LD      DE,(ARREND)     ; End of string arrays
         CALL    CPDEHL          ; All string arrays done?
         JP      Z,SCNEND        ; Yes - Move string if found
         CALL    LOADFP          ; Get array name to BCDE
@@ -2674,9 +2692,7 @@ ARRLP:  EX      DE,HL
         ADD     HL,BC           ; Two bytes per dimension size
         ADD     HL,BC
         INC     HL              ; Plus one for number of dim'ns
-GRBARY: EX      DE,HL
-        LD      HL,(CUROPR)     ; Get address of next array
-        EX      DE,HL
+GRBARY: LD      DE,(CUROPR)     ; Get address of next array
         CALL    CPDEHL          ; Is this array finished?
         JP      Z,ARRLP         ; Yes - Get next one
         LD      BC,GRBARY       ; Loop until array all done
@@ -3041,10 +3057,11 @@ FPADD:  LD      A,B             ; Get FP exponent
         SUB     B               ; BCDE number larger?
         JP      NC,NOSWAP       ; No - Don't swap them
         CPL                     ; Two's complement
-        INC     A               ;  FP exponent
-        EX      DE,HL
-        CALL    STAKFP          ; Put FPREG on stack
-        EX      DE,HL
+        INC     A               ; FP exponent
+        LD      HL,(FPREG)      ; LSB,NLSB of FPREG
+        PUSH    HL              ; Stack them
+        LD      HL,(FPREG+2)    ; MSB and exponent of FPREG
+        PUSH    HL              ; Stack them
         LD      (FPREG),DE      ; Move BCDE to FPREG
         LD      (FPREG+2),BC
         POP     BC              ; Restore number from stack
@@ -3303,7 +3320,10 @@ BYTSFT: LD      B,E             ; Shift partial product left
         LD      C,A
         RET
 
-DIV10:  CALL    STAKFP          ; Save FPREG on stack
+DIV10:  LD      HL,(FPREG)      ; LSB,NLSB of FPREG
+        PUSH    HL              ; Stack them
+        LD      HL,(FPREG+2)    ; MSB and exponent of FPREG
+        PUSH    HL              ; Stack them
         LD      BC,8420H        ; BCDE = 10.
         LD      DE,0000H
         LD      (FPREG),DE      ; Move 10 to FPREG
@@ -3480,15 +3500,6 @@ LOADFP: LD      E,(HL)          ; Get LSB of number
         INC     HL
         LD      B,(HL)          ; Get exponent of number
 INCHL:  INC     HL              ; Used for conditional "INC HL"
-        RET
-
-FPTHL:  LD      DE,FPREG        ; Point to FPREG source
-DETHL4: EX      DE,HL           ; Swap source destination
-        LDI                     ; 4 bytes to move (HL++)->(DE++)
-        LDI
-        LDI
-        LDI
-        EX      DE,HL           ; Swap source destination
         RET
 
 SIGNS:  LD      HL,FPREG+2      ; Point to MSB of FPREG
@@ -3683,7 +3694,10 @@ ADDIG:  PUSH    DE              ; Save sign of exponent
         POP     DE              ; Restore sign of exponent
         JP      MANLP           ; Get another digit
 
-RSCALE: CALL    STAKFP          ; Put number on stack
+RSCALE: LD      HL,(FPREG)      ; LSB,NLSB of FPREG
+        PUSH    HL              ; Stack them
+        LD      HL,(FPREG+2)    ; MSB and exponent of FPREG
+        PUSH    HL              ; Stack them
         CALL    FLGREL          ; Digit to add to FPREG
 PADD:   POP     BC              ; Restore number
         POP     DE
@@ -3855,7 +3869,11 @@ NEGAFT: LD  HL,INVSGN           ; Negate result
 
 SQR:    CALL    STAKFP          ; Put value on stack
         LD      HL,HALF         ; Set power to 1/2
-        CALL    PHLTFP          ; Move 1/2 to FPREG
+        LD      DE,FPREG        ; Move 1/2 to FPREG
+        LDI                     ; 4 bytes to move (HL++)->(DE++)
+        LDI
+        LDI
+        LDI
 
 POWER:  POP     BC              ; Get base from stack
         POP     DE
@@ -3946,7 +3964,11 @@ SUMSER: CALL    STAKFP          ; Put FPREG on stack
 SMSER1: CALL    STAKFP          ; Put value on stack
         LD      A,(HL)          ; Get number of coefficients
         INC     HL              ; Point to start of table
-        CALL    PHLTFP          ; Move coefficient to FPREG
+        LD      DE,FPREG        ; Move coefficient to FPREG
+        LDI                     ; 4 bytes to move (HL++)->(DE++)
+        LDI
+        LDI
+        LDI
         .BYTE   06H             ; Skip "POP AF"
 SUMLP:  POP     AF              ; Restore count
         POP     BC              ; Restore number
@@ -3969,7 +3991,11 @@ RND:    CALL    TSTSGN          ; Test sign of FPREG
         LD      HL,SEED+2       ; Random number seed
         JP      M,RESEED        ; Negative - Re-seed
         LD      HL,LSTRND       ; Last random number
-        CALL    PHLTFP          ; Move last RND to FPREG
+        LD      DE,FPREG        ; Move last RND to FPREG
+        LDI                     ; 4 bytes to move (HL++)->(DE++)
+        LDI
+        LDI
+        LDI
         LD      HL,SEED+2       ; Random number seed
         RET     Z               ; Return if RND(0)
         ADD     A,(HL)          ; Add (SEED)+2)
@@ -4017,8 +4043,13 @@ RND1:   LD      DE,(FPREG)      ; Move FPREG to BCDE
         DEC     D               ; with the
         INC     E               ; number
 RND2:   CALL    BNORM           ; Normalise number
-        LD      HL,LSTRND       ; Save random number
-        JP      FPTHL           ; Move FPREG to last and return
+        LD      DE,LSTRND       ; Save random number
+        LD      HL,FPREG        ; Move FPREG to last and return
+        LDI                     ; 4 bytes to move (HL++)->(DE++)
+        LDI
+        LDI
+        LDI
+        RET
 
 RESEED: LD      (HL),A          ; Re-seed random numbers
         DEC     HL
