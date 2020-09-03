@@ -26,22 +26,19 @@ ORG         0x0066
 SECTION     z80_acia_interrupt
 ORG         0x0080
 
-SECTION     z80_acia_rxa_chk
+SECTION     z80_acia_rxa
 ORG         0x00F0
 
-SECTION     z80_acia_rxa
-ORG         0x0100
-
 SECTION     z80_acia_txa
-ORG         0x0130
+ORG         0x0120
 
 SECTION     z80_acia_print
-ORG         0x0180
+ORG         0x0170
 
 SECTION     z80_init
-ORG         0x0190
+ORG         0x0180
 
 SECTION     z80_init_strings
-ORG         0x0200
+ORG         0x01F0
 
 ;==============================================================================

@@ -92,9 +92,9 @@ RST_08_LBL:
 RST_10_LBL:
                 JP      RST_10
                 NOP
-RST_18_LBL:
-                JP      RST_18
-                NOP
+RST_18_LBL:       
+                LD      A,(serRxBufUsed)    ; this is called each token,
+                RET                         ; so optimise it to here
 RST_20_LBL:
                 JP      RST_20
                 NOP

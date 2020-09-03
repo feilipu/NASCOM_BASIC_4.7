@@ -1256,6 +1256,7 @@ UPDATA: LD      (NXTDAT),HL     ; Update DATA pointer
 
 
 TSTBRK: RST     18H             ; Check input status
+        OR      A               ; Check count Zero
         RET     Z               ; No key, go back
         RST     10H             ; Get the key into A
         CP      ESC             ; Escape key?

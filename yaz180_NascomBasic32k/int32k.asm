@@ -126,7 +126,6 @@ PRT0_INTERRUPT:
 SECTION z180_asci0
 RX0_CHK:
         LD      A,(ASCI0RxBufUsed)
-        CP      $0
         RET
 
 ;------------------------------------------------------------------------------
