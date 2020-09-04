@@ -123,7 +123,7 @@ For convenience, because we can't easily change the ROM code interrupt routines 
 
 ## USR Jump Address & Parameter Access
 
-For the RC2014 with 32k Basic the location for `USR(x)` is `0x8224`, and with 56k Basic the location for `USR(x)` is `0x2224`. For the YAZ180 with 32k Basic the `USR(x)` jump address is located at `0x8004`. For the YAZ180 with 56k Basic the `USR(x)` jump address is located at `0x2704`.
+For the RC2014 with 32k Basic the location for `USR(x)` loaded user program address is `0x8224`, and with 56k Basic the location for `USR(x)` is `0x2224`. For the YAZ180 with 32k Basic the `USR(x)` jump address is located at `0x8004`. For the YAZ180 with 56k Basic the `USR(x)` jump address is located at `0x2704`.
 
 # Program Usage
 
