@@ -66,16 +66,16 @@ For convenience, because we can't easily change the ROM code interrupt routines 
 
 For the RC2014 with 32k Basic the `USR(x)` loaded user program address is located at `0x8224`.
 
-Your assembly program can receive a 16 bit parameter passed in from the function by calling `DEINT` at `0x0AE8`. The parameter is stored in register pair `DE`.
+Your assembly program can receive a 16 bit parameter passed in from the function by calling `DEINT` at `0x0AF7`. The parameter is stored in register pair `DE`.
 
-When your assembly program is finished it can return a 16 bit parameter stored in `A` (MSB) and `B` (LSB) by jumping to `ABPASS` which is located at `0x12C3`.
+When your assembly program is finished it can return a 16 bit parameter stored in `A` (MSB) and `B` (LSB) by jumping to `ABPASS` which is located at `0x12C7`.
 
 Note that these address of these functions can also be loaded from `0x025B` for `DEINT` and `0x025D` for `ABPASS`, as noted in the NASCOM Basic Manual.
 
 ``` asm
                                 ; from Nascom Basic Symbol Tables
-DEINT           .EQU    $0AE8   ; Function DEINT to get USR(x) into DE registers
-ABPASS          .EQU    $12C3   ; Function ABPASS to put output into AB register for return
+DEINT           .EQU    $0AF7   ; Function DEINT to get USR(x) into DE registers
+ABPASS          .EQU    $12C7   ; Function ABPASS to put output into AB register for return
 
 
                 .ORG    9000H   ; your code origin, for example

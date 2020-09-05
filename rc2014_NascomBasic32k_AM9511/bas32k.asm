@@ -1197,7 +1197,7 @@ FORSLP: CALL    LOKFOR          ; Look for existing "FOR" block
         LD      HL,(LOOPST)     ; Get address of loop statement
         LD      A,H             ; Compare the FOR loops
         SUB     D               ; Compare with D
-        JR      NZ,$+4          ; Different - Exit
+        JP      NZ,$+5          ; Different - Exit
         LD      A,L             ; Get L
         SUB     E               ; Compare with E
         POP     HL              ; Restore block address
@@ -1287,7 +1287,7 @@ GETCHR: INC     HL              ; Point to next character
         CP      ':'             ; Z if ':'
         RET     NC              ; NC if > "9"
         CP      ' '
-        JP      Z,GETCHR        ; Skip over spaces
+        JR      Z,GETCHR        ; Skip over spaces
         CP      '0'
         CCF                     ; NC if < '0'
         INC     A               ; Test for zero - Leave carry
@@ -1416,7 +1416,7 @@ GTLNLP: CALL    GETCHR          ; Get next character
         LD      HL,65529/10     ; Largest number 65529
         LD      A,H             ; Number in range?
         SUB     D               ; Compare with D
-        JR      NZ,$+4          ; Different - Exit
+        JP      NZ,$+5          ; Different - Exit
         LD      A,L             ; Get L
         SUB     E               ; Compare with E
         JP      C,SNERR         ; No - ?SN Error
@@ -2282,7 +2282,7 @@ NSCFOR: XOR     A               ; Simple variable
         LD      HL,(FNRGNM)     ; FN argument name
         LD      A,H             ; Is it the FN argument?
         SUB     D               ; Compare with D
-        JR      NZ,$+4          ; Different - Exit
+        JP      NZ,$+5          ; Different - Exit
         LD      A,L             ; Get L
         SUB     E               ; Compare with E
         LD      DE,FNARG        ; Point to argument value
@@ -2396,7 +2396,7 @@ FNDARY: ADD     HL,DE           ; Move to next array start
         LD      DE,(ARREND)     ; End of arrays
         LD      A,H             ; End of arrays found?
         SUB     D               ; Compare with D
-        JR      NZ,$+4          ; Different - Exit
+        JP      NZ,$+5          ; Different - Exit
         LD      A,L             ; Get L
         SUB     E               ; Compare with E
         JP      Z,CREARY        ; Yes - Create array
@@ -2504,7 +2504,7 @@ FNDELP: POP     HL              ; Address of next dim' size
         PUSH    AF              ; Save number of dim'ns
         LD      A,H             ; Dimension too large?
         SUB     D               ; Compare with D
-        JR      NZ,$+4          ; Different - Exit
+        JP      NZ,$+5          ; Different - Exit
         LD      A,L             ; Get L
         SUB     E               ; Compare with E
         JP      NC,BSERR        ; Yes - ?BS Error
