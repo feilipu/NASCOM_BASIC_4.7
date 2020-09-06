@@ -2004,7 +2004,7 @@ OPRND:  XOR     A               ; Get operand routine
         CP      ZFN             ; "FN" Token ?
         JP      Z,DOFN          ; Yes - Do FN routine
         CP      '&'             ; &H = HEX, &B = BINARY
-        JR      NZ,NOTAMP
+        JP      NZ,NOTAMP       ; No - Skip to functions
         CALL    GETCHR          ; Get next character
         CP      'H'             ; Hex number indicated? [Searle function added]
         JP      Z,HEXTFP        ; Convert Hex to FPREG

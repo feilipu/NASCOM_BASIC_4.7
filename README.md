@@ -125,7 +125,7 @@ For convenience, because we can't easily change the ROM code interrupt routines 
 
 For the RC2014 with 32k Basic the location for `USR(x)` loaded user program address is `0x8224`, and with 56k Basic the location for `USR(x)` is `0x2224`. For the YAZ180 with 32k Basic the `USR(x)` jump address is located at `0x8004`. For the YAZ180 with 56k Basic the `USR(x)` jump address is located at `0x2704`.
 
-# Program Usage
+# `HLOAD` Keyword Usage
 
 1. Select the preferred origin `.ORG` for your arbitrary program, and assemble a HEX file using your preferred assembler, or compile a C program using z88dk. For the RC2014 32kB, suitable origins commence from `0x8400`, and the default z88dk origin for RC2014 is `0x9000`.
 
@@ -144,3 +144,26 @@ Note that your program and the `USR(x)` jump address setting will remain in plac
 Any Basic programs loaded will also remain in place during a Warm Reset.
 
 Issuing the `RESET` keyword will clear the RC2014 RAM, and return the original memory contents.
+
+# Modifications to MS Basic
+
+MS Basic uses 4 Byte values extensively as floating point numbers in [Microsoft Binary Format](https://en.wikipedia.org/wiki/Microsoft_Binary_Format), and as pointers to strings. Many of the improvements are in handling these values as they are shifted around in memory, and to `BCDE` registers and the stack.
+
+- 4 `LDI` instructions are used to move values from one location (the Floating Point Register `FPREG`) to another location in memory, and these are in-lined to also save the call-return cycles.
+- The `LD (x),DE` `LD(x+2),BC` instruction pair is used to grab values into registers and save from registers, avoiding the need to preserve `HL` and often saving push-pop cycles and of course the call-return cycles.
+- There is a 16_16x16 multiply `MLDEBC` used to calculate table offsets, which was optimised to use shift instructions available to the Z80. I experimented with different zero multiplier checks, and with removing the checks, but Microsoft had already done the right optimisation there, so it was left as it was.
+- The extensions that Grant Searle had inserted into the operand evaluation chain to check for Hex and Binary numbers were moved to the end of the operand checks, so as not to slow down the normal operand or function evaluation.
+
+Doing these changes got about 6% improvement in the benchmarks.
+
+The next step was to use the [`z88dk-ticks`](https://github.com/z88dk/z88dk/wiki/Tool---ticks) tool to evaluate hotspots and try to remediate them. Using the debug mode it is possible to capture exactly how many iterations (visits) and how many cycles are consumed by each instruction.
+
+The testing revealed that the comparison function `CPDEHL` was a very heavily used function. As it is quite small, and through removing the call-return overhead, it adds only a few bytes per instance to in-line it. There is plenty of space in the 8kB ROM to allow this change so it was made.
+
+Then, the paths taken by the `JR` and `JP` conditional instructions were examined, by checking which path was taken most frequently across the benchmarks. This resulted in changing a few `JR` instructions for `JP` instructions, when the conditional path was mostly true, and one replacement of a `JP` instruction where the conditional was most often false.
+
+So with these changes we are now at 8% improvement over the original Microsoft code.
+
+Looking further at `z88dk-ticks` hotspot results, the next most used function is `GETCHR` used to collect input from code strings. `GETCHR` is a larger function and is used about 50 times throughout the code base, so there is little point to in-line it. However I do note the new `JR` conditional is used in checking for spaces in token strings, which does save a few cycles. Microsoft warns in the Nascom Basic Manual to optimise performance by removing spaces in code. Now it is even more true than before.
+
+So at this point I'll call it done. It seems that without rewriting the code substantially that's about all that I can squeeze out. The result is that with no change in function, MS Basic is now simply 8% faster.
