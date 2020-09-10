@@ -32,11 +32,11 @@ This ROM works with the most basic versions of the RC2014, with 32k of RAM. This
 
 ACIA 6850 interrupt driven serial I/O to run modified NASCOM Basic 4.7. Full input and output buffering with incoming data hardware handshaking. Handshake shows full before the buffer is totally filled to allow run-on from the sender. Transmit and receive are interrupt driven, and are fast.
 
-Receive buffer is 255 bytes, to allow efficient pasting of Basic into the editor. The Transmit buffer is 15 bytes, because the RC2014 is too slow to fill the buffer. Receive buffer overflows are silently discarded.
+Receive buffer is 255 bytes, to allow efficient pasting of Basic into the editor. The Transmit buffer is 63 bytes. Receive buffer overflows are silently discarded.
+
+Also, this ROM provides both Intel HEX loading functions and an `RST`, `INT0`, and `NMI` RAM JumP Table, starting at `0x8000`.
 
 This version of the standard MS Basic 4.7 is to support the AMD Am9511A Arithmetic Processor for floating point calculations. The Am9511A was produced prior to this version of MS Basic, and the Microsoft Binary Format for floating point numbers is very closely aligned to the APU floating point format.
-
-Also, this ROM provides both Intel HEX loading functions and an `RST`, `INT0`, and `NMI` JumP Table.
 
 This allows you to upload Assembly or compiled C programs, and then run them as described below.
 
@@ -50,7 +50,7 @@ There are are several stages to this process.
 2. Once the final line of the HEX code is read into memory, `HLOAD` will return to NASCOM Basic with `ok`.
 3. Start the new arbitrary program from Basic by entering the`USR(x)` command.
 
-The `HLOAD` program can be exited without uploading a valid file by typing `:` followed by `CR CR CR CR CR CR`.
+The `HLOAD` program can be exited without uploading a valid file by typing `:` followed by `CR CR CR CR CR CR`, or any other character.
 
 The top of Basic memory can be readjusted by using the `RESET` function, when required.
 
@@ -61,10 +61,13 @@ For convenience, because we can't easily change the ROM code interrupt routines 
 * Tx: `RST 08H` expects a byte to transmit in the `a` register.
 * Rx: `RST 10H` returns a received byte in the `a` register, and will block (loop) until it has a byte to return.
 * Rx Check: `RST 18H` will immediately return the number of bytes in the Rx buffer (0 if buffer empty) in the `a` register.
+* ACIA Interrupt: `RST 38H` is used by the ACIA 68B50 Serial Device.
+
+All `RST xxH` targets can be rewritten in a `JP` table originating at `0x8000` in RAM. This allows the use of debugging tools and reorganising the efficient `RST` instructions as needed.
 
 ## USR Jump Address & Parameter Access
 
-For the RC2014 with 32k Basic the `USR(x)` loaded user program address is located at `0x8224`.
+For the RC2014 with 32k Basic the `USR(x)` loaded user program address is located at `0x8204`.
 
 Your assembly program can receive a 16 bit parameter passed in from the function by calling `DEINT` at `0x0B07`. The parameter is stored in register pair `DE`.
 

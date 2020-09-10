@@ -33,25 +33,20 @@ Full input and output buffering with incoming data hardware handshaking.
 Handshake shows full before the buffer is totally filled to allow run-on from the sender.
 Transmit and receive are interrupt driven, and are fast.
 
-Receive buffer is 255 bytes, to allow efficient pasting of Basic into the editor.
-Transmit buffer is 15 bytes, because the RC2014 is too slow to fill the buffer.
-Receive buffer overflows are silently discarded.
+Receive buffer is 255 bytes, to allow efficient pasting of Basic into the editor. The Transmit buffer is 63 bytes. Receive buffer overflows are silently discarded.
+
+These ROMs provides both Intel `HLOAD` function and a `RST`, `INT0`, and `NMI` RAM JumP Table, starting at `0x8000`. This allows you to upload Assembly or compiled C programs, and then run them as described.
 
 ## Mini, Micro, Classic: 32kB MS Basic
 
 This ROM works with the most basic default versions of the RC2014, with 32k of RAM.
 This is the ROM to choose if you want fast I/O from a standard RC2014.
 
-This ROM provides both Intel `HLOAD` function and a `RST`, `INT0`, and `NMI` JumP Table.
-This allows you to upload Assembly or compiled C programs, and then run them as described.
-
 ## Plus: 64kB MS Basic
 
-This version requires a 64k/56k RAM module.
-The 56k version utilises the full 56k RAM memory space of the RC2014, starting at `0x2000`.
+This version requires a 64k/56k RAM module. The 56k version utilises the full 56k RAM memory space of the RC2014, starting at `0x2000`.
 
-This ROM provides both Intel `HLOAD` function and a `RST`, `INT0`, and `NMI` JumP Table.
-This allows you to upload Assembly or compiled C programs, and then run them as described.
+This ROM provides both Intel `HLOAD` function and a `RST`, `INT0`, and `NMI` RAM JumP Table, starting at `0x2000`. This allows you to upload Assembly or compiled C programs, and then run them as described.
 
 ## Mini, Micro, Classic: 32kB MS Basic using AM9511A APU Module
 
@@ -62,50 +57,6 @@ This is the ROM to choose if you want fast I/O from a standard RC2014, and you h
 
 This ROM works with the most basic default version of the RC2014, with 32k of RAM.
 This is the ROM to choose if you want fast I/O from a standard RC2014, and you have installed a LUT (Multiply) Module.
-
-==============================================================================
-
-# YAZ180
-
-ASCI0 interrupt driven serial I/O to run modified NASCOM Basic 4.7.
-
-If you're using the YAZ180 with 32kB Nascom Basic, then all of the RAM between `0x3000` and `0x7FFF` is available for your assembly programs, without limitation. In the YAZ180 the area between `0x2000` and `0x2FFF` is reserved for system calls, buffers, and stack space. For the RC2014 the area from `0x8000` is reserved for these uses.
-
-In the YAZ180 32kB Basic, the area from `0x4000` to `0x7FFF` is the Banked memory area, and this RAM can be managed by the HexLoadr program to write to all of the physical RAM space using ESA Records.
-
-HexLoadr supports the Extended Segment Address Record Type, and will store the MSB of the ESA in the Z180 BBR Register. The LSB of the ESA is silently abandoned. When HexLoadr terminates the BBR is returned to the original value.
-
-Two versions of initialisation routines NASCOM Basic are provided.
-
-## 56k Basic with integrated HexLoadr
-
-The 56k version utilises the full 56k RAM memory space of the YAZ180, starting at `0x2000`.
-
-Full input and output ASCI0 buffering. Transmit and receive are interrupt driven.
-
-Receive buffer is 255 bytes, to allow efficient pasting of Basic into the editor.
-Receive buffer overflows are silently discarded.
-
-Transmit buffer is 255 bytes, because the YAZ180 is 36.864MHz CPU.
-Transmit function busy waits when buffer is full. No Tx characters lost.
-
-## 32k Basic with integrated HexLoadr
-
-The 32k version uses the CA0 space for buffers and the CA1 space for Basic.
-This leaves the Bank RAM / Flash space in `0x4000` to `0x7FFF` available for other usage.
-
-The rationale is to allow in-circuit programming, and an exit to another system.
-An integrated HexLoadr program is provided for this purpose.
-
-Full input and output ASCI0 buffering. Transmit and receive are interrupt driven.
-
-Receive buffer is 255 bytes, to allow efficient pasting of Basic into the editor.
-Receive buffer overflows are silently discarded.
-
-Transmit buffer is 255 bytes, because the YAZ180 is 36.864MHz CPU.
-Transmit function busy waits when buffer is full. No Tx characters lost.
-
-https://feilipu.me/2016/05/23/another-z80-project/
 
 ==============================================================================
 
@@ -120,10 +71,13 @@ For convenience, because we can't easily change the ROM code interrupt routines 
 * Tx: `RST 08H` expects a byte to transmit in the `a` register.
 * Rx: `RST 10H` returns a received byte in the `a` register, and will block (loop) until it has a byte to return.
 * Rx Check: `RST 18H` will immediately return the number of bytes in the Rx buffer (0 if buffer empty) in the `a` register.
+* ACIA Interrupt: `RST 38H` is used by the ACIA 68B50 Serial Device.
+
+All `RST xxH` targets can be rewritten in a `JP` table originating at `0x8000` in RAM. This allows the use of debugging tools and reorganising the efficient `RST` call instructions as needed.
 
 ## USR Jump Address & Parameter Access
 
-For the RC2014 with 32k Basic the location for `USR(x)` loaded user program address is `0x8224`, and with 56k Basic the location for `USR(x)` is `0x2224`. For the YAZ180 with 32k Basic the `USR(x)` jump address is located at `0x8004`. For the YAZ180 with 56k Basic the `USR(x)` jump address is located at `0x2704`.
+For the RC2014 with 32k Basic the location for `USR(x)` loaded user program address is `0x8204`, and with 56k Basic the location for `USR(x)` is `0x2204`. For the YAZ180 with 32k Basic the `USR(x)` jump address is located at `0x8004`. For the YAZ180 with 56k Basic the `USR(x)` jump address is located at `0x2704`.
 
 # `HLOAD` Keyword Usage
 
@@ -167,3 +121,48 @@ So with these changes we are now at 8% improvement over the original Microsoft c
 Looking further at `z88dk-ticks` hotspot results, the next most used function is `GETCHR` used to collect input from code strings. `GETCHR` is a larger function and is used about 50 times throughout the code base, so there is little point to in-line it. However I do note the new `JR` conditional is used in checking for spaces in token strings, which does save a few cycles. Microsoft warns in the Nascom Basic Manual to optimise performance by removing spaces in code. Now it is even more true than before.
 
 So at this point I'll call it done. It seems that without rewriting the code substantially that's about all that I can squeeze out. The result is that with no change in function, MS Basic is now simply 8% faster.
+
+==============================================================================
+
+# YAZ180 (deprecated, see [yabios](https://github.com/feilipu/yaz180/tree/master/yabios))
+
+ASCI0 interrupt driven serial I/O to run modified NASCOM Basic 4.7.
+
+If you're using the YAZ180 with 32kB Nascom Basic, then all of the RAM between `0x3000` and `0x7FFF` is available for your assembly programs, without limitation. In the YAZ180 the area between `0x2000` and `0x2FFF` is reserved for system calls, buffers, and stack space. For the RC2014 the area from `0x8000` is reserved for these uses.
+
+In the YAZ180 32kB Basic, the area from `0x4000` to `0x7FFF` is the Banked memory area, and this RAM can be managed by the HexLoadr program to write to all of the physical RAM space using ESA Records.
+
+HexLoadr supports the Extended Segment Address Record Type, and will store the MSB of the ESA in the Z180 BBR Register. The LSB of the ESA is silently abandoned. When HexLoadr terminates the BBR is returned to the original value.
+
+Two versions of initialisation routines NASCOM Basic are provided.
+
+## 56k Basic with integrated HexLoadr
+
+The 56k version utilises the full 56k RAM memory space of the YAZ180, starting at `0x2000`.
+
+Full input and output ASCI0 buffering. Transmit and receive are interrupt driven.
+
+Receive buffer is 255 bytes, to allow efficient pasting of Basic into the editor.
+Receive buffer overflows are silently discarded.
+
+Transmit buffer is 255 bytes, because the YAZ180 is 36.864MHz CPU.
+Transmit function busy waits when buffer is full. No Tx characters lost.
+
+## 32k Basic with integrated HexLoadr
+
+The 32k version uses the CA0 space for buffers and the CA1 space for Basic.
+This leaves the Bank RAM / Flash space in `0x4000` to `0x7FFF` available for other usage.
+
+The rationale is to allow in-circuit programming, and an exit to another system.
+An integrated HexLoadr program is provided for this purpose.
+
+Full input and output ASCI0 buffering. Transmit and receive are interrupt driven.
+
+Receive buffer is 255 bytes, to allow efficient pasting of Basic into the editor.
+Receive buffer overflows are silently discarded.
+
+Transmit buffer is 255 bytes, because the YAZ180 is 36.864MHz CPU.
+Transmit function busy waits when buffer is full. No Tx characters lost.
+
+https://feilipu.me/2016/05/23/another-z80-project/
+
