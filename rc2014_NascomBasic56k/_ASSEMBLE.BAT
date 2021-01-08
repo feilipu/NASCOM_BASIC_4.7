@@ -1,6 +1,6 @@
 
 zcc +z80 --no-crt -v -m --list -Ca-f0xFF @nascom56k.lst -o int56k
-appmake +glue -b int56k --ihex --pad --filler 0xFF --recsize 24 --clean
+z88dk-appmake +glue -b int56k --ihex --pad --filler 0xFF --recsize 24 --clean
 
 # AND
 
