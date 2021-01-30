@@ -50,18 +50,20 @@ There are are several stages to this process.
 
 The `HLOAD` program can be exited without uploading a valid file by typing `:` followed by `CR CR CR CR CR CR`, or any other character.
 
-The top of Basic memory can be readjusted by using the `RESET` function, when required.
+The top of Basic memory can be readjusted by using the `RESET` function, when required. `RESET` is functionally equivalent to a cold start.
 
 ## RST locations
 
 For convenience, because we can't easily change the ROM code interrupt routines this ROM provides for the RC2014, the ACIA serial Tx and Rx routines are reachable from your assembly program by calling the `RST` instructions from your program.
 
-* Tx: `RST 08H` expects a byte to transmit in the `a` register.
-* Rx: `RST 10H` returns a received byte in the `a` register, and will block (loop) until it has a byte to return.
-* Rx Check: `RST 18H` will immediately return the number of bytes in the Rx buffer (0 if buffer empty) in the `a` register.
-* ACIA Interrupt: `RST 38H` is used by the ACIA 68B50 Serial Device.
+* Tx: `RST 08` expects a byte to transmit in the `a` register.
+* Rx: `RST 10` returns a received byte in the `a` register, and will block (loop) until it has a byte to return.
+* Rx Check: `RST 18` will immediately return the number of bytes in the Rx buffer (0 if buffer empty) in the `a` register.
+* Unused: `RST 20`, `RST 28`, `RST 30` are available to the user.
+* INT: `RST 38` is used by the ACIA 68B50 Serial Device through the IM1 `INT` location.
+* NMI: `NMI` is unused and is available to the user.
 
-All `RST xxH` targets can be rewritten in a `JP` table originating at `0x8000` in RAM. This allows the use of debugging tools and reorganising the efficient `RST` instructions as needed.
+All `RST xx` targets can be rewritten in a `JP` table originating at `0x8000` in RAM. This allows the use of debugging tools and reorganising the efficient `RST` instructions as needed.
 
 ## USR Jump Address & Parameter Access
 
@@ -81,9 +83,9 @@ ABPASS          .EQU    $12C8   ; Function ABPASS to put output into AB register
 
                 .ORG    9000H   ; your code origin, for example
                 CALL    DEINT   ; get the USR(x) argument in DE
-                 
+
                                 ; your code here
-                                
+
                 JP      ABPASS  ; return the 16 bit value to USR(x). Note JP not CALL
 ```
 
