@@ -51,7 +51,6 @@ serialInt:
         push af
         push hl
 
-im1_rx_check:
         in a,(SER_STATUS_ADDR)      ; get the status of the ACIA
         rrca                        ; check whether a byte has been received, via SER_RDRF
         jr NC,im1_tx_send           ; if not, go check for bytes to transmit
@@ -73,7 +72,6 @@ im1_rx_get:
         inc l                       ; move the Rx pointer low byte along, 0xFF rollover
         ld (serRxInPtr),hl          ; write where the next byte should be poked
 
-im1_rts_check:
         ld a,(serRxBufUsed)         ; get the current Rx count
         cp SER_RX_FULLSIZE          ; compare the count with the preferred full size
         jr C,im1_tx_check           ; leave the RTS low, and check for Rx/Tx possibility
