@@ -74,7 +74,7 @@ im1_rx_get:
 
         ld a,(serRxBufUsed)         ; get the current Rx count
         cp SER_RX_FULLSIZE          ; compare the count with the preferred full size
-        jr C,im1_tx_check           ; leave the RTS low, and check for Rx/Tx possibility
+        jr NZ,im1_tx_check          ; leave the RTS low, and check for Rx/Tx possibility
 
         ld a,(serControl)           ; get the ACIA control echo byte
         and ~SER_TEI_MASK           ; mask out the Tx interrupt bits
@@ -138,7 +138,7 @@ RXA:
         jr Z,RXA                    ; wait, if there are no bytes available
 
         cp SER_RX_EMPTYSIZE         ; compare the count with the preferred empty size
-        jr NC,rxa_clean_up          ; if the buffer is too full, don't change the RTS
+        jr NZ,rxa_clean_up          ; if the buffer is too full, don't change the RTS
 
         di                          ; critical section begin
         ld a,(serControl)           ; get the ACIA control echo byte
