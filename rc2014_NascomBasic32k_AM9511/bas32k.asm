@@ -3562,7 +3562,7 @@ MLDEBC: LD      HL,0            ; Clear partial product
         RET     Z               ; Return zero if zero
         LD      A,B
         LD      B,16            ; 16 bits (iterations)
-MLDBLP: ADD     HL,HL           ; Shift P.P left
+MLDBLP: ADD     HL,HL           ; Shift partial product left
         JP      C,BSERR         ; ?BS Error if overflow
         RL      C
         RLA
