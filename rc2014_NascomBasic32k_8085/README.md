@@ -26,19 +26,17 @@ This Source Code Form is subject to the terms of the Mozilla Public License, v. 
 
 ==============================================================================
 
-# RC2014 8085 Classic
+# 8085 CPU Module for the RC2014
 
-This ROM works with the 8085 CPU Module version of the RC2014, with 32k of RAM. This is the ROM to choose if you want fast I/O from the 8085 RC2014, together with the capability to upload C programs from within Basic.
+This ROM works with the 8085 CPU Module for the RC2014, with 32k of RAM. This is the ROM to choose if you want fast I/O from the 8085 CPU for RC2014, together with the capability to upload C programs from within Basic.
 
-ACIA 6850 interrupt driven serial I/O to run modified NASCOM Basic 4.7. Full input and output buffering with incoming data hardware handshaking. Handshake shows full before the buffer is totally filled to allow run-on from the sender. Transmit and receive are interrupt driven, and are fast.
+ACIA 6850 interrupt driven serial I/O to run modified NASCOM Basic 4.7. Full input and output buffering with incoming data hardware handshaking. Handshake shows full before the buffer is totally filled to allow run-on from the sender. Transmit and receive are interrupt driven, and are fast. The ACIA interrupt uses RST 5.5.
 
-Receive buffer is 255 bytes, to allow efficient pasting of Basic into the editor. The Transmit buffer is 63 bytes. Receive buffer overflows are silently discarded.
+Receive buffer is 255 bytes, to allow efficient pasting of Basic into the editor. The Transmit buffer is 63 bytes, with 16 byte handshake overrun.
 
-Also, this ROM provides both Intel HEX loading functions and an `RST`, `INT0`, and `NMI` RAM JumP Table, starting at `0x8000`.
+Also, this ROM provides both Intel HEX loading functions and an `RST`, `INT`, and `TRAP` RAM JumP Table, starting at `0x8000`.
 
 This allows you to upload Assembly or compiled C programs, and then run them as described below.
-
-__NOTE__ The Intel HEX program loader has been integrated inside MS Basic as the `HLOAD` keyword.
 
 The goal of this extension to standard MS Basic is to load an arbitrary program in Intel HEX format into an arbitrary location in the Z80 address space, and allow you to start and use your program from NASCOM Basic. Your program can be created in assembler, or in C, provided the code is available in Intel HEX format.
 
@@ -59,11 +57,13 @@ For convenience, because we can't easily change the ROM code interrupt routines 
 * Tx: `RST 08` expects a byte to transmit in the `a` register.
 * Rx: `RST 10` returns a received byte in the `a` register, and will block (loop) until it has a byte to return.
 * Rx Check: `RST 18` will immediately return the number of bytes in the Rx buffer (0 if buffer empty) in the `a` register.
-* Unused: `RST 20`, `RST 28`, `RST 30` are available to the user.
-* INT: `RST 38` is used by the ACIA 68B50 Serial Device through the IM1 `INT` location.
-* NMI: `NMI` is unused and is available to the user.
+* Unused: `RST 20`, `RST 28`, `RST 30`, `RST 38` are available to the user.
+* IRQ 5.5: is used by the 8085 CPU Module ACIA 68B50 Serial Device.
+* IRQ 6.5: is connected to the RC2014 Bus `INT`, is unused, and is available to the user.
+* IRQ 7.5: is connected to the RC2014 RX and can be used to trigger bit banged serial on SID.
+* TRAP: is connected to the RC2014 Bus `NMI`, is unused and is available to the user.
 
-All `RST xx` targets can be rewritten in a `JP` table originating at `0x8000` in RAM. This allows the use of debugging tools and reorganising the efficient `RST` instructions as needed.
+All `RST xx` targets can be rewritten in a `JP` table originating at `0x8000` in RAM. This allows the use of debugging tools and reorganising the efficient `RST` instructions as needed. Check the source to see the address of each `RST xx`.
 
 ## USR Jump Address & Parameter Access
 

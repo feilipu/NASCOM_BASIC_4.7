@@ -231,7 +231,7 @@ PRINT:
         JR        PRINT             ; Continue until $00
 
 ;------------------------------------------------------------------------------
-SECTION        z80_init             ; ORG $0180
+SECTION z80_init                    ; ORG $0180
 
 PUBLIC  INIT
 

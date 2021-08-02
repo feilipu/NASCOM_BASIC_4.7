@@ -1,7 +1,7 @@
 ;==============================================================================
 ;
-; The rework to support MS Basic HLOAD and the Z80 instruction tuning are
-; copyright (C) 2020 Phillip Stevens
+; The rework to support MS Basic HLOAD and the 8085 instruction tuning are
+; copyright (C) 2021 Phillip Stevens
 ;
 ; This Source Code Form is subject to the terms of the Mozilla Public
 ; License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -10,9 +10,9 @@
 ; ACIA 6850 interrupt driven serial I/O to run modified NASCOM Basic 4.7.
 ; Full input and output buffering with incoming data hardware handshaking.
 ; Handshake shows full before the buffer is totally filled to allow run-on
-; from the sender. Transmit and receive are interrupt driven.
+; from the sender. Transmit and receive are interrupt driven using IRQ_55.
 ;
-; feilipu, August 2020
+; feilipu, August 2021
 ;
 ;==============================================================================
 ;
@@ -44,7 +44,7 @@ INCLUDE "rc2014.inc"
 ;
 
 ;------------------------------------------------------------------------------
-SECTION z80_acia_interrupt
+SECTION acia_interrupt
 
 
 serialInt:
@@ -53,7 +53,7 @@ serialInt:
 
         in a,(SER_STATUS_ADDR)      ; get the status of the ACIA
         rrca                        ; check whether a byte has been received, via SER_RDRF
-        jr NC,im1_tx_send           ; if not, go check for bytes to transmit
+        jp NC,im1_tx_send           ; if not, go check for bytes to transmit
 
 im1_rx_get:
         in a,(SER_DATA_ADDR)        ; Get the received byte from the ACIA 
@@ -61,7 +61,7 @@ im1_rx_get:
 
         ld a,(serRxBufUsed)         ; Get the number of bytes in the Rx buffer
         cp SER_RX_BUFSIZE-1         ; check whether there is space in the buffer
-        jr NC,im1_tx_check          ; buffer full, check if we can send something
+        jp NC,im1_tx_check          ; buffer full, check if we can send something
 
         ld a,l                      ; get Rx byte from l
         ld hl,serRxBufUsed
@@ -74,7 +74,7 @@ im1_rx_get:
 
         ld a,(serRxBufUsed)         ; get the current Rx count
         cp SER_RX_FULLSIZE          ; compare the count with the preferred full size
-        jr NZ,im1_tx_check          ; leave the RTS low, and check for Rx/Tx possibility
+        jp NZ,im1_tx_check          ; leave the RTS low, and check for Rx/Tx possibility
 
         ld a,(serControl)           ; get the ACIA control echo byte
         and ~SER_TEI_MASK           ; mask out the Tx interrupt bits
@@ -85,15 +85,15 @@ im1_rx_get:
 im1_tx_check:
         in a,(SER_STATUS_ADDR)      ; get the status of the ACIA
         rrca                        ; check whether a byte has been received, via SER_RDRF
-        jr C,im1_rx_get             ; another byte received, go get it
+        jp C,im1_rx_get             ; another byte received, go get it
 
 im1_tx_send:
         rrca                        ; check whether a byte can be transmitted, via SER_TDRE
-        jr NC,im1_txa_end           ; if not, we're done for now
+        jp NC,im1_txa_end           ; if not, we're done for now
 
         ld a,(serTxBufUsed)         ; get the number of bytes in the Tx buffer
         or a                        ; check whether it is zero
-        jr Z,im1_tei_clear          ; if the count is zero, then disable the Tx Interrupt
+        jp Z,im1_tei_clear          ; if the count is zero, then disable the Tx Interrupt
 
         ld hl,(serTxOutPtr)         ; get the pointer to place where we pop the Tx byte
         ld a,(hl)                   ; get the Tx byte
@@ -109,7 +109,7 @@ im1_tx_send:
         ld hl,serTxBufUsed
         dec (hl)                    ; atomically decrement current Tx count
 
-        jr NZ,im1_txa_end           ; if we've more Tx bytes to send, we're done for now
+        jp NZ,im1_txa_end           ; if we've more Tx bytes to send, we're done for now
 
 im1_tei_clear:
         ld a,(serControl)           ; get the ACIA control echo byte
@@ -122,23 +122,23 @@ im1_txa_end:
         pop af
 
         ei
-        reti
+        ret
 
 ;------------------------------------------------------------------------------
-; SECTION z80_acia_rxa_chk          ; ORG $00F0
+; SECTION acia_rxa_chk              ; ORG $00F0
 ; RXA_CHK:                          ; insert directly into JumP table
 ;       ld a,(serRxBufUsed)
 ;       ret
 
 ;------------------------------------------------------------------------------
-SECTION z80_acia_rxa                ; ORG $00F0
+SECTION acia_rxa                    ; ORG $00F0
 RXA:
         ld a,(serRxBufUsed)         ; get the number of bytes in the Rx buffer
         or a                        ; see if there are zero bytes available
-        jr Z,RXA                    ; wait, if there are no bytes available
+        jp Z,RXA                    ; wait, if there are no bytes available
 
         cp SER_RX_EMPTYSIZE         ; compare the count with the preferred empty size
-        jr NZ,rxa_clean_up          ; if the buffer is too full, don't change the RTS
+        jp NZ,rxa_clean_up          ; if the buffer is too full, don't change the RTS
 
         di                          ; critical section begin
         ld a,(serControl)           ; get the ACIA control echo byte
@@ -165,18 +165,18 @@ rxa_clean_up:
         ret                         ; char ready in A
 
 ;------------------------------------------------------------------------------
-SECTION z80_acia_txa                ; ORG $0120
+SECTION acia_txa                    ; ORG $0120
 TXA:
         push hl                     ; store HL so we don't clobber it
         ld l,a                      ; store Tx character
 
         ld a,(serTxBufUsed)         ; Get the number of bytes in the Tx buffer
         or a                        ; check whether the buffer is empty
-        jr NZ,txa_buffer_out        ; buffer not empty, so abandon immediate Tx
+        jp NZ,txa_buffer_out        ; buffer not empty, so abandon immediate Tx
 
         in a,(SER_STATUS_ADDR)      ; get the status of the ACIA
         and SER_TDRE                ; check whether a byte can be transmitted
-        jr Z,txa_buffer_out         ; if not, so abandon immediate Tx
+        jp Z,txa_buffer_out         ; if not, so abandon immediate Tx
 
         ld a,l                      ; Retrieve Tx character for immediate Tx
         out (SER_DATA_ADDR),a       ; immediately output the Tx byte to the ACIA
@@ -187,7 +187,7 @@ TXA:
 txa_buffer_out:
         ld a,(serTxBufUsed)         ; Get the number of bytes in the Tx buffer
         cp SER_TX_BUFSIZE-1         ; check whether there is space in the buffer
-        jr NC,txa_buffer_out        ; buffer full, so wait till it has space
+        jp NC,txa_buffer_out        ; buffer full, so wait till it has space
 
         ld a,l                      ; Retrieve Tx character
 
@@ -221,27 +221,31 @@ txa_buffer_out:
         ret
 
 ;------------------------------------------------------------------------------
-SECTION z80_acia_print              ; ORG $0170
+SECTION acia_print                  ; ORG $0170
 PRINT:
         LD        A,(HL)            ; Get character
         OR        A                 ; Is it $00 ?
         RET       Z                 ; Then RETurn on terminator
         CALL      TXA               ; Print it
         INC       HL                ; Next Character
-        JR        PRINT             ; Continue until $00
+        JP        PRINT             ; Continue until $00
 
 ;------------------------------------------------------------------------------
-SECTION        z80_init             ; ORG $0180
+SECTION init                        ; ORG $0180
 
 PUBLIC  INIT
 
 INIT:
         LD SP,TEMPSTACK             ; Set up a temporary stack
 
-        LD HL,Z80_VECTOR_PROTO      ; Establish Z80 RST Vector Table
-        LD DE,Z80_VECTOR_BASE
-        LD BC,Z80_VECTOR_SIZE
-        LDIR
+        LD HL,VECTOR_PROTO          ; Establish 8085 RST Vector Table
+        LD DE,VECTOR_BASE
+        LD C,VECTOR_SIZE
+COPY:
+        LD A,(HL)
+        LD (DE),A
+        DEC C
+        JP NZ,COPY
 
         LD HL,serRxBuf              ; Initialise Rx Buffer
         LD (serRxInPtr),HL
@@ -267,22 +271,23 @@ INIT:
         LD (serControl),A           ; write the ACIA control byte echo
         OUT (SER_CTRL_ADDR),A       ; output to the ACIA control byte
 
-        IM 1                        ; interrupt mode 1
-        EI
+        LD A,1EH                    ; enable IRQ 5.5, mask IRQ 6.5 & 7.5
+        SIM                         ; do it
+        EI                          ; enable interrupts
 
 START:
         LD HL,SIGNON1               ; Sign-on message
         CALL PRINT                  ; Output string
         LD A,(basicStarted)         ; Check the BASIC STARTED flag
         CP 'Y'                      ; to see if this is power-up
-        JR NZ,COLDSTART             ; If not BASIC started then always do cold start
+        JP NZ,COLDSTART             ; If not BASIC started then always do cold start
         LD HL,SIGNON2               ; Cold/warm message
         CALL PRINT                  ; Output string
 CORW:
         RST 10H
         AND 11011111B               ; lower to uppercase
         CP 'C'
-        JR NZ,CHECKWARM
+        JP NZ,CHECKWARM
         RST 08H
         LD A,CR
         RST 08H
@@ -294,7 +299,7 @@ COLDSTART:
         JP $0250                    ; <<<< Start Basic COLD:
 CHECKWARM:
         CP 'W'
-        JR NZ,CORW
+        JP NZ,CORW
         RST 08H
         LD A,CR
         RST 08H
@@ -307,10 +312,10 @@ WARMSTART:
 ;
 ; STRINGS
 ;
-SECTION         z80_init_strings    ; ORG $01F0
+SECTION         init_strings        ; ORG $01F8
 
 SIGNON1:        DEFM    CR,LF
-                DEFM    "RC2014 - MS Basic Loader",CR,LF
+                DEFM    "RC2014/8085 - MS Basic Loader",CR,LF
                 DEFM    "z88dk - feilipu",CR,LF,0
 
 SIGNON2:        DEFM    CR,LF
@@ -318,24 +323,29 @@ SIGNON2:        DEFM    CR,LF
 
 ;==============================================================================
 ;
-; Z80 INTERRUPT VECTOR PROTOTYPE ASSIGNMENTS
+; 8085 INTERRUPT VECTOR PROTOTYPE ASSIGNMENTS
 ;
 
-EXTERN  NULL_RET, NULL_INT, NULL_NMI
+EXTERN  NULL_RET, NULL_INT
 
-PUBLIC  Z180_TRAP
-PUBLIC  RST_08, RST_10, RST_20, RST_28, RST_30
-PUBLIC  INT_INT0, INT_NMI
+PUBLIC  RST_00, RST_08, RST_10; RST_18
+PUBLIC  RST_20, RST_28, RST_30, RST_38
 
-DEFC    Z180_TRAP   =       INIT            ; Initialise, should never get here
+PUBLIC  TRAP, IRQ_55, IRQ_65, IRQ_75, RST_40
+
+DEFC    RST_00      =       INIT            ; Initialise, should never get here
 DEFC    RST_08      =       TXA             ; TX character over ACIA, loop until space
 DEFC    RST_10      =       RXA             ; RX character over ACIA, loop until byte
 ;       RST_18      =       RXA_CHK         ; Check ACIA status, return # bytes available
 DEFC    RST_20      =       NULL_RET        ; RET
+DEFC    TRAP        =       NULL_INT        ; 8085 TRAP 0x0024 - RC2014 Bus /NMI
 DEFC    RST_28      =       NULL_RET        ; RET
+DEFC    IRQ_55      =       serialInt       ; ACIA interrupt IRQ 5.5 - 8085 CPU Module
 DEFC    RST_30      =       NULL_RET        ; RET
-DEFC    INT_INT0    =       serialInt       ; ACIA interrupt
-DEFC    INT_NMI     =       NULL_NMI        ; RETN
+DEFC    IRQ_65      =       NULL_INT        ; 8085 IRQ 6.5 - RC2014 Bus /INT
+DEFC    RST_38      =       NULL_RET        ; RET
+DEFC    IRQ_75      =       NULL_INT        ; 8085 IRQ 7.5 - RC2014 Bus /RX
+DEFC    RST_40      =       NULL_RET        ; 8085 JP V Overflow
 
 ;==============================================================================
 
