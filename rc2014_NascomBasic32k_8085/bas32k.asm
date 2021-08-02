@@ -2663,6 +2663,8 @@ TSTOPL: LD      DE,TMPSTR       ; Temporary string
         LD      A,1
         LD      (TYPE),A        ; Set type to string
         CALL    DETHL4          ; Move string to pool
+        INC     HL
+        INC     DE
         LD      A,H             ; Out of string pool?
         SUB     D               ; Compare with D
         JP      NZ,$+5          ; Different - Exit
@@ -3608,13 +3610,22 @@ INCHL:  INC     HL              ; Used for conditional "INC HL"
         RET
 
 FPTHL:  LD      DE,FPREG        ; Point to FPREG
-DETHL4: LD      B,4             ; 4 bytes to move
-DETHLB: LD      A,(DE)          ; Get source
+DETHL4: LD      A,(DE)          ; Get source
         LD      (HL),A          ; Save destination
         INC     DE              ; Next source
         INC     HL              ; Next destination
-        DEC     B               ; Count bytes
-        JP      NZ,DETHLB       ; Loop if more
+        LD      A,(DE)          ; Get source
+        LD      (HL),A          ; Save destination
+        INC     DE              ; Next source
+        INC     HL              ; Next destination
+        LD      A,(DE)          ; Get source
+        LD      (HL),A          ; Save destination
+        INC     DE              ; Next source
+        INC     HL              ; Next destination
+        LD      A,(DE)          ; Get source
+        LD      (HL),A          ; Save destination
+        INC     DE              ; Next source
+        INC     HL              ; Next destination
         RET
 
 SIGNS:  LD      HL,FPREG+2      ; Point to MSB of FPREG

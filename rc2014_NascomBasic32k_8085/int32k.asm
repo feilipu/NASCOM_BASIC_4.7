@@ -244,6 +244,8 @@ INIT:
 COPY:
         LD A,(HL)
         LD (DE),A
+        INC HL
+        INC DE
         DEC C
         JP NZ,COPY
 
