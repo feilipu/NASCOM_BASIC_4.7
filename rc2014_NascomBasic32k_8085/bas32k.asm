@@ -1121,12 +1121,10 @@ SETLIN: PUSH    HL              ; Set up LINES counter
         RET
 
 COUNT:  PUSH    HL              ; Save code string address
-        PUSH    DE
         LD      HL,(LINESC)     ; Get LINES counter
-        LD      DE,-1
-        ADC     HL,DE           ; Decrement
+        LD      BC,1
+        SUB     HL,BC           ; Decrement
         LD      (LINESC),HL     ; Put it back
-        POP     DE
         POP     HL              ; Restore code string address
         RET     P               ; Return if more lines to go
         PUSH    HL              ; Save code string address
@@ -2663,8 +2661,6 @@ TSTOPL: LD      DE,TMPSTR       ; Temporary string
         LD      A,1
         LD      (TYPE),A        ; Set type to string
         CALL    DETHL4          ; Move string to pool
-        INC     HL
-        INC     DE
         LD      A,H             ; Out of string pool?
         SUB     D               ; Compare with D
         JP      NZ,$+5          ; Different - Exit
@@ -4259,8 +4255,9 @@ WIDTH:  CALL    GETINT          ; Get integer 0-255
 
 LINES:  CALL    GETNUM          ; Get a number
         CALL    DEINT           ; Get integer -32768 to 32767
-        LD      (LINESC),DE     ; Set lines counter
-        LD      (LINESN),DE     ; Set lines number
+        EX      DE,HL
+        LD      (LINESC),HL     ; Set lines counter
+        LD      (LINESN),HL     ; Set lines number
         RET
 
 DEEK:   CALL    DEINT           ; Get integer -32768 to 32767
