@@ -1121,10 +1121,12 @@ SETLIN: PUSH    HL              ; Set up LINES counter
         RET
 
 COUNT:  PUSH    HL              ; Save code string address
+        PUSH    BC
         LD      HL,(LINESC)     ; Get LINES counter
         LD      BC,1
         SUB     HL,BC           ; Decrement
         LD      (LINESC),HL     ; Put it back
+        POP     BC
         POP     HL              ; Restore code string address
         RET     P               ; Return if more lines to go
         PUSH    HL              ; Save code string address
