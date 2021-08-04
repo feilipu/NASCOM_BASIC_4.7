@@ -18,7 +18,7 @@ http://searle.wales/
 
 ==============================================================================
 
-The rework to support MS Basic HLOAD, RESET, and the 8085 undocumented instruction tuning are copyright (C) 20201 Phillip Stevens
+The rework to support MS Basic HLOAD, RESET, and the 8085 undocumented instruction tuning are copyright (C) 2021 Phillip Stevens
 
 This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
@@ -30,12 +30,9 @@ This Source Code Form is subject to the terms of the Mozilla Public License, v. 
 
 This ROM works with the 8085 CPU Module for the RC2014, with 32k of RAM. This is the ROM to choose if you want fast I/O from the 8085 CPU for RC2014, together with the capability to upload C programs from within Basic.
 
-ACIA 6850 interrupt driven serial I/O to run modified NASCOM Basic 4.7. Full input and output buffering with incoming data hardware handshaking. Handshake shows full before the buffer is totally filled to allow run-on from the sender. Transmit and receive are interrupt driven, and are fast. The ACIA interrupt uses RST 5.5.
-
-Receive buffer is 255 bytes, to allow efficient pasting of Basic into the editor. The Transmit buffer is 63 bytes, with 16 byte handshake overrun.
+ACIA 6850 interrupt driven serial I/O to run modified NASCOM Basic 4.7. Full input and output buffering with incoming data hardware handshaking. The handshake shows full 16 bytes before the buffer is totally filled, to allow overrun from the sender. Transmit and receive are interrupt driven, and are fast. The ACIA interrupt is configured to use RST 5.5, but can be changed to use other RST as needed. The receive buffer is 255 bytes and the transmit buffer is 63 bytes.
 
 Also, this ROM provides both Intel HEX loading functions and an `RST`, `INT`, and `TRAP` RAM JumP Table, starting at `0x8000`.
-
 This allows you to upload Assembly or compiled C programs, and then run them as described below.
 
 The goal of this extension to standard MS Basic is to load an arbitrary program in Intel HEX format into an arbitrary location in the Z80 address space, and allow you to start and use your program from NASCOM Basic. Your program can be created in assembler, or in C, provided the code is available in Intel HEX format.
