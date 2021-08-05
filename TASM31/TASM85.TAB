@@ -1,4 +1,4 @@
-"TASM Zilog 8085 Assembler.     "
+"TASM Zilog 8085 Assembler.    "
 /*-------------------------------------------*/
 /*
 /* This is the instruction set definition table 
@@ -156,6 +156,8 @@ LD   B,E     43   1 NOP 1
 LD   B,H     44   1 NOP 1
 LD   B,L     45   1 NOP 1
 LD   B,*     06   2 NOP 1
+LD   BC,DE   4B42 2 NOP 1
+LD   BC,HL   4D44 2 NOP 1
 LD   BC,*    01   3 NOP 1
 LD   C,(HL)  4E   1 NOP 1
 LD   C,A     4F   1 NOP 1
@@ -177,7 +179,8 @@ LD   D,L     55   1 NOP 1
 LD   D,*     16   2 NOP 1
 LD   DE,HL+* 28   2 NOP 1
 LD   DE,SP+* 38   2 NOP 1
-LD   DE,HL   0028 2 NOP 1
+LD   DE,BC   5950 2 NOP 1
+LD   DE,HL   5D54 2 NOP 1
 LD   DE,SP   0038 2 NOP 1
 LD   DE,*    11   3 NOP 1
 LD   E,(HL)  5E   1 NOP 1
@@ -200,6 +203,8 @@ LD   H,L     65   1 NOP 1
 LD   H,*     26   2 NOP 1
 LD   HL,(DE) ED   1 NOP 1
 LD   HL,(*)  2A   3 NOP 1
+LD   HL,BC   6960 2 NOP 1
+LD   HL,DE   6B62 2 NOP 1
 LD   HL,*    21   3 NOP 1
 LD   L,(HL)  6E   1 NOP 1
 LD   L,A     6F   1 NOP 1
