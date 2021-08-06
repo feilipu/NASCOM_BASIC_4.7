@@ -205,6 +205,7 @@ LD   HL,(DE) ED   1 NOP 1
 LD   HL,(*)  2A   3 NOP 1
 LD   HL,BC   6960 2 NOP 1
 LD   HL,DE   6B62 2 NOP 1
+LD   HL,SP   EB0038EB   4 NOP 1
 LD   HL,*    21   3 NOP 1
 LD   L,(HL)  6E   1 NOP 1
 LD   L,A     6F   1 NOP 1
