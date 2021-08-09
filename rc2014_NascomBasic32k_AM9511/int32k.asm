@@ -249,7 +249,7 @@ INIT:
 
         LD HL,serTxBuf              ; Initialise Tx Buffer
         LD (serTxInPtr),HL
-        LD (serTxOutPtr),HL              
+        LD (serTxOutPtr),HL
 
         XOR A                       ; 0 the RXA & TXA Buffer Counts
         LD (serRxBufUsed),A

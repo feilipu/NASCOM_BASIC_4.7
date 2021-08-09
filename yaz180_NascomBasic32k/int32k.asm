@@ -391,7 +391,7 @@ Z180_INIT:
 
             LD      HL,ASCI0TxBuf   ; Initialise 0Tx Buffer
             LD      (ASCI0TxInPtr),HL
-            LD      (ASCI0TxOutPtr),HL              
+            LD      (ASCI0TxOutPtr),HL
 
             XOR     A               ; 0 the ASCI0 Tx & Rx Buffer Counts
             LD      (ASCI0RxBufUsed),A

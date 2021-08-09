@@ -255,7 +255,7 @@ COPY:
 
         LD HL,serTxBuf              ; Initialise Tx Buffer
         LD (serTxInPtr),HL
-        LD (serTxOutPtr),HL              
+        LD (serTxOutPtr),HL
 
         XOR A                       ; 0 the RXA & TXA Buffer Counts
         LD (serRxBufUsed),A
@@ -273,7 +273,7 @@ COPY:
         LD (serControl),A           ; write the ACIA control byte echo
         OUT (SER_CTRL_ADDR),A       ; output to the ACIA control byte
 
-        LD A,1EH                    ; enable IRQ 5.5, mask IRQ 6.5 & 7.5
+        LD A,$1E                    ; enable IRQ 5.5, mask IRQ 6.5 & 7.5
         SIM                         ; do it
         EI                          ; enable interrupts
 
