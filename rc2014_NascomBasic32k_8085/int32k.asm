@@ -273,7 +273,7 @@ COPY:
         LD (serControl),A           ; write the ACIA control byte echo
         OUT (SER_CTRL_ADDR),A       ; output to the ACIA control byte
 
-        LD A,$1E                    ; enable IRQ 5.5, mask IRQ 6.5 & 7.5
+        LD A,$1D                    ; reset 7.5 latch, enable IRQ 6.5, mask IRQ 5.5 & 7.5
         SIM                         ; do it
         EI                          ; enable interrupts
 
@@ -340,11 +340,11 @@ DEFC    RST_08      =       TXA             ; TX character over ACIA, loop until
 DEFC    RST_10      =       RXA             ; RX character over ACIA, loop until byte
 ;       RST_18      =       RXA_CHK         ; Check ACIA status, return # bytes available
 DEFC    RST_20      =       NULL_RET        ; RET
-DEFC    TRAP        =       NULL_INT        ; 8085 TRAP 0x0024 - RC2014 Bus /NMI
+DEFC    TRAP        =       NULL_INT        ; 8085 TRAP - RC2014 Bus /NMI
 DEFC    RST_28      =       NULL_RET        ; RET
-DEFC    IRQ_55      =       serialInt       ; ACIA interrupt IRQ 5.5 - 8085 CPU Module
+DEFC    IRQ_55      =       NULL_INT        ; 8085 IRQ 5.5 - 8085 CPU Module
 DEFC    RST_30      =       NULL_RET        ; RET
-DEFC    IRQ_65      =       NULL_INT        ; 8085 IRQ 6.5 - RC2014 Bus /INT
+DEFC    IRQ_65      =       serialInt       ; 8085 IRQ 6.5 - RC2014 Bus /INT
 DEFC    RST_38      =       NULL_RET        ; RET
 DEFC    IRQ_75      =       NULL_INT        ; 8085 IRQ 7.5 - RC2014 Bus /RX
 DEFC    RST_40      =       NULL_RET        ; 8085 JP V Overflow
