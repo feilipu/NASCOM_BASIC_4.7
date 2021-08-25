@@ -51,25 +51,22 @@ INCLUDE "rc2014.inc"
 ;------------------------------------------------------------------------------
 SECTION serial_interrupt
 
-.cpuInt                             ; 4 - 18 max cycles before starting interrupt
+.cpu_int
+                                    ; 24 -> 38 max cycles before starting interrupt
         push af                     ; 12
-        push hl                     ; 12
+                                    ; 36 -> 50 max cycles before reading start bit
         rim                         ;  4 get the status of the SID
-                                    ; 32 - 46 max cycles before reading start bit
 
         rla                         ;  4 check whether a byte is being received
-        jp C,cint_end               ;  7 no start bit, so exit
-                                    ; 39 - 57 total, should be 32 cycles
+        push hl                     ; 12
+        jp C,cint_end               ; 10/7 no start bit, so exit
 
         ld hl, 0x0800               ; 10 8 bits per byte in H, clear L
 
 .cint_loop
-        nop                         ;  4 delay
-        nop                         ;  4 delay
         push hl                     ; 12 delay
         pop hl                      ; 10 delay
-
-                                    ; 19 - 37 delay required to middle of first bit
+                                    ; 31 -> 45 cycles required to middle of first bit
 
         rim                         ;  4 get received SID bit
         rla                         ;  4 SID bit to Carry
@@ -77,6 +74,8 @@ SECTION serial_interrupt
         rra                         ;  4
         ld l,a                      ;  4 capture bit in L
         dec h                       ;  4
+        nop                         ;  4 delay
+        nop                         ;  4 delay
         jp NZ,cint_loop             ; 10/7
                                     ; 64 loop total for correct timing
 
@@ -111,21 +110,21 @@ SECTION serial_interrupt
 
 ALIGN $010
 
-.aciaInt
+.acia_int
         push af
         push hl
 
         in a,(SER_STATUS_ADDR)      ; get the status of the ACIA
         rrca                        ; check whether a byte has been received, via SER_RDRF
-        jp NC,im1_tx_send           ; if not, go check for bytes to transmit
+        jp NC,acia_tx_send          ; if not, go check for bytes to transmit
 
-.im1_rx_get
+.acia_rx_get
         in a,(SER_DATA_ADDR)        ; Get the received byte from the ACIA 
         ld l,a                      ; Move Rx byte to l
 
         ld a,(serRxBufUsed)         ; Get the number of bytes in the Rx buffer
         cp SER_RX_BUFSIZE-1         ; check whether there is space in the buffer
-        jp NC,im1_tx_check          ; buffer full, check if we can send something
+        jp NC,acia_tx_check         ; buffer full, check if we can send something
 
         ld a,l                      ; get Rx byte from l
         ld hl,serRxBufUsed
@@ -138,7 +137,7 @@ ALIGN $010
 
         ld a,(serRxBufUsed)         ; get the current Rx count
         cp SER_RX_FULLSIZE          ; compare the count with the preferred full size
-        jp NZ,im1_tx_check          ; leave the RTS low, and check for Rx/Tx possibility
+        jp NZ,acia_tx_check         ; leave the RTS low, and check for Rx/Tx possibility
 
         ld a,(serControl)           ; get the ACIA control echo byte
         and ~SER_TEI_MASK           ; mask out the Tx interrupt bits
@@ -146,18 +145,18 @@ ALIGN $010
         ld (serControl),a           ; write the ACIA control echo byte back
         out (SER_CTRL_ADDR),a       ; Set the ACIA CTRL register
 
-.im1_tx_check
+.acia_tx_check
         in a,(SER_STATUS_ADDR)      ; get the status of the ACIA
         rrca                        ; check whether a byte has been received, via SER_RDRF
-        jp C,im1_rx_get             ; another byte received, go get it
+        jp C,acia_rx_get            ; another byte received, go get it
 
-.im1_tx_send
+.acia_tx_send
         rrca                        ; check whether a byte can be transmitted, via SER_TDRE
-        jp NC,im1_txa_end           ; if not, we're done for now
+        jp NC,acia_txa_end          ; if not, we're done for now
 
         ld a,(serTxBufUsed)         ; get the number of bytes in the Tx buffer
         or a                        ; check whether it is zero
-        jp Z,im1_tei_clear          ; if the count is zero, then disable the Tx Interrupt
+        jp Z,acia_tei_clear         ; if the count is zero, then disable the Tx Interrupt
 
         ld hl,(serTxOutPtr)         ; get the pointer to place where we pop the Tx byte
         ld a,(hl)                   ; get the Tx byte
@@ -173,15 +172,15 @@ ALIGN $010
         ld hl,serTxBufUsed
         dec (hl)                    ; atomically decrement current Tx count
 
-        jp NZ,im1_txa_end           ; if we've more Tx bytes to send, we're done for now
+        jp NZ,acia_txa_end          ; if we've more Tx bytes to send, we're done for now
 
-.im1_tei_clear
+.acia_tei_clear
         ld a,(serControl)           ; get the ACIA control echo byte
         and ~SER_TEI_RTS0           ; mask out (disable) the Tx Interrupt
         ld (serControl),a           ; write the ACIA control byte back
         out (SER_CTRL_ADDR),a       ; Set the ACIA CTRL register
 
-.im1_txa_end
+.acia_txa_end
         ld hl,TXA                   ; get address of ACIA TXA
         ld (RST_08_ADDR),hl         ; 16 update RST_08 contents
 
@@ -202,13 +201,13 @@ SECTION serial_rx                   ; ORG $00F0
         push hl                     ; store HL so we don't clobber it
         push bc                     ; store BC
 
-        ld bc,TXA                   ; get address of acia TXA
         ld hl,(RST_08_ADDR)         ; get contents of RST_08 vector
-        sub hl,bc                   ; check whether we're using the ACIA TXA
-        jp NZ,rx_clean_up           ; skip the control clean up
+        ld bc,TXC                   ; get address of cpu TXC
+        sub hl,bc                   ; check whether we're using the cpu TXC
+        jp Z,rx_get_byte            ; then skip the ACIA control clean up
 
         cp SER_RX_EMPTYSIZE         ; compare the count with the preferred empty size
-        jp NZ,rx_clean_up           ; if the buffer is too full, don't change the RTS
+        jp NZ,rx_get_byte           ; if the buffer is too full, don't change the RTS
 
         di                          ; critical section begin
         ld a,(serControl)           ; get the ACIA control echo byte
@@ -218,16 +217,14 @@ SECTION serial_rx                   ; ORG $00F0
         ei                          ; critical section end
         out (SER_CTRL_ADDR),a       ; set the ACIA CTRL register
 
-.rx_clean_up
-
+.rx_get_byte
+        ld hl,(serRxOutPtr)         ; get the pointer to place where we pop the Rx byte
+        ld a,(hl)                   ; get the Rx byte
+        inc l                       ; move the Rx pointer low byte along
+        ld (serRxOutPtr),hl         ; write where the next byte should be popped
 
         ld hl,serRxBufUsed
         dec (hl)                    ; atomically decrement Rx count
-        ld hl,(serRxOutPtr)         ; get the pointer to place where we pop the Rx byte
-        ld a,(hl)                   ; get the Rx byte
-
-        inc l                       ; move the Rx pointer low byte along
-        ld (serRxOutPtr),hl         ; write where the next byte should be popped
 
         pop bc                      ; recover BC
         pop hl                      ; recover HL
@@ -385,8 +382,6 @@ PUBLIC  INIT
         LD (serControl),A           ; write the ACIA control byte echo
         OUT (SER_CTRL_ADDR),A       ; output to the ACIA control byte
 
-        LD A,$1D                    ; reset 7.5 latch, enable IRQ 6.5, mask IRQ 5.5 & 7.5
-        SIM                         ; do it
         EI                          ; enable interrupts
 
 .START
@@ -462,9 +457,9 @@ DEFC    TRAP        =       NULL_INT        ; 8085 TRAP - RC2014 Bus /NMI
 DEFC    RST_28      =       NULL_RET        ; RET
 DEFC    IRQ_55      =       NULL_INT        ; 8085 IRQ 5.5 - 8085 CPU Module
 DEFC    RST_30      =       NULL_RET        ; RET
-DEFC    IRQ_65      =       aciaInt         ; 8085 IRQ 6.5 - RC2014 Bus /INT
+DEFC    IRQ_65      =       acia_int        ; 8085 IRQ 6.5 - RC2014 Bus /INT
 DEFC    RST_38      =       NULL_RET        ; RET
-DEFC    IRQ_75      =       cpuInt          ; 8085 IRQ 7.5 - RC2014 Bus /RX
+DEFC    IRQ_75      =       cpu_int         ; 8085 IRQ 7.5 - RC2014 Bus /RX
 DEFC    RST_40      =       NULL_RET        ; 8085 JP V Overflow
 
 ;==============================================================================
