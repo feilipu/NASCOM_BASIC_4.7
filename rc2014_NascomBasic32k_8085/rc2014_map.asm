@@ -23,19 +23,16 @@ ORG         VECTOR_PROTO+VECTOR_SIZE
 SECTION     serial_interrupt
 ORG         $0080
 
-SECTION     acia_rxa
-ORG         $00B0
-
-SECTION     serial_tx
+SECTION     serial_trx
 ORG         $0130
 
 SECTION     serial_print
-ORG         $01A0
+ORG         $01C8
 
 SECTION     init
-ORG         $01B8
+ORG         $01E0
 
 SECTION     init_strings
-ORG         $0240
+ORG         $0268
 
 ;==============================================================================

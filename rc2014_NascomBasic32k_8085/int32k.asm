@@ -49,7 +49,7 @@ INCLUDE "rc2014.inc"
 ;
 
 ;------------------------------------------------------------------------------
-SECTION serial_interrupt
+SECTION serial_interrupt            ; ORG $0080
 
 .cpu_int
                                     ; 24 -> 38 max cycles before starting interrupt
@@ -108,7 +108,7 @@ SECTION serial_interrupt
                                     ; 186 cycles from last sample for buffer management
                                     ; 160 cycles budget (1/2 bit + 2 stop bit)
 
-ALIGN $010
+ALIGN $008
 
 .acia_int
         push af
@@ -191,7 +191,7 @@ ALIGN $010
         ret
 
 ;------------------------------------------------------------------------------
-SECTION serial_rx                   ; ORG $00F0
+SECTION serial_trx                  ; ORG $0130
 
 .RX
         ld a,(serRxBufUsed)         ; get the number of bytes in the Rx buffer
@@ -230,8 +230,7 @@ SECTION serial_rx                   ; ORG $00F0
         pop hl                      ; recover HL
         ret                         ; char ready in A
 
-;------------------------------------------------------------------------------
-SECTION serial_tx                   ; ORG $0130
+ALIGN $008
 
 .TXC                                ; output a character in A
         di
@@ -261,8 +260,6 @@ SECTION serial_tx                   ; ORG $0130
         ei
         ret
 
-ALIGN $010
-
 .TXA
         push hl                     ; store HL so we don't clobber it
         ld l,a                      ; store Tx character
@@ -288,11 +285,7 @@ ALIGN $010
 
         ld a,l                      ; Retrieve Tx character
 
-        ld hl,serTxBufUsed
-        di
-        inc (hl)                    ; atomic increment of Tx count
         ld hl,(serTxInPtr)          ; get the pointer to where we poke
-        ei
         ld (hl),a                   ; write the Tx byte to the serTxInPtr
 
         inc l                       ; move the Tx pointer, just low byte along
@@ -301,6 +294,9 @@ ALIGN $010
         or serTxBuf&0xFF            ; locate base
         ld l,a                      ; return the low byte to l
         ld (serTxInPtr),hl          ; write where the next byte should be poked
+
+        ld hl,serTxBufUsed
+        inc (hl)                    ; atomic increment of Tx count
 
         pop hl                      ; recover HL
 
@@ -318,7 +314,7 @@ ALIGN $010
         ret
 
 ;------------------------------------------------------------------------------
-SECTION serial_print                ; ORG $01A0
+SECTION serial_print                ; ORG $01C8
 
 .APRINT
         LD A,(HL)                   ; get character
@@ -337,7 +333,7 @@ SECTION serial_print                ; ORG $01A0
         jp CPRINT                   ; continue until $00
 
 ;------------------------------------------------------------------------------
-SECTION init                        ; ORG $01B8
+SECTION init                        ; ORG $01E0
 
 PUBLIC  INIT
 
@@ -409,7 +405,7 @@ PUBLIC  INIT
 .COLDSTART
         LD A,'Y'                    ; Set the BASIC STARTED flag
         LD (basicStarted),A
-        JP $02D0                    ; <<<< Start Basic COLD:
+        JP $02C0                    ; <<<< Start Basic COLD
 .CHECKWARM
         CP 'W'
         JP NZ,CORW
@@ -419,22 +415,22 @@ PUBLIC  INIT
         LD A,LF
         RST 08H
 .WARMSTART
-        JP $02D3                    ; <<<< Start Basic WARM:
+        JP $02C3                    ; <<<< Start Basic WARM
 
 ;==============================================================================
 ;
 ; STRINGS
 ;
-SECTION         init_strings        ; ORG $0240
+SECTION init_strings                ; ORG $0268
 
 .SIGNON1
-                DEFM    CR,LF
-                DEFM    "RC2014/8085 - MS Basic Loader",CR,LF
-                DEFM    "z88dk - feilipu",CR,LF,0
+        DEFM    CR,LF
+        DEFM    "RC2014/8085 - MS Basic Loader",CR,LF
+        DEFM    "z88dk - feilipu",CR,LF,0
 
 .SIGNON2
-                DEFM    CR,LF
-                DEFM    "Cold | Warm start (C|W) ? ",0
+        DEFM    CR,LF
+        DEFM    "Cold | Warm start (C|W) ? ",0
 
 ;==============================================================================
 ;

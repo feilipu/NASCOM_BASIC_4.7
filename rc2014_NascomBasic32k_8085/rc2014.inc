@@ -47,21 +47,21 @@ DEFC    SER_TX_BUFSIZE  =   $40     ; Size of the Tx Buffer, 2^n Bytes, n = 6 he
 ; Interrupt vectors (offsets) for 8085 RST and IRQ interrupts
 ;
 
-DEFC    VECTOR_BASE     =   RAMSTART    ; RAM vector address for 8085 RST Table
+DEFC    VECTOR_BASE         =   RAMSTART    ; RAM vector address for 8085 RST Table
 
 ; 8085 Following Overflow TRAP 0x0040
 
-DEFC    VECTOR_PROTO    =   $0048
-DEFC    VECTOR_SIZE     =   $34
+DEFC    VECTOR_PROTO        =   $0048
+DEFC    VECTOR_SIZE         =   $34
 
 ;   Prototype Interrupt Service Routines - complete in main program
 ;
 ;DEFC       RST_00          =   INIT        Reboot
-;DEFC       RST_08          =   TX0         TX a character over ACIA
-;DEFC       RST_10          =   RX0         RX a character over ACIA, block no bytes available
-;DEFC       RST_18          =   RX0_CHK     Check ACIA status, return # bytes available
+;DEFC       RST_08          =   TX          TX a character over SOD / ACIA
+;DEFC       RST_10          =   RX          RX a character over SID / ACIA, block no bytes available
+;DEFC       RST_18          =   RX_CHK      Check SID / ACIA status, return # bytes available
 ;DEFC       RST_20          =   NULL_RET
-;DEFC       TRAP            =   NULL_INT    8085 TRAP 0x0024
+;DEFC       TRAP            =   NULL_INT    8085 TRAP $0024
 ;DEFC       RST_28          =   NULL_RET
 ;DEFC       IRQ_55          =   NULL_INT    8085 IRQ 5.5
 ;DEFC       RST_30          =   NULL_RET
