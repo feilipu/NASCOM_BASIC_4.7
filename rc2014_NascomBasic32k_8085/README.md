@@ -30,7 +30,7 @@ This Source Code Form is subject to the terms of the Mozilla Public License, v. 
 
 This ROM works with the 8085 CPU Module for the RC2014, with 32k of RAM. This is the ROM to choose if you want fast I/O from the 8085 CPU for RC2014, together with the capability to upload C programs from within Basic.
 
-ACIA 6850 interrupt driven serial I/O to run modified NASCOM Basic 4.7. Full input and output buffering with incoming data hardware handshaking. The handshake shows full 16 bytes before the buffer is totally filled, to allow overrun from the sender. Transmit and receive are interrupt driven, and are fast. The ACIA interrupt is configured to use RST 5.5, but can be changed to use other RST as needed. The receive buffer is 255 bytes and the transmit buffer is 63 bytes.
+ACIA 6850 interrupt driven serial I/O to run modified NASCOM Basic 4.7. Full input and output buffering with incoming data hardware handshaking. The handshake shows full 16 bytes before the buffer is totally filled, to allow run-on from the sender. Transmit and receive are interrupt driven, and are fast. The receive buffer is 255 bytes and the transmit buffer is 63 bytes.
 
 Also, this ROM provides both Intel HEX loading functions and an `RST`, `INT`, and `TRAP` RAM JumP Table, starting at `0x8000`.
 This allows you to upload Assembly or compiled C programs, and then run them as described below.
@@ -55,8 +55,8 @@ For convenience, because we can't easily change the ROM code interrupt routines 
 * Rx: `RST 10` returns a received byte in the `a` register, and will block (loop) until it has a byte to return.
 * Rx Check: `RST 18` will immediately return the number of bytes in the Rx buffer (0 if buffer empty) in the `a` register.
 * Unused: `RST 20`, `RST 28`, `RST 30`, `RST 38` are available to the user.
-* IRQ 5.5: is used by the 8085 CPU Module ACIA 68B50 Serial Device.
-* IRQ 6.5: is connected to the RC2014 Bus `INT`, is unused, and is available to the user.
+* IRQ 5.5: is available to the user
+* IRQ 6.5: is connected to the RC2014 Bus `INT`, and is used by the 8085 CPU Module ACIA 68B50 Serial Device.
 * IRQ 7.5: is connected to the RC2014 RX and can be used to trigger bit banged serial on SID.
 * TRAP: is connected to the RC2014 Bus `NMI`, is unused and is available to the user.
 
@@ -66,16 +66,16 @@ All `RST xx` targets can be rewritten in a `JP` table originating at `0x8000` in
 
 For the RC2014 with 32k Basic the `USR(x)` loaded user program address is located at `0x8204`.
 
-Your assembly program can receive a 16 bit parameter passed in from the function by calling `DEINT` at `0x0AF7`. The parameter is stored in register pair `DE`.
+Your assembly program can receive a 16 bit parameter passed in from the function by calling `DEINT` at `0x0B70`. The parameter is stored in register pair `DE`.
 
-When your assembly program is finished it can return a 16 bit parameter stored in `A` (MSB) and `B` (LSB) by jumping to `ABPASS` which is located at `0x12C8`.
+When your assembly program is finished it can return a 16 bit parameter stored in `A` (MSB) and `B` (LSB) by jumping to `ABPASS` which is located at `0x1320`.
 
-Note that these address of these functions can also be loaded from `0x025B` for `DEINT` and `0x025D` for `ABPASS`, as noted in the NASCOM Basic Manual.
+Note that these address of these functions can also be loaded from `0x02CB` for `DEINT` and `0x02CD` for `ABPASS`, as noted in the NASCOM Basic Manual.
 
 ``` asm
                                 ; from Nascom Basic Symbol Tables
-DEINT           .EQU    $0AF7   ; Function DEINT to get USR(x) into DE registers
-ABPASS          .EQU    $12C8   ; Function ABPASS to put output into AB register for return
+DEINT           .EQU    $0B70   ; Function DEINT to get USR(x) into DE registers
+ABPASS          .EQU    $1320   ; Function ABPASS to put output into AB register for return
 
 
                 .ORG    9000H   ; your code origin, for example

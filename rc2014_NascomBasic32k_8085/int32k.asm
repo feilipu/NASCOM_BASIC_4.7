@@ -182,7 +182,7 @@ ALIGN $008
 
 .acia_txa_end
         ld hl,TXA                   ; get address of ACIA TXA
-        ld (RST_08_ADDR),hl         ; 16 update RST_08 contents
+        ld (RST_08_ADDR),hl         ; update RST_08 contents
 
         pop hl
         pop af
