@@ -516,7 +516,7 @@ INITAB: JP      WARMST          ; Warm start jump
         .BYTE   0               ; Break not by NMI
         .BYTE   0               ; Break flag
 
-        JP      TTYLIN          ; Input reflection (set to TTY)
+         JP     TTYLIN          ; Input reflection (set to TTY)
 
         .WORD   STLOOK          ; Temp string space
         .WORD   -2              ; Current line number (cold)

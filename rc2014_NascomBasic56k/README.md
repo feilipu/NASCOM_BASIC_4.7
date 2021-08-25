@@ -30,12 +30,9 @@ This Source Code Form is subject to the terms of the Mozilla Public License, v. 
 
 This ROM works with the versions of the RC2014, with 64k of RAM. This is the ROM to choose if you want fast I/O from a standard RC2014, together with the capability to upload C programs from within Basic.
 
-ACIA 6850 interrupt driven serial I/O to run modified NASCOM Basic 4.7. Full input and output buffering with incoming data hardware handshaking. Handshake shows full before the buffer is totally filled to allow run-on from the sender. Transmit and receive are interrupt driven, and are fast.
+ACIA 6850 interrupt driven serial I/O to run modified NASCOM Basic 4.7. Full input and output buffering with incoming data hardware handshaking. The handshake shows full 16 bytes before the buffer is totally filled, to allow run-on from the sender. Transmit and receive are interrupt driven, and are fast. The receive buffer is 255 bytes and the transmit buffer is 63 bytes. Use 115200 baud with 8n2.
 
-Receive buffer is 255 bytes, to allow efficient pasting of Basic into the editor. The Transmit buffer is 63 bytes. Receive buffer overflows are silently discarded.
-
-Also, this ROM provides both Intel HEX loading functions and an `RST`, `INT0`, and `NMI` RAM JumP Table, starting at `0x2000`.
-
+Also, this ROM provides both Intel HEX loading functions and an `RST`, `INT0`, and `NMI` RAM JumP Table, starting at `0x8000`.
 This allows you to upload Assembly or compiled C programs, and then run them as described below.
 
 __NOTE__ The Intel HEX program loader has been integrated inside MS Basic as the `HLOAD` keyword.

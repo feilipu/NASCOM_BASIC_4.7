@@ -31,32 +31,37 @@ ACIA 6850 interrupt driven serial I/O to run modified NASCOM Basic 4.7.
 
 Full input and output buffering with incoming data hardware handshaking.
 Handshake shows full before the buffer is totally filled to allow run-on from the sender.
-Transmit and receive are interrupt driven, and are fast.
+Transmit and receive are interrupt driven, and are fast. Use 115200 baud with 8n2 setting.
 
-Receive buffer is 255 bytes, to allow efficient pasting of Basic into the editor. The Transmit buffer is 63 bytes. Receive buffer overflows are silently discarded.
+Receive buffer is 255 bytes, to allow efficient pasting of Basic into the editor. The Transmit buffer is 63 bytes.
 
 These ROMs provides both Intel `HLOAD` function and a `RST`, `INT0`, and `NMI` RAM JumP Table, starting at `0x8000`. This allows you to upload Assembly or compiled C programs, and then run them as described.
 
-## Mini, Micro, Classic: 32kB MS Basic
+## RC2014 Mini, Micro, __Classic: 32kB MS Basic__
 
 This ROM works with the most basic default versions of the RC2014, with 32k of RAM.
 This is the ROM to choose if you want fast I/O from a standard RC2014.
 
-## Plus: 64kB MS Basic
+## RC2014 Plus: 64kB MS Basic
 
 This version requires a 64k/56k RAM module. The 56k version utilises the full 56k RAM memory space of the RC2014, starting at `0x2000`.
 
-This ROM provides both Intel `HLOAD` function and a `RST`, `INT0`, and `NMI` RAM JumP Table, starting at `0x2000`. This allows you to upload Assembly or compiled C programs, and then run them as described.
+This version provides both Intel `HLOAD` function and a `RST`, `INT0`, and `NMI` RAM JumP Table, starting at `0x2000`. This allows you to upload Assembly or compiled C programs, and then run them as described.
 
-## Mini, Micro, Classic: 32kB MS Basic using AM9511A APU Module
+## RC2014 Mini, Micro, Classic: 32kB MS Basic using __AM9511A APU Module__
 
 This ROM works with the most basic default versions of the RC2014, with 32k of RAM.
 This is the ROM to choose if you want fast I/O from a standard RC2014, and you have installed an AM9511A APU Module.
 
-## Mini, Micro, Classic: 32kB MS Basic using LUT Multiply Module
+## RC2014 Mini, Micro, Classic: 32kB MS Basic using __LUT Multiply Module__
 
-This ROM works with the most basic default version of the RC2014, with 32k of RAM.
+This version works with the most basic default version of the RC2014, with 32k of RAM.
 This is the ROM to choose if you want fast I/O from a standard RC2014, and you have installed a LUT (Multiply) Module.
+
+## RC2014 Classic: 32kB MS Basic using __8085 CPU Module__
+
+This version works with the most basic default version of the RC2014 running with an 8085 CPU Module, with 32k of RAM.
+This is the ROM to choose if you want fast I/O from a standard RC2014, and you have installed an 8085 CPU Module.
 
 ==============================================================================
 
@@ -77,7 +82,7 @@ All `RST xxH` targets can be rewritten in a `JP` table originating at `0x8000` i
 
 ## USR Jump Address & Parameter Access
 
-For the RC2014 with 32k Basic the location for `USR(x)` loaded user program address is `0x8204`, and with 56k Basic the location for `USR(x)` is `0x2204`. For the YAZ180 with 32k Basic the `USR(x)` jump address is located at `0x8004`. For the YAZ180 with 56k Basic the `USR(x)` jump address is located at `0x2704`.
+For the RC2014 with 32k Basic the location for `USR(x)` loaded user program address is `0x8204`, and with 56k Basic the location for `USR(x)` is `0x2204`.
 
 # `HLOAD` Keyword Usage
 
