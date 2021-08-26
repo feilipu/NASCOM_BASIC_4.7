@@ -52,14 +52,14 @@ INCLUDE "rc2014.inc"
 SECTION serial_interrupt            ; ORG $0080
 
 .cpu_int
-                                    ; 24 -> 38 max cycles before starting interrupt
+                                    ; 24 -> 30 with 38 max cycles before starting interrupt
         push af                     ; 12
                                     ; 36 -> 50 max cycles before reading start bit
         rim                         ;  4 get the status of the SID
 
         rla                         ;  4 check whether a byte is being received
         push hl                     ; 12
-        jp C,cint_end               ; 10/7 no start bit, so exit
+        jp C,cint_end               ; 10/7 no start bit detected, so exit
 
         ld hl, 0x0800               ; 10 8 bits per byte in H, clear L
 
@@ -72,33 +72,35 @@ SECTION serial_interrupt            ; ORG $0080
         rla                         ;  4 SID bit to Carry
         ld a,l                      ;  4
         rra                         ;  4
-        ld l,a                      ;  4 capture bit in L
-        dec h                       ;  4
+        ld l,a                      ;  4 capture bit in L & A
+
         nop                         ;  4 delay
         nop                         ;  4 delay
+
+        dec h                       ;  4 capture 8 bits
         jp NZ,cint_loop             ; 10/7
                                     ; 64 loop total for correct timing
 
         ld a,(serRxBufUsed)         ; 13 get the number of bytes in the Rx buffer
         cp SER_RX_BUFSIZE-1         ;  4 check whether there is space in the buffer
-        jp NC,cint_end              ; 10/7 buffer full, exit
+        jp NC,cint_end              ; 10/7 buffer full, so discard byte
 
         ld a,l                      ;  4 get Rx byte from l
-        ld hl,serRxBufUsed          ; 10
-        inc (hl)                    ; 10 atomically increment Rx buffer count
         ld hl,(serRxInPtr)          ; 16 get the pointer to where we poke
         ld (hl),a                   ;  7 write the Rx byte to the serRxInPtr address
-
         inc l                       ;  4 move the Rx pointer low byte along, 0xFF rollover
         ld (serRxInPtr),hl          ; 16 write where the next byte should be poked
 
-.cint_end
+        ld hl,serRxBufUsed          ; 10
+        inc (hl)                    ; 10 atomically increment Rx buffer count
+
         ld hl,TXC                   ; 10 get address of cpu TXC
         ld (RST_08_ADDR),hl         ; 16 update RST_08 contents
 
         ld a,$10                    ;  7
-        sim                         ;  4 reset R7.5
+        sim                         ;  4 reset R7.5 register during stop bits
 
+.cint_end
         pop hl                      ; 10
         pop af                      ; 10
 
@@ -127,13 +129,13 @@ ALIGN $008
         jp NC,acia_tx_check         ; buffer full, check if we can send something
 
         ld a,l                      ; get Rx byte from l
-        ld hl,serRxBufUsed
-        inc (hl)                    ; atomically increment Rx buffer count
         ld hl,(serRxInPtr)          ; get the pointer to where we poke
         ld (hl),a                   ; write the Rx byte to the serRxInPtr address
-
         inc l                       ; move the Rx pointer low byte along, 0xFF rollover
         ld (serRxInPtr),hl          ; write where the next byte should be poked
+
+        ld hl,serRxBufUsed
+        inc (hl)                    ; atomically increment Rx buffer count
 
         ld a,(serRxBufUsed)         ; get the current Rx count
         cp SER_RX_FULLSIZE          ; compare the count with the preferred full size
