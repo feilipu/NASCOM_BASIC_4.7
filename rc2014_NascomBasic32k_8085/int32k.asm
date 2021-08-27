@@ -55,8 +55,8 @@ SECTION serial_interrupt            ; ORG $0080
                                     ; 24 -> 30 with 38 max cycles before starting interrupt
         push af                     ; 12
                                     ; 36 -> 50 max cycles before reading start bit
-        rim                         ;  4 get the status of the SID
 
+        rim                         ;  4 get the status of the SID
         rla                         ;  4 check whether a byte is being received
         push hl                     ; 12
         jp C,cint_end               ; 10/7 no start bit detected, so exit
@@ -66,13 +66,13 @@ SECTION serial_interrupt            ; ORG $0080
 .cint_loop
         push hl                     ; 12 delay
         pop hl                      ; 10 delay
-                                    ; 31 -> 45 cycles required to middle of first bit
+                                    ; 31 -> 45 cycles required for middle of first bit
 
         rim                         ;  4 get received SID bit
         rla                         ;  4 SID bit to Carry
         ld a,l                      ;  4
         rra                         ;  4
-        ld l,a                      ;  4 capture bit in L & A
+        ld l,a                      ;  4 capture bit in L
 
         nop                         ;  4 delay
         nop                         ;  4 delay
@@ -235,12 +235,11 @@ SECTION serial_trx                  ; ORG $0130
 ALIGN $008
 
 .TXC                                ; output a character in A
-        di
         push hl
-
         ld h,11                     ; 11 bits per byte (1 start, 2 stop bits)
         ld l,a
         xor a                       ; clear carry for start bit
+        di
 
 .txc_loop
         ld a,$80                    ;  7 set eventual SOD enable bit
