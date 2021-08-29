@@ -58,9 +58,9 @@ SECTION serial_interrupt            ; ORG $0080
 
         rim                         ;  4 get the status of the SID
         rla                         ;  4 check whether a byte is being received
-        push hl                     ; 12
         jp C,cint_end               ; 10/7 no start bit detected, so exit
 
+        push hl                     ; 12
         ld hl, 0x0800               ; 10 8 bits per byte in H, clear L
 
 .cint_loop
@@ -83,7 +83,7 @@ SECTION serial_interrupt            ; ORG $0080
 
         ld a,(serRxBufUsed)         ; 13 get the number of bytes in the Rx buffer
         cp SER_RX_BUFSIZE-1         ;  4 check whether there is space in the buffer
-        jp NC,cint_end              ; 10/7 buffer full, so discard byte
+        jp NC,cint_exit             ; 10/7 buffer full, so discard byte
 
         ld a,l                      ;  4 get Rx byte from l
         ld hl,(serRxInPtr)          ; 16 get the pointer to where we poke
@@ -94,14 +94,14 @@ SECTION serial_interrupt            ; ORG $0080
         ld hl,serRxBufUsed          ; 10
         inc (hl)                    ; 10 atomically increment Rx buffer count
 
+.cint_exit
         ld hl,TXC                   ; 10 get address of cpu TXC
         ld (RST_08_ADDR),hl         ; 16 update RST_08 contents
-
-        ld a,$10                    ;  7
-        sim                         ;  4 reset R7.5 register during stop bits
+        pop hl                      ; 10
 
 .cint_end
-        pop hl                      ; 10
+        ld a,$10                    ;  7
+        sim                         ;  4 reset R7.5 register during stop bits
         pop af                      ; 10
 
         ei                          ;  4
@@ -321,7 +321,7 @@ SECTION serial_print                ; ORG $01C8
         LD A,(HL)                   ; get character
         OR A                        ; is it $00 ?
         RET Z                       ; then RETurn on terminator
-        CALL TXA                    ; print it
+        CALL TXA                    ; output character in A
         INC HL                      ; next Character
         JP APRINT                   ; continue until $00
 
@@ -339,9 +339,9 @@ SECTION init                        ; ORG $01E0
 PUBLIC  INIT
 
 .INIT
-        LD SP,TEMPSTACK             ; Set up a temporary stack
+        LD SP,TEMPSTACK             ; set up a temporary stack
 
-        LD HL,VECTOR_PROTO          ; Establish 8085 RST Vector Table
+        LD HL,VECTOR_PROTO          ; establish 8085 RST Vector Table
         LD DE,VECTOR_BASE
         LD C,VECTOR_SIZE
 .COPY
@@ -352,22 +352,23 @@ PUBLIC  INIT
         DEC C
         JP NZ,COPY
 
-        LD HL,serRxBuf              ; Initialise Rx Buffer
+        LD HL,serRxBuf              ; initialise Rx Buffer
         LD (serRxInPtr),HL
         LD (serRxOutPtr),HL
 
-        LD HL,serTxBuf              ; Initialise Tx Buffer
+        LD HL,serTxBuf              ; initialise Tx Buffer
         LD (serTxInPtr),HL
         LD (serTxOutPtr),HL
 
-        XOR A                       ; 0 the RXA & TXA Buffer Counts
+        XOR A                       ; zero the RX & TXA Buffer Counts
         LD (serRxBufUsed),A
         LD (serTxBufUsed),A
 
-        LD A,$19
-        SIM                         ; reset R7.5, Set MSE to mask R5.5
+        LD A,$D9
+        SIM                         ; set TXC high, reset R7.5,
+                                    ; set MSE to mask R5.5
 
-        LD A,SER_RESET              ; Master Reset the ACIA
+        LD A,SER_RESET              ; master RESET the ACIA
         OUT (SER_CTRL_ADDR),A
 
         LD A,SER_REI|SER_TDI_RTS0|SER_8N2|SER_CLK_DIV_64
