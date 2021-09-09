@@ -52,9 +52,8 @@ INCLUDE "rc2014.inc"
 SECTION serial_interrupt            ; ORG $0080
 
 .cpu_int
-                                    ; 24 -> 30 with 38 max cycles before starting interrupt
+                                    ; approx 38 cycles before starting interrupt
         push af                     ; 12
-                                    ; 36 -> 50 max cycles before reading start bit
 
         rim                         ;  4 get the status of the SID
         rla                         ;  4 check whether a byte is being received
@@ -62,11 +61,12 @@ SECTION serial_interrupt            ; ORG $0080
 
         push hl                     ; 12
         ld hl, 0x0800               ; 10 8 bits per byte in H, clear L
+                                    ; 87 cycles before starting loop
 
 .cint_loop
-        push hl                     ; 12 delay
-        pop hl                      ; 10 delay
-                                    ; 31 -> 45 cycles required for middle of first bit
+        nop                         ;  4 delay
+        nop                         ;  4 delay
+                                    ; 96 total cycles required for middle of first bit
 
         rim                         ;  4 get received SID bit
         rla                         ;  4 SID bit to Carry
@@ -74,12 +74,12 @@ SECTION serial_interrupt            ; ORG $0080
         rra                         ;  4
         ld l,a                      ;  4 capture bit in L
 
-        nop                         ;  4 delay
-        nop                         ;  4 delay
+        push hl                     ; 12 delay
+        pop hl                      ; 10 delay
 
         dec h                       ;  4 capture 8 bits
         jp NZ,cint_loop             ; 10/7
-                                    ; 64 loop total for correct timing
+                                    ; 64 loop total cycles for correct timing
 
         ld a,(serRxBufUsed)         ; 13 get the number of bytes in the Rx buffer
         cp SER_RX_BUFSIZE-1         ;  4 check whether there is space in the buffer
@@ -108,9 +108,7 @@ SECTION serial_interrupt            ; ORG $0080
         ret                         ; 10
 
                                     ; 186 cycles from last sample for buffer management
-                                    ; 160 cycles budget (1/2 bit + 2 stop bit)
-
-ALIGN $008
+                                    ; 160 cycles budget (1/2 bit + 2 stop bits)
 
 .acia_int
         push af
@@ -232,36 +230,38 @@ SECTION serial_trx                  ; ORG $0130
         pop hl                      ; recover HL
         ret                         ; char ready in A
 
-ALIGN $008
-
-.TXC                                ; output a character in A
+.TXC                                ; output a character in A via SOD
         push hl
-        ld h,11                     ; 11 bits per byte (1 start, 2 stop bits)
+        ld h,9                      ; 10 bits per byte (1 start, 1 active stop bits)
         ld l,a
-        xor a                       ; clear carry for start bit
+
+        ld a,$40                    ;  7 clear start and set SOD enable bits
         di
+        sim                         ;  4 output start bit
 
 .txc_loop
-        ld a,$80                    ;  7 set eventual SOD enable bit
-        rra                         ;  4 move carry into SOD bit
-        sim                         ;  4 output bit data
-
-        dec hl                      ;  6 delay for a bit time
-        inc hl                      ;  6 delay
+        nop                         ;  4 delay for a bit time
+        nop                         ;  4 delay
+        nop                         ;  4 delay
         ld a,0                      ;  7 delay
 
-        scf                         ;  4 set eventual stop bit(s)
         ld a,l                      ;  4
-        rra                         ;  4
+        scf                         ;  4 set eventual stop bit(s)
+        rra                         ;  4 get bit into carry
         ld l,a                      ;  4
-        dec h                       ;  4
+
+        ld a,$80                    ;  7 set eventual SOD enable bit
+        rra                         ;  4 move carry into SOD bit
+
+        dec h                       ;  4 loop 8 + 1 bits
+        sim                         ;  4 output bit data
         jp NZ,txc_loop              ; 10/7
-                                    ; 64 total for correct timing
+                                    ; 64 loop total cycles for correct timing
         pop hl
         ei
         ret
 
-.TXA
+.TXA                                ; output a character in A via ACIA
         push hl                     ; store HL so we don't clobber it
         ld l,a                      ; store Tx character
 
@@ -313,9 +313,6 @@ ALIGN $008
         out (SER_CTRL_ADDR),a       ; set the ACIA CTRL register
         ei                          ; critical section end
         ret
-
-;------------------------------------------------------------------------------
-SECTION serial_print                ; ORG $01C8
 
 .APRINT
         LD A,(HL)                   ; get character
@@ -408,6 +405,7 @@ PUBLIC  INIT
         LD A,'Y'                    ; Set the BASIC STARTED flag
         LD (basicStarted),A
         JP $02C0                    ; <<<< Start Basic COLD
+
 .CHECKWARM
         CP 'W'
         JP NZ,CORW
@@ -423,7 +421,7 @@ PUBLIC  INIT
 ;
 ; STRINGS
 ;
-SECTION init_strings                ; ORG $0268
+SECTION init_strings                ; ORG $0270
 
 .SIGNON1
         DEFM    CR,LF

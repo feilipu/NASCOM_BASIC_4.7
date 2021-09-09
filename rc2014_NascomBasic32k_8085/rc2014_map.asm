@@ -26,13 +26,10 @@ ORG         $0080
 SECTION     serial_trx
 ORG         $0130
 
-SECTION     serial_print
-ORG         $01C8
-
 SECTION     init
 ORG         $01E0
 
 SECTION     init_strings
-ORG         $0268
+ORG         $0270
 
 ;==============================================================================
