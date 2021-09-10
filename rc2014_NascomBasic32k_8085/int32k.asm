@@ -60,8 +60,8 @@ SECTION serial_interrupt            ; ORG $0080
         jp C,cint_end               ; 10/7 no start bit detected, so exit
 
         push hl                     ; 12
-        ld hl, 0x0800               ; 10 8 bits per byte in H, clear L
-                                    ; 87 cycles before starting loop
+        ld h,$08                    ;  7 8 bits per byte in H
+                                    ; approx 84 cycles before starting loop
 
 .cint_loop
         nop                         ;  4 delay
@@ -79,7 +79,7 @@ SECTION serial_interrupt            ; ORG $0080
 
         dec h                       ;  4 capture 8 bits
         jp NZ,cint_loop             ; 10/7
-                                    ; 64 loop total cycles for correct timing
+                                    ; loop total 64 cycles for correct timing
 
         ld a,(serRxBufUsed)         ; 13 get the number of bytes in the Rx buffer
         cp SER_RX_BUFSIZE-1         ;  4 check whether there is space in the buffer
@@ -107,7 +107,7 @@ SECTION serial_interrupt            ; ORG $0080
         ei                          ;  4
         ret                         ; 10
 
-                                    ; 186 cycles from last sample for buffer management
+                                    ; 207 cycles from last sample for buffer management
                                     ; 160 cycles budget (1/2 bit + 2 stop bits)
 
 .acia_int
@@ -141,9 +141,9 @@ SECTION serial_interrupt            ; ORG $0080
 
         ld a,(serControl)           ; get the ACIA control echo byte
         and ~SER_TEI_MASK           ; mask out the Tx interrupt bits
-        or SER_TDI_RTS1             ; Set RTS high, and disable Tx Interrupt
+        or SER_TDI_RTS1             ; set RTS high, and disable Tx Interrupt
         ld (serControl),a           ; write the ACIA control echo byte back
-        out (SER_CTRL_ADDR),a       ; Set the ACIA CTRL register
+        out (SER_CTRL_ADDR),a       ; set the ACIA CTRL register
 
 .acia_tx_check
         in a,(SER_STATUS_ADDR)      ; get the status of the ACIA
@@ -178,7 +178,7 @@ SECTION serial_interrupt            ; ORG $0080
         ld a,(serControl)           ; get the ACIA control echo byte
         and ~SER_TEI_RTS0           ; mask out (disable) the Tx Interrupt
         ld (serControl),a           ; write the ACIA control byte back
-        out (SER_CTRL_ADDR),a       ; Set the ACIA CTRL register
+        out (SER_CTRL_ADDR),a       ; set the ACIA CTRL register
 
 .acia_txa_end
         ld hl,TXA                   ; get address of ACIA TXA
@@ -256,7 +256,7 @@ SECTION serial_trx                  ; ORG $0130
         dec h                       ;  4 loop 8 + 1 bits
         sim                         ;  4 output bit data
         jp NZ,txc_loop              ; 10/7
-                                    ; 64 loop total cycles for correct timing
+                                    ; loop total 64 cycles for correct timing
         pop hl
         ei
         ret
@@ -280,11 +280,11 @@ SECTION serial_trx                  ; ORG $0130
         ret                         ; and just complete
 
 .txa_buffer_out
-        ld a,(serTxBufUsed)         ; Get the number of bytes in the Tx buffer
+        ld a,(serTxBufUsed)         ; get the number of bytes in the Tx buffer
         cp SER_TX_BUFSIZE-1         ; check whether there is space in the buffer
         jp NC,txa_buffer_out        ; buffer full, so wait till it has space
 
-        ld a,l                      ; Retrieve Tx character
+        ld a,l                      ; retrieve Tx character
 
         ld hl,(serTxInPtr)          ; get the pointer to where we poke
         ld (hl),a                   ; write the Tx byte to the serTxInPtr
@@ -380,17 +380,17 @@ PUBLIC  INIT
         EI                          ; enable interrupts
 
 .START
-        LD HL,SIGNON1               ; Sign-on message
-        CALL CPRINT                 ; Output string
-        LD HL,SIGNON1               ; Sign-on message
-        CALL APRINT                 ; Output string
-        LD A,(basicStarted)         ; Check the BASIC STARTED flag
+        LD HL,SIGNON1               ; sign-on message
+        CALL CPRINT                 ; output string
+        LD HL,SIGNON1               ; sign-on message
+        CALL APRINT                 ; output string
+        LD A,(basicStarted)         ; check the BASIC STARTED flag
         CP 'Y'                      ; to see if this is power-up
-        JP NZ,COLDSTART             ; If not BASIC started then always do cold start
-        LD HL,SIGNON2               ; Cold/warm message
-        CALL CPRINT                 ; Output string
-        LD HL,SIGNON2               ; Cold/warm message
-        CALL APRINT                 ; Output string
+        JP NZ,COLDSTART             ; if not BASIC started then always do cold start
+        LD HL,SIGNON2               ; cold/warm message
+        CALL CPRINT                 ; output string
+        LD HL,SIGNON2               ; cold/warm message
+        CALL APRINT                 ; output string
 .CORW
         RST 10H
         AND 11011111B               ; lower to uppercase
@@ -402,7 +402,7 @@ PUBLIC  INIT
         LD A,LF
         RST 08H
 .COLDSTART
-        LD A,'Y'                    ; Set the BASIC STARTED flag
+        LD A,'Y'                    ; set the BASIC STARTED flag
         LD (basicStarted),A
         JP $02C0                    ; <<<< Start Basic COLD
 
@@ -444,7 +444,7 @@ PUBLIC  RST_20, RST_28, RST_30, RST_38
 
 PUBLIC  TRAP, IRQ_55, IRQ_65, IRQ_75, RST_40
 
-DEFC    RST_00      =       INIT            ; Initialise, should never get here
+DEFC    RST_00      =       INIT            ; initialise, should never get here
 DEFC    RST_08      =       TXC             ; TX character, loop until space
 DEFC    RST_10      =       RX              ; RX character, loop until byte
 ;       RST_18      =       RX_CHK          ; Check receive buffer status, return # bytes available
