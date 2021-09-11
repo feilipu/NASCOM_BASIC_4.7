@@ -516,7 +516,7 @@ INITAB: JP      WARMST          ; Warm start jump
         .BYTE   0               ; Break not by NMI
         .BYTE   0               ; Break flag
 
-        JP      TTYLIN          ; Input reflection (set to TTY)
+         JP     TTYLIN          ; Input reflection (set to TTY)
 
         .WORD   STLOOK          ; Temp string space
         .WORD   -2              ; Current line number (cold)
@@ -1044,8 +1044,7 @@ INCLEN: INC     A               ; Move on one character
         LD      (CURPOS),A      ; Save new position
 DINPOS: POP     AF              ; Restore character
         POP     BC              ; Restore buffer length
-        RST     08H             ; Send it
-        RET
+        JP      $0008           ; Send it via RST 08
 
 OUTNCR: CALL    OUTC            ; Output character in A
         JP      PRNTCRLF        ; Output CRLF
@@ -3722,7 +3721,8 @@ INT:    LD      HL,FPEXP        ; Point to exponent
         POP     AF              ; Restore LSB of number
         RET
 
-MLDEBC: LD      HL,0            ; Clear partial product
+MLDEBC:                         ; Multiply DE by BC to HL
+        LD      HL,0            ; Clear partial product
         LD      A,B             ; Test multiplier
         OR      C
         RET     Z               ; Return zero if zero
@@ -3978,7 +3978,7 @@ POWERS: .BYTE   0A0H,086H,001H  ; 100000
         .BYTE   00AH,000H,000H  ;     10
         .BYTE   001H,000H,000H  ;      1
 
-NEGAFT: LD  HL,INVSGN           ; Negate result
+NEGAFT: LD      HL,INVSGN       ; Negate result
         EX      (SP),HL         ; To be done after caller
         JP      (HL)            ; Return to caller
 

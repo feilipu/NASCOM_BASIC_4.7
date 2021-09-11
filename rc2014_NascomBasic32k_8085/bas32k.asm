@@ -177,9 +177,8 @@ MSIZE:  LD      HL,MEMMSG       ; Point to message
         JP      NZ,TSTMEM       ; If number - Test if RAM there
         LD      HL,STLOOK       ; Point to start of RAM
 MLOOP:  INC     HL              ; Next byte
-        LD      A,H             ; Above address FFFF ?
-        OR      L
-        JP      Z,SETTOP        ; Yes - 64K RAM
+                                ; Above address FFFF ?
+        JP      K,SETTOP        ; Yes - 64K RAM
         LD      A,(HL)          ; Get contents
         LD      B,A             ; Save it
         CPL                     ; Flip all bits
@@ -238,7 +237,7 @@ BRKRET: CALL    CLREG           ; Clear registers and stack
 
 BFREE:  .BYTE   " Bytes free",CR,LF,0,0
 
-SIGNON: .BYTE   "Z80 BASIC Ver 4.7c",CR,LF
+SIGNON: .BYTE   "8085 BASIC Ver 4.7c",CR,LF
         .BYTE   "Copyright ",40,"C",41
         .BYTE   " 1978 by Microsoft",CR,LF,0,0
 
@@ -3706,12 +3705,9 @@ FPINT:  LD      B,A             ; <- Move
         RET
 
 DCBCDE: DEC     DE              ; Decrement BCDE
-        LD      A,D             ; Test LSBs
-        AND     E
-        INC     A
-        RET     NZ              ; Exit if LSBs not FFFF
+        JP      NK,DCDERET      ; Exit if LSBs not FFFF
         DEC     BC              ; Decrement MSBs
-        RET
+DCDERET:RET
 
 INT:    LD      HL,FPEXP        ; Point to exponent
         LD      A,(HL)          ; Get exponent
@@ -3983,7 +3979,7 @@ POWERS: .BYTE   0A0H,086H,001H  ; 100000
         .BYTE   00AH,000H,000H  ;     10
         .BYTE   001H,000H,000H  ;      1
 
-NEGAFT: LD  HL,INVSGN           ; Negate result
+NEGAFT: LD      HL,INVSGN       ; Negate result
         EX      (SP),HL         ; To be done after caller
         JP      (HL)            ; Return to caller
 
@@ -4247,7 +4243,6 @@ MONITR: JP      $0000           ; Restart (Normally Monitor Start)
 CLS:    LD      A,CS            ; ASCII Clear screen
         RST     08H             ; Output character
 ARET:   RET                     ; A RETurn instruction
-
 
 WIDTH:  CALL    GETINT          ; Get integer 0-255
         LD      A,E             ; Width to A

@@ -3516,7 +3516,10 @@ FPMULT: CALL    TSTSGN          ; Test sign of FPREG
         ld      c,h             ; CDEB  = 32-bit product
         jp      BNORM           ; Normalise
 
-DIV10:  CALL    STAKFP          ; Save FPREG on stack
+DIV10:  LD      HL,(FPREG)      ; LSB,NLSB of FPREG
+        PUSH    HL              ; Stack them
+        LD      HL,(FPREG+2)    ; MSB and exponent of FPREG
+        PUSH    HL              ; Stack them
         LD      BC,8420H        ; BCDE = 10.
         LD      DE,0000H
         LD      (FPREG),DE      ; Move 10 to FPREG
@@ -3800,7 +3803,8 @@ INT:    LD      HL,FPEXP        ; Point to exponent
         POP     AF              ; Restore LSB of number
         RET
 
-MLDEBC: LD      HL,0            ; Clear partial product
+MLDEBC:                         ; Multiply DE by BC to HL
+        LD      HL,0            ; Clear partial product
         LD      A,B             ; Test multiplier
         OR      C
         RET     Z               ; Return zero if zero
@@ -4056,7 +4060,7 @@ POWERS: .BYTE   0A0H,086H,001H  ; 100000
         .BYTE   00AH,000H,000H  ;     10
         .BYTE   001H,000H,000H  ;      1
 
-NEGAFT: LD  HL,INVSGN           ; Negate result
+NEGAFT: LD      HL,INVSGN       ; Negate result
         EX      (SP),HL         ; To be done after caller
         JP      (HL)            ; Return to caller
 

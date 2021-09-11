@@ -236,7 +236,7 @@ PUBLIC  INIT
 .INIT
         LD SP,TEMPSTACK             ; Set up a temporary stack
 
-        LD HL,VECTOR_PROTO      ; Establish Z80 RST Vector Table
+        LD HL,VECTOR_PROTO          ; Establish Z80 RST Vector Table
         LD DE,VECTOR_BASE
         LD BC,VECTOR_SIZE
         LDIR
@@ -290,6 +290,7 @@ PUBLIC  INIT
         LD A,'Y'                    ; Set the BASIC STARTED flag
         LD (basicStarted),A
         JP $0250                    ; <<<< Start Basic COLD:
+
 .CHECKWARM
         CP 'W'
         JR NZ,CORW
