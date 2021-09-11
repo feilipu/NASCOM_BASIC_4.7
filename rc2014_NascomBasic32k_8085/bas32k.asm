@@ -3705,9 +3705,9 @@ FPINT:  LD      B,A             ; <- Move
         RET
 
 DCBCDE: DEC     DE              ; Decrement BCDE
-        JP      NK,DCDERET      ; Exit if LSBs not FFFF
+        JP      NK,$+4          ; Exit if LSBs not FFFF
         DEC     BC              ; Decrement MSBs
-DCDERET:RET
+        RET
 
 INT:    LD      HL,FPEXP        ; Point to exponent
         LD      A,(HL)          ; Get exponent
