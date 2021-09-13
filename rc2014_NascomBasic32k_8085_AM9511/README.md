@@ -26,9 +26,12 @@ This Source Code Form is subject to the terms of the Mozilla Public License, v. 
 
 ==============================================================================
 
-# 8085 CPU Module for the RC2014
+# 8085 CPU Module for the RC2014 with APU Module for the RC2014
 
-This ROM works with the 8085 CPU Module for the RC2014, with 32k of RAM. This is the ROM to choose if you want fast I/O from the 8085 CPU for RC2014, together with the capability to upload C programs from within Basic.
+__Note well. This code works, but the hardware interface to the APU Module doesn't.
+8085 allows only 25ns for /WAIT. Am9511A takes 83ns to assert /WAIT. So until a wait state is provided, don't use this code__.
+
+This ROM works with the 8085 CPU Module for the RC2014 and the APU Module for the RC2014, with 32k of RAM. This is the ROM to choose if you want fast I/O from the 8085 CPU for RC2014, together with the capability to upload C programs from within Basic.
 
 ACIA 6850 interrupt driven serial I/O to run modified NASCOM Basic 4.7. Full input and output buffering with incoming data hardware handshaking. The handshake shows full 16 bytes before the buffer is totally filled, to allow run-on from the sender. Transmit and receive are interrupt driven, and are fast. The receive buffer is 255 bytes and the transmit buffer is 63 bytes. Use 115200 baud with 8n2.
 
