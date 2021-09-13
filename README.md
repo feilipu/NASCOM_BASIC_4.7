@@ -63,6 +63,13 @@ This is the ROM to choose if you want fast I/O from a standard RC2014, and you h
 This version works with the most basic default version of the RC2014 running with an 8085 CPU Module, with 32k of RAM.
 This is the ROM to choose if you want fast I/O from a standard RC2014, and you have installed an 8085 CPU Module.
 
+## RC2014 Classic: 32kB MS Basic using __8085 CPU Module__ and __AM9511A APU Module__
+
+Note well. This code works, but the hardware interface to the APU Module doesn't.
+
+This version works with the most basic default version of the RC2014 running with an 8085 CPU Module, with 32k of RAM.
+This is the ROM to choose if you want fast I/O from a standard RC2014, and you have installed an 8085 CPU Module.
+
 ==============================================================================
 
 # Important Addresses
