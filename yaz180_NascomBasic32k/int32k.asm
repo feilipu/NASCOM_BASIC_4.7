@@ -200,12 +200,12 @@ TX0_BUFFER_OUT:
 ;------------------------------------------------------------------------------
 SECTION z180_asci0_print
 TX0_PRINT:
-        LD      A,(HL)              ; Get a byte
-        OR      A                   ; Is it $00 ?
-        RET     Z                   ; Then RETurn on terminator
-        CALL    TX0                 ; Print it
-        INC     HL                  ; Next byte
-        JR      TX0_PRINT           ; Continue until $00
+        LD A,(HL)                   ; get a byte
+        OR A                        ; is it $00 ?
+        RET Z                       ; then RETurn on terminator
+        CALL TX0                    ; output character in A
+        INC HL                      ; next byte
+        JP TX0_PRINT                ; continue until $00
 
 ;------------------------------------------------------------------------------
 SECTION     z180_hexloadr
