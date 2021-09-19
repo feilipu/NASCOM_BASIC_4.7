@@ -52,7 +52,7 @@ INCLUDE "rc2014.inc"
 SECTION serial_interrupt            ; ORG $0080
 
 .cpu_int
-                                    ; approx 38 cycles before starting interrupt
+                                    ; approx 32 cycles before starting interrupt
         push af                     ; 12
 
         rim                         ;  4 get the status of the SID
@@ -61,7 +61,7 @@ SECTION serial_interrupt            ; ORG $0080
 
         push hl                     ; 12
         ld h,$08                    ;  7 8 bits per byte in H
-                                    ; approx 84 cycles before starting loop
+                                    ; approx 78 cycles before starting loop
 
 .cint_loop
         nop                         ;  4 delay
@@ -80,6 +80,10 @@ SECTION serial_interrupt            ; ORG $0080
         dec h                       ;  4 capture 8 bits
         jp NZ,cint_loop             ; 10/7
                                     ; loop total 64 cycles for correct timing
+
+        rim                         ;  4
+        rla                         ;  4 SID bit to Carry
+        jp NC,cint_exit             ; 10/7 check stop bit for frame error
 
         ld a,(serRxBufUsed)         ; 13 get the number of bytes in the Rx buffer
         cp SER_RX_BUFSIZE-1         ;  4 check whether there is space in the buffer
@@ -232,12 +236,13 @@ SECTION serial_trx                  ; ORG $0130
 
 .TXC                                ; output a character in A via SOD
         push hl
-        ld h,9                      ; 10 bits per byte (1 start, 1 active stop bits)
+        ld h,9                      ; active bits per byte (1 start, 1 stop bits)
         ld l,a
 
-        ld a,$40                    ;  7 clear start and set SOD enable bits
+        ld a,$40                    ; clear SOD start bit and enable bit
         di
-        sim                         ;  4 output start bit
+
+        sim                         ; output start bit
 
 .txc_loop
         nop                         ;  4 delay for a bit time
@@ -245,8 +250,8 @@ SECTION serial_trx                  ; ORG $0130
         nop                         ;  4 delay
         ld a,0                      ;  7 delay
 
-        ld a,l                      ;  4
         scf                         ;  4 set eventual stop bit(s)
+        ld a,l                      ;  4
         rra                         ;  4 get bit into carry
         ld l,a                      ;  4
 
@@ -255,6 +260,7 @@ SECTION serial_trx                  ; ORG $0130
 
         dec h                       ;  4 loop 8 + 1 bits
         sim                         ;  4 output bit data
+
         jp NZ,txc_loop              ; 10/7
                                     ; loop total 64 cycles for correct timing
         pop hl
