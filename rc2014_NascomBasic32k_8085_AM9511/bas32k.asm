@@ -179,15 +179,15 @@ IO_APU_OP_LN        .EQU    009h
 IO_APU_OP_EXP       .EQU    00Ah
 IO_APU_OP_PWR       .EQU    00Bh
 
-        .ORG    02C0H           ; <<<< Modified to allow for ACIA Tx/Rx on RST6.5
+        .ORG    0240H           ; <<<< Modified to allow for ACIA Tx/Rx on RST6.5
 
-COLD:   JP      CSTART          ; Jump in for cold start (0x02C0)
-WARM:   JP      WARMST          ; Jump in for warm start (0x02C3)
+COLD:   JP      CSTART          ; Jump in for cold start (0x0240)
+WARM:   JP      WARMST          ; Jump in for warm start (0x0243)
 
-        .FILL   5               ; pad so DEINT is 0x02CB, ABPASS is 0x02CD
+        .FILL   5               ; pad so DEINT is 0x024B, ABPASS is 0x024D
 
-        .WORD   DEINT           ; 0x02CB Get integer -32768 to 32767
-        .WORD   ABPASS          ; 0x02CD Return integer in AB
+        .WORD   DEINT           ; 0x024B Get integer -32768 to 32767
+        .WORD   ABPASS          ; 0x024D Return integer in AB
 
 RESET:  RET     NZ              ; Return if any more on line
 CSTART: LD      HL,WRKSPC       ; Start of workspace RAM
@@ -277,7 +277,7 @@ BRKRET: CALL    CLREG           ; Clear registers and stack
 
 BFREE:  .BYTE   " Bytes free",CR,LF,0,0
 
-SIGNON: .BYTE   "8085 BASIC Ver 4.7c - APU",CR,LF
+SIGNON: .BYTE   "8085+APU BASIC Ver 4.7c",CR,LF
         .BYTE   "Copyright ",40,"C",41
         .BYTE   " 1978 by Microsoft",CR,LF,0,0
 

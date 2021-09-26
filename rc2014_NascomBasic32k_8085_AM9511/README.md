@@ -63,7 +63,7 @@ For convenience, because we can't easily change the ROM code interrupt routines 
 * Unused: `RST 20`, `RST 28`, `RST 30`, `RST 38` are available to the user.
 * IRQ 5.5: is available to the user
 * IRQ 6.5: is connected to the RC2014 Bus `INT`, and is used by the 8085 CPU Module ACIA 68B50 Serial Device.
-* IRQ 7.5: is connected to the RC2014 RX and can be used to trigger bit banged serial on SID.
+* IRQ 7.5: is connected to the 8085 Module FTDI `RX` and may be used to trigger bit banged serial on SID.
 * TRAP: is connected to the RC2014 Bus `NMI`, is unused and is available to the user.
 
 All `RST xx` targets can be rewritten in a `JP` table originating at `0x8000` in RAM. This allows the use of debugging tools and reorganising the efficient `RST` instructions as needed. Check the source to see the address of each `RST xx`.
