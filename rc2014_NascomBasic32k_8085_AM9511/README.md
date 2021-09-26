@@ -72,16 +72,16 @@ All `RST xx` targets can be rewritten in a `JP` table originating at `0x8000` in
 
 For the RC2014 with 32k Basic the `USR(x)` loaded user program address is located at `0x8204`.
 
-Your assembly program can receive a 16 bit parameter passed in from the function by calling `DEINT` at `0x0B07`. The parameter is stored in register pair `DE`.
+Your assembly program can receive a 16 bit parameter passed in from the function by calling `DEINT` at `0x0AFE`. The parameter is stored in register pair `DE`.
 
-When your assembly program is finished it can return a 16 bit parameter stored in `A` (MSB) and `B` (LSB) by jumping to `ABPASS` which is located at `0x12D8`.
+When your assembly program is finished it can return a 16 bit parameter stored in `A` (MSB) and `B` (LSB) by jumping to `ABPASS` which is located at `0x12AE`.
 
 Note that these address of these functions can also be loaded from `0x025B` for `DEINT` and `0x025D` for `ABPASS`, as noted in the NASCOM Basic Manual.
 
 ``` asm
                                 ; from Nascom Basic Symbol Tables
-DEINT           .EQU    $0B07   ; Function DEINT to get USR(x) into DE registers
-ABPASS          .EQU    $12D8   ; Function ABPASS to put output into AB register for return
+DEINT           .EQU    $0AFE   ; Function DEINT to get USR(x) into DE registers
+ABPASS          .EQU    $12AE   ; Function ABPASS to put output into AB register for return
 
 
                 .ORG    9000H   ; your code origin, for example
