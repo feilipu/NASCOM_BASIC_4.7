@@ -139,15 +139,15 @@ MO      .EQU    24H             ; Missing operand
 HX      .EQU    26H             ; HEX error
 BN      .EQU    28H             ; BIN error
 
-        .ORG    02C0H           ; <<<< Modified to allow for ACIA Tx/Rx on RST6.5
+        .ORG    0240H           ; <<<< Modified to allow for ACIA Tx/Rx on RST6.5
 
-COLD:   JP      CSTART          ; Jump in for cold start (0x02C0)
-WARM:   JP      WARMST          ; Jump in for warm start (0x02C3)
+COLD:   JP      CSTART          ; Jump in for cold start (0x0240)
+WARM:   JP      WARMST          ; Jump in for warm start (0x0243)
 
-        .FILL   5               ; pad so DEINT is 0x02CB, ABPASS is 0x02CD
+        .FILL   5               ; pad so DEINT is 0x024B, ABPASS is 0x024D
 
-        .WORD   DEINT           ; 0x02CB Get integer -32768 to 32767
-        .WORD   ABPASS          ; 0x02CD Return integer in AB
+        .WORD   DEINT           ; 0x024B Get integer -32768 to 32767
+        .WORD   ABPASS          ; 0x024D Return integer in AB
 
 RESET:  RET     NZ              ; Return if any more on line
 CSTART: LD      HL,WRKSPC       ; Start of workspace RAM

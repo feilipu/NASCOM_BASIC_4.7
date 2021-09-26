@@ -13,10 +13,6 @@
 ; from the sender. Transmit and receive are interrupt driven using IRQ_65.
 ; 115200 baud, 8n2
 ;
-; 8085 SID interrupt driven serial with full input buffering.
-; Receive interrupt driven using IRQ_75.
-; 115200 baud, 8n2
-;
 ; feilipu, August 2021
 ;
 ;==============================================================================
@@ -49,70 +45,7 @@ INCLUDE "rc2014.inc"
 ;
 
 ;------------------------------------------------------------------------------
-SECTION serial_interrupt            ; ORG $0080
-
-.cpu_int
-                                    ; approx 32 cycles before starting interrupt
-        push af                     ; 12
-
-        rim                         ;  4 get the status of the SID
-        rla                         ;  4 check whether a byte is being received
-        jp C,cint_end               ; 10/7 no start bit detected, so exit
-
-        push hl                     ; 12
-        ld h,$08                    ;  7 8 bits per byte in H
-                                    ; approx 78 cycles before starting loop
-
-.cint_loop
-        nop                         ;  4 delay
-        nop                         ;  4 delay
-                                    ; 96 total cycles required for middle of first bit
-
-        rim                         ;  4 get received SID bit
-        rla                         ;  4 SID bit to Carry
-        ld a,l                      ;  4
-        rra                         ;  4
-        ld l,a                      ;  4 capture bit in L
-
-        push hl                     ; 12 delay
-        pop hl                      ; 10 delay
-
-        dec h                       ;  4 capture 8 bits
-        jp NZ,cint_loop             ; 10/7
-                                    ; loop total 64 cycles for correct timing
-
-        rim                         ;  4
-        rla                         ;  4 SID bit to Carry
-        jp NC,cint_exit             ; 10/7 check stop bit for frame error
-
-        ld a,(serRxBufUsed)         ; 13 get the number of bytes in the Rx buffer
-        cp SER_RX_BUFSIZE-1         ;  4 check whether there is space in the buffer
-        jp NC,cint_exit             ; 10/7 buffer full, so discard byte
-
-        ld a,l                      ;  4 get Rx byte from l
-        ld hl,(serRxInPtr)          ; 16 get the pointer to where we poke
-        ld (hl),a                   ;  7 write the Rx byte to the serRxInPtr address
-        inc l                       ;  4 move the Rx pointer low byte along, 0xFF rollover
-        ld (serRxInPtr),hl          ; 16 write where the next byte should be poked
-
-        ld hl,serRxBufUsed          ; 10
-        inc (hl)                    ; 10 atomically increment Rx buffer count
-
-.cint_exit
-        ld hl,TXC                   ; 10 get address of cpu TXC
-        ld (RST_08_ADDR),hl         ; 16 update RST_08 contents
-        pop hl                      ; 10
-
-.cint_end
-        ld a,$10                    ;  7
-        sim                         ;  4 reset R7.5 register during stop bits
-        pop af                      ; 10
-
-        ei                          ;  4
-        ret                         ; 10
-
-                                    ; 207 cycles from last sample for buffer management
-                                    ; 160 cycles budget (1/2 bit + 2 stop bits)
+SECTION acia_interrupt              ; ORG $0080
 
 .acia_int
         push af
@@ -185,9 +118,6 @@ SECTION serial_interrupt            ; ORG $0080
         out (SER_CTRL_ADDR),a       ; set the ACIA CTRL register
 
 .acia_txa_end
-        ld hl,TXA                   ; get address of ACIA TXA
-        ld (RST_08_ADDR),hl         ; update RST_08 contents
-
         pop hl
         pop af
 
@@ -195,23 +125,22 @@ SECTION serial_interrupt            ; ORG $0080
         ret
 
 ;------------------------------------------------------------------------------
-SECTION serial_trx                  ; ORG $0130
+; SECTION acia_rxa_chk              ; ORG $00F0
+;
+; .RXA_CHK                          ; insert directly into JumP table
+;       ld a,(serRxBufUsed)
+;       ret
 
-.RX
+;------------------------------------------------------------------------------
+SECTION acia_rxa                    ; ORG $00F0
+
+.RXA
         ld a,(serRxBufUsed)         ; get the number of bytes in the Rx buffer
         or a                        ; see if there are zero bytes available
-        jp Z,RX                     ; wait, if there are no bytes available
-
-        push hl                     ; store HL so we don't clobber it
-        push bc                     ; store BC
-
-        ld hl,(RST_08_ADDR)         ; get contents of RST_08 vector
-        ld bc,TXC                   ; get address of cpu TXC
-        sub hl,bc                   ; check whether we're using the cpu TXC
-        jp Z,rx_get_byte            ; then skip the ACIA control clean up
+        jp Z,RXA                    ; wait, if there are no bytes available
 
         cp SER_RX_EMPTYSIZE         ; compare the count with the preferred empty size
-        jp NZ,rx_get_byte           ; if the buffer is too full, don't change the RTS
+        jp NZ,rxa_get_byte          ; if the buffer is too full, don't change the RTS
 
         di                          ; critical section begin
         ld a,(serControl)           ; get the ACIA control echo byte
@@ -221,7 +150,9 @@ SECTION serial_trx                  ; ORG $0130
         ei                          ; critical section end
         out (SER_CTRL_ADDR),a       ; set the ACIA CTRL register
 
-.rx_get_byte
+.rxa_get_byte
+        push hl                     ; store HL so we don't clobber it
+
         ld hl,(serRxOutPtr)         ; get the pointer to place where we pop the Rx byte
         ld a,(hl)                   ; get the Rx byte
         inc l                       ; move the Rx pointer low byte along
@@ -230,42 +161,11 @@ SECTION serial_trx                  ; ORG $0130
         ld hl,serRxBufUsed
         dec (hl)                    ; atomically decrement Rx count
 
-        pop bc                      ; recover BC
         pop hl                      ; recover HL
         ret                         ; char ready in A
 
-.TXC                                ; output a character in A via SOD
-        push hl
-        ld h,9                      ; active bits per byte (1 start, 1 stop bits)
-        ld l,a
-
-        ld a,$40                    ; clear SOD start bit and enable bit
-        di
-
-        sim                         ; output start bit
-
-.txc_loop
-        nop                         ;  4 delay for a bit time
-        nop                         ;  4 delay
-        nop                         ;  4 delay
-        ld a,0                      ;  7 delay
-
-        scf                         ;  4 set eventual stop bit(s)
-        ld a,l                      ;  4
-        rra                         ;  4 get bit into carry
-        ld l,a                      ;  4
-
-        ld a,$80                    ;  7 set eventual SOD enable bit
-        rra                         ;  4 move carry into SOD bit
-
-        dec h                       ;  4 loop 8 + 1 bits
-        sim                         ;  4 output bit data
-
-        jp NZ,txc_loop              ; 10/7
-                                    ; loop total 64 cycles for correct timing
-        pop hl
-        ei
-        ret
+;------------------------------------------------------------------------------
+SECTION acia_txa                    ; ORG $0120
 
 .TXA                                ; output a character in A via ACIA
         push hl                     ; store HL so we don't clobber it
@@ -320,24 +220,8 @@ SECTION serial_trx                  ; ORG $0130
         ei                          ; critical section end
         ret
 
-.APRINT
-        LD A,(HL)                   ; get character
-        OR A                        ; is it $00 ?
-        RET Z                       ; then RETurn on terminator
-        CALL TXA                    ; output character in A
-        INC HL                      ; next Character
-        JP APRINT                   ; continue until $00
-
-.CPRINT
-        ld a,(hl)                   ; get next character
-        or a                        ; check if null (end of string)
-        ret Z
-        call TXC                    ; output character in A
-        inc hl                      ; next character
-        jp CPRINT                   ; continue until $00
-
 ;------------------------------------------------------------------------------
-SECTION init                        ; ORG $01E0
+SECTION init                        ; ORG $0170
 
 PUBLIC  INIT
 
@@ -346,13 +230,13 @@ PUBLIC  INIT
 
         LD HL,VECTOR_PROTO          ; establish 8085 RST Vector Table
         LD DE,VECTOR_BASE
-        LD C,VECTOR_SIZE
+        LD B,VECTOR_SIZE
 .COPY
         LD A,(HL)
         LD (DE),A
         INC HL
         INC DE
-        DEC C
+        DEC B
         JP NZ,COPY
 
         LD HL,serRxBuf              ; initialise Rx Buffer
@@ -363,13 +247,13 @@ PUBLIC  INIT
         LD (serTxInPtr),HL
         LD (serTxOutPtr),HL
 
-        XOR A                       ; zero the RX & TXA Buffer Counts
+        XOR A                       ; zero the RXA & TXA Buffer Counts
         LD (serRxBufUsed),A
         LD (serTxBufUsed),A
 
-        LD A,$D9
-        SIM                         ; set TXC high, reset R7.5,
-                                    ; set MSE to mask R5.5
+        LD A,$1D
+        SIM                         ; reset R7.5,
+                                    ; set MSE to mask R7.5 & R5.5
 
         LD A,SER_RESET              ; master RESET the ACIA
         OUT (SER_CTRL_ADDR),A
@@ -387,16 +271,12 @@ PUBLIC  INIT
 
 .START
         LD HL,SIGNON1               ; sign-on message
-        CALL CPRINT                 ; output string
-        LD HL,SIGNON1               ; sign-on message
-        CALL APRINT                 ; output string
+        CALL PRINT                  ; output string
         LD A,(basicStarted)         ; check the BASIC STARTED flag
         CP 'Y'                      ; to see if this is power-up
         JP NZ,COLDSTART             ; if not BASIC started then always do cold start
         LD HL,SIGNON2               ; cold/warm message
-        CALL CPRINT                 ; output string
-        LD HL,SIGNON2               ; cold/warm message
-        CALL APRINT                 ; output string
+        CALL PRINT                  ; output string
 .CORW
         RST 10H
         AND 11011111B               ; lower to uppercase
@@ -410,7 +290,7 @@ PUBLIC  INIT
 .COLDSTART
         LD A,'Y'                    ; set the BASIC STARTED flag
         LD (basicStarted),A
-        JP $02C0                    ; <<<< Start Basic COLD
+        JP $0240                    ; <<<< Start Basic COLD
 
 .CHECKWARM
         CP 'W'
@@ -421,17 +301,25 @@ PUBLIC  INIT
         LD A,LF
         RST 08H
 .WARMSTART
-        JP $02C3                    ; <<<< Start Basic WARM
+        JP $0243                    ; <<<< Start Basic WARM
+
+.PRINT
+        LD A,(HL)                   ; get character
+        OR A                        ; is it $00 ?
+        RET Z                       ; then RETurn on terminator
+        CALL TXA                    ; output character in A
+        INC HL                      ; next Character
+        JP PRINT                    ; continue until $00
 
 ;==============================================================================
 ;
 ; STRINGS
 ;
-SECTION init_strings                ; ORG $0270
+SECTION init_strings                ; ORG $01F0
 
 .SIGNON1
         DEFM    CR,LF
-        DEFM    "RC2014/8085 - MS Basic Loader",CR,LF
+        DEFM    "RC2014-8085 - MS Basic Loader",CR,LF
         DEFM    "z88dk - feilipu",CR,LF,0
 
 .SIGNON2
@@ -450,10 +338,10 @@ PUBLIC  RST_20, RST_28, RST_30, RST_38
 
 PUBLIC  TRAP, IRQ_55, IRQ_65, IRQ_75, RST_40
 
-DEFC    RST_00      =       INIT            ; initialise, should never get here
-DEFC    RST_08      =       TXC             ; TX character, loop until space
-DEFC    RST_10      =       RX              ; RX character, loop until byte
-;       RST_18      =       RX_CHK          ; Check receive buffer status, return # bytes available
+DEFC    RST_00      =       INIT            ; Initialise, should never get here
+DEFC    RST_08      =       TXA             ; TX character, loop until space
+DEFC    RST_10      =       RXA             ; RX character, loop until byte
+;       RST_18      =       RXA_CHK         ; Check receive buffer status, return # bytes available
 DEFC    RST_20      =       NULL_RET        ; RET
 DEFC    TRAP        =       NULL_INT        ; 8085 TRAP - RC2014 Bus /NMI
 DEFC    RST_28      =       NULL_RET        ; RET
@@ -461,7 +349,7 @@ DEFC    IRQ_55      =       NULL_INT        ; 8085 IRQ 5.5 - 8085 CPU Module
 DEFC    RST_30      =       NULL_RET        ; RET
 DEFC    IRQ_65      =       acia_int        ; 8085 IRQ 6.5 - RC2014 Bus /INT
 DEFC    RST_38      =       NULL_RET        ; RET
-DEFC    IRQ_75      =       cpu_int         ; 8085 IRQ 7.5 - RC2014 Bus /RX
+DEFC    IRQ_75      =       NULL_INT        ; 8085 IRQ 7.5 - 8085 CPU Module /RX
 DEFC    RST_40      =       NULL_RET        ; 8085 JP V Overflow
 
 ;==============================================================================
