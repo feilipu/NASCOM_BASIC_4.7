@@ -184,7 +184,7 @@ IO_APU_OP_PWR       .EQU    00Bh
 COLD:   JP      CSTART          ; Jump in for cold start (0x0240)
 WARM:   JP      WARMST          ; Jump in for warm start (0x0243)
 
-        .FILL   5               ; pad so DEINT is 0x025B, ABPASS is 0x024D
+        .FILL   5               ; pad so DEINT is 0x024B, ABPASS is 0x024D
 
         .WORD   DEINT           ; 0x024B Get integer -32768 to 32767
         .WORD   ABPASS          ; 0x024D Return integer in AB
@@ -274,7 +274,7 @@ BRKRET: CALL    CLREG           ; Clear registers and stack
 
 BFREE:  .BYTE   " Bytes free",CR,LF,0,0
 
-SIGNON: .BYTE   "Z80 BASIC Ver 4.7c - APU",CR,LF
+SIGNON: .BYTE   "Z80+APU BASIC Ver 4.7c",CR,LF
         .BYTE   "Copyright ",40,"C",41
         .BYTE   " 1978 by Microsoft",CR,LF,0,0
 
