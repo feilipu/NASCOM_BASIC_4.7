@@ -144,7 +144,7 @@ BN      .EQU    28H             ; BIN error
 COLD:   JP      CSTART          ; Jump in for cold start (0x0240)
 WARM:   JP      WARMST          ; Jump in for warm start (0x0243)
 
-        .FILL   5               ; pad so DEINT is 0x025B, ABPASS is 0x024D
+        .FILL   5               ; pad so DEINT is 0x024B, ABPASS is 0x024D
 
         .WORD   DEINT           ; 0x024B Get integer -32768 to 32767
         .WORD   ABPASS          ; 0x024D Return integer in AB
