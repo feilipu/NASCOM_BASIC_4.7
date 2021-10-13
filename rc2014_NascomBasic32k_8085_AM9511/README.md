@@ -22,14 +22,11 @@ The rework to support MS Basic HLOAD, RESET, and the 8085 undocumented instructi
 
 This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-@feilipu, September 2021
+@feilipu, October 2021
 
 ==============================================================================
 
 # 8085 CPU Module for the RC2014 with APU Module for the RC2014
-
-__Note well. This code works, but the hardware interface to the APU Module doesn't.
-8085 allows only 25ns for /WAIT. Am9511A takes 83ns to assert /WAIT. So until a wait state is provided, don't use this code__.
 
 This ROM works with the 8085 CPU Module for the RC2014 and the APU Module for the RC2014, with 32k of RAM. This is the ROM to choose if you want fast I/O from the 8085 CPU for RC2014, together with the capability to upload C programs from within Basic.
 

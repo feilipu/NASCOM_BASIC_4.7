@@ -13,7 +13,7 @@
 ; from the sender. Transmit and receive are interrupt driven using IRQ_65.
 ; 115200 baud, 8n2
 ;
-; feilipu, September 2021
+; feilipu, October 2021
 ;
 ;==============================================================================
 ;

@@ -13,7 +13,7 @@
 ;
 ; The RESET function returns to cold start status.
 ;
-; feilipu, September 2021
+; feilipu, October 2021
 ;
 ;==============================================================================
 ;
