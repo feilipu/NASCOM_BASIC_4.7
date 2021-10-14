@@ -1,9 +1,3 @@
 
-zcc +z80 -m8085 --no-crt -v -m --list -Ca-f0xFF @nascom32k.lst -o int32k
-z88dk-appmake +glue -b int32k --ihex --pad --filler 0xFF --recsize 24 --clean
-
-# AND
-
-tasm -85 -a7 -fff -c -l d:bas32k.asm d:bas32k.hex
-
-# CONCATENATE THE TWO HEX FILES
+zcc +z80 -m8085 --no-crt -v -m --list -Ca-f0xFF @nascom32k.lst -o rc2014_32k_8085
+z88dk-appmake +glue -b rc2014_32k_8085 --ihex --pad --filler 0xFF --recsize 24 --clean
