@@ -3225,12 +3225,8 @@ SAVEXP: LD      (FPEXP),A       ; Save result as zero
 
 NORMAL: DEC     B               ; Count bits
         ADD     HL,HL           ; Shift HL left
-        LD      A,D             ; Get NMSB
-        RLA                     ; Shift left with last bit
-        LD      D,A             ; Save NMSB
-        LD      A,C             ; Get MSB
-        ADC     A,A             ; Shift left with last bit
-        LD      C,A             ; Save MSB
+        RL      D               ; Get NMSB, shift left with last bit
+        RL      C               ; Get MSB, shift left with last bit
 PNORM:  JP      P,NORMAL        ; Not done - Keep going
         LD      A,B             ; Number of bits shifted
         LD      E,H             ; Save HL in EB
@@ -3313,18 +3309,10 @@ SHRITE: ADD     A,8+1           ; Adjust count
 SHRLP:  XOR     A               ; Flag for all done
         DEC     L               ; All shifting done?
         RET     Z               ; Yes - Return
-        LD      A,C             ; Get MSB
-SHRT1:  RRA                     ; Shift it right
-        LD      C,A             ; Re-save
-        LD      A,D             ; Get NMSB
-        RRA                     ; Shift right with last bit
-        LD      D,A             ; Re-save it
-        LD      A,E             ; Get LSB
-        RRA                     ; Shift right with last bit
-        LD      E,A             ; Re-save it
-        LD      A,B             ; Get underflow
-        RRA                     ; Shift right with last bit
-        LD      B,A             ; Re-save underflow
+        RR      C               ; Get MSB, shift it right
+        RR      D               ; Get NMSB,shift right with last bit
+        RR      E               ; Get LSB, shift right with last bit
+        RR      B               ; Get underflow, shift right with last bit
         JP      SHRLP           ; More bits to do
 
 UNITY:  DEFB    000H,000H,000H,081H     ; 1.00000
@@ -3544,7 +3532,7 @@ MLDEBC:                         ; Multiply DE by BC to HL
         LD      B,16            ; 16 bits (iterations)
 MLDBLP: ADD     HL,HL           ; Shift partial product left
         JP      C,BSERR         ; ?BS Error if overflow
-        RL      C
+        SLA     C               ; Shift multiplier left
         RLA
         JP      NC,NOMLAD       ; Bit was zero - No add
         ADD     HL,DE

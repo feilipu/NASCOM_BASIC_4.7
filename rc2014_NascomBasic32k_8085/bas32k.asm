@@ -3150,6 +3150,7 @@ NOSWAP: CP      24+1            ; Second number insignificant?
         INC     (HL)            ; Increment it
         JP      Z,OVERR         ; Number overflowed - Error
         LD      L,1             ; 1 bit to shift right
+        LD      C,A             ; Save MSB of BCDE
         CALL    SHRT1           ; Shift result right
         JP      RONDUP          ; Round it up
 
@@ -3276,8 +3277,8 @@ SHRITE: ADD     A,8+1           ; Adjust count
 SHRLP:  XOR     A               ; Flag for all done
         DEC     L               ; All shifting done?
         RET     Z               ; Yes - Return
-        LD      A,C             ; Get MSB
-SHRT1:  RRA                     ; Shift it right
+SHRT1:  LD      A,C             ; Get MSB
+        RRA                     ; Shift it right
         LD      C,A             ; Re-save
         LD      A,D             ; Get NMSB
         RRA                     ; Shift right with last bit
@@ -3408,7 +3409,7 @@ DVBCDE: CALL    TSTSGN          ; Test sign of FPREG
         LD      A,(HL)          ; Get NMSB of dividend
         LD      (DIV2),A        ; Save for subtraction
         DEC     HL
-        LD      A,(HL)          ; Get MSB of dividend
+        LD      A,(HL)          ; Get LSB of dividend
         LD      (DIV1),A        ; Save for subtraction
         LD      B,C             ; Get MSB
         EX      DE,HL           ; NMSB,LSB to HL
@@ -3438,12 +3439,7 @@ RESDIV: POP     BC              ; Restore divisor
         RRA                     ; Bit 0 to bit 7
         JP      M,RONDB         ; Done - Normalise result
         RLA                     ; Restore carry
-        LD      A,E             ; Get LSB of quotient
-        RLA                     ; Double it
-        LD      E,A             ; Put it back
-        LD      A,D             ; Get NMSB of quotient
-        RLA                     ; Double it
-        LD      D,A             ; Put it back
+        RL      DE              ; Get NMSB and LSB of quotient, double them
         LD      A,C             ; Get MSB of quotient
         RLA                     ; Double it
         LD      C,A             ; Put it back

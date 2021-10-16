@@ -3289,7 +3289,7 @@ SHRLP:  XOR     A               ; Flag for all done
         DEC     L               ; All shifting done?
         RET     Z               ; Yes - Return
         LD      A,C             ; Get MSB
-SHRT1:  RRA                     ; Shift it right
+        RRA                     ; Shift it right
         LD      C,A             ; Re-save
         LD      A,D             ; Get NMSB
         RRA                     ; Shift right with last bit
