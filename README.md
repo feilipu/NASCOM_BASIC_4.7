@@ -17,7 +17,7 @@ http://searle.wales/
 
 ==============================================================================
 
-The rework to support MS Basic HLOAD, RESET, and the Z80 instruction tuning are copyright (C) 2020 Phillip Stevens
+The rework to support MS Basic HLOAD, RESET, and the 8085 and Z80 instruction tuning are copyright (C) 2020-2021 Phillip Stevens
 
 This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
@@ -40,7 +40,7 @@ These ROMs provides both Intel `HLOAD` function and a `RST`, `INT0`, and `NMI` R
 ## RC2014 Mini, Micro, __Classic: 32kB MS Basic__
 
 This ROM works with the most basic default versions of the RC2014, with 32k of RAM.
-This is the ROM to choose if you want fast I/O from a standard RC2014.
+This is the ROM to choose if you want fast I/O from a standard Z80 based RC2014.
 
 ## RC2014 Plus: 64kB MS Basic
 
@@ -48,27 +48,20 @@ This version requires a 64k/56k RAM module. The 56k version utilises the full 56
 
 This version provides both Intel `HLOAD` function and a `RST`, `INT0`, and `NMI` RAM JumP Table, starting at `0x2000`. This allows you to upload Assembly or compiled C programs, and then run them as described.
 
-## RC2014 Mini, Micro, Classic: 32kB MS Basic using __AM9511A APU Module__
+## RC2014 Mini, Micro, Classic: 32kB MS Basic using __Am9511A APU Module__
 
 This ROM works with the most basic default versions of the RC2014, with 32k of RAM.
-This is the ROM to choose if you want fast I/O from a standard RC2014, and you have installed an AM9511A APU Module.
-
-## RC2014 Mini, Micro, Classic: 32kB MS Basic using __LUT Multiply Module__
-
-This version works with the most basic default version of the RC2014, with 32k of RAM.
-This is the ROM to choose if you want fast I/O from a standard RC2014, and you have installed a LUT (Multiply) Module.
+This is the ROM to choose if you want fast I/O from a standard RC2014, and you have installed an Am9511A APU Module.
 
 ## RC2014 Classic: 32kB MS Basic using __8085 CPU Module__
 
 This version works with the most basic default version of the RC2014 running with an 8085 CPU Module, with 32k of RAM.
 This is the ROM to choose if you want fast I/O from a standard RC2014, and you have installed an 8085 CPU Module.
 
-## RC2014 Classic: 32kB MS Basic using __8085 CPU Module__ and __AM9511A APU Module__
-
-Note well. This code works, but the hardware interface to the APU Module doesn't.
+## RC2014 Classic: 32kB MS Basic using __8085 CPU Module__ and __Am9511A APU Module__
 
 This version works with the most basic default version of the RC2014 running with an 8085 CPU Module, with 32k of RAM.
-This is the ROM to choose if you want fast I/O from a standard RC2014, and you have installed an 8085 CPU Module.
+This is the ROM to choose if you want fast I/O from a standard RC2014, and you have installed both an 8085 CPU Module and Am9511A APU Module.
 
 ==============================================================================
 
@@ -128,9 +121,11 @@ The testing revealed that the comparison function `CPDEHL` was a very heavily us
 
 Then, the paths taken by the `JR` and `JP` conditional instructions were examined, by checking which path was taken most frequently across the benchmarks. This resulted in changing a few `JR` instructions for `JP` instructions, when the conditional path was mostly true, and one replacement of a `JP` instruction where the conditional was most often false.
 
-So with these changes we are now at 12% improvement over the original Microsoft code.
-
 Looking further at `z88dk-ticks` hotspot results, the next most used function is `GETCHR` used to collect input from code strings. `GETCHR` is a larger function and is used about 50 times throughout the code base, so there is little point to in-line it. However I do note the new `JR` conditional is used in checking for spaces in token strings, which does save a few cycles. Microsoft warns in the Nascom Basic Manual to optimise performance by removing spaces in code. Now it is even more true than before.
+
+As the Z80 and 8085 have better shift instructions than the 8080, these instructions have been used where possible. Specifically for the 8085 the `rl de` and the `sra hl` undocumented instructions have been used where appropriate.
+
+So with these changes we are now at 12% improvement over the original Microsoft code.
 
 So at this point I'll call it done. It seems that without rewriting the code substantially that's about all that I can squeeze out. The result is that with no change in function, MS Basic is now simply 12% faster.
 
