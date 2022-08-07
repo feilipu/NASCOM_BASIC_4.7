@@ -1,11 +1,3 @@
-# NOTE THAT THIS REPOSITORY IS ARCHIVED.
-
-I've moved development to [GitLab NASCOM BASIC](https://gitlab.com/feilipu/NASCOM_BASIC), where I'm free to use application appropriate security.
-<br>
-<br>
-<br>
-<br>
-
 # NASCOM ROM BASIC Ver 4.7, (C) 1978 Microsoft
 
 Scanned from source published in 80-BUS NEWS from Vol 2, Issue 3 (May-June 1983) to Vol 3, Issue 3 (May-June 1984).
