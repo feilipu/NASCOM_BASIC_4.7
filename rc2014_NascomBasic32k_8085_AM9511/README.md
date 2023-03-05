@@ -73,7 +73,7 @@ Your assembly program can receive a 16 bit parameter passed in from the function
 
 When your assembly program is finished it can return a 16 bit parameter stored in `A` (MSB) and `B` (LSB) by jumping to `ABPASS` which is located at `0x12AE`.
 
-Note that these address of these functions can also be loaded from `0x025B` for `DEINT` and `0x025D` for `ABPASS`, as noted in the NASCOM Basic Manual.
+Note that these address of these functions can also be read from `0x025B` for `DEINT` and `0x025D` for `ABPASS`, as noted in the NASCOM Basic Manual.
 
 ``` asm
                                 ; from Nascom Basic Symbol Tables
@@ -103,11 +103,11 @@ ABPASS          .EQU    $12AE   ; Function ABPASS to put output into AB register
 
 ## Notes
 
-Note that your program and the `USR(x)` jump address setting will remain in place through a RC2014 Warm Reset, provided you prevent Basic from initialising the RAM locations you have used. Also, you can reload your assembly program to the same RAM location through multiple Warm Resets, without reprogramming the `USR(x)` jump.
+Note that your C or assembly program and the `USR(x)` jump address setting will remain in place through a RC2014 Warm Reset, provided you prevent Basic from initialising the RAM locations you have used. Also, you can reload your assembly program to the same RAM location through multiple Warm Resets, without reprogramming the `USR(x)` jump.
 
 Any Basic programs loaded will also remain in place during a Warm Reset.
 
-Issuing the `RESET` keyword will clear the RC2014 RAM, and return the original memory contents.
+Issuing the `RESET` keyword will clear the RC2014 RAM, and provide an option to return the original memory size. `RESET` is functionally equivalent to a cold start.
 
 # Credits
 

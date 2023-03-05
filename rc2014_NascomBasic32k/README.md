@@ -100,7 +100,7 @@ ABPASS          .EQU    $12CC   ; Function ABPASS to put output into AB register
 
 ## Notes
 
-Note that your C or assembly program and the `USR(x)` jump address setting will remain in place through a RC2014 Warm Reset, provided you prevent Basic from initialising the RAM locations you have used.
+Note that your C or assembly program and the `USR(x)` jump address setting will remain in place through a RC2014 Warm Reset, provided you prevent Basic from initialising the RAM locations you have used. Also, you can reload your assembly program to the same RAM location through multiple Warm Resets, without reprogramming the `USR(x)` jump.
 
 Any Basic programs loaded will also remain in place during a Warm Reset.
 
