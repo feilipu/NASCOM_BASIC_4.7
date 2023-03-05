@@ -1,8 +1,9 @@
-MYZEN: EQU 9000H ;set for 32k MS Basic
-SYMSPC:EQU 1800H ;sets SOFP & EOFP
+; build instructions
+; zcc +z80 --no-crt -v -m --list -Ca-f0x00 zen_src.asm -o zen
+; z88dk-appmake +glue -b zen --ihex --pad --filler 0xFF --clean
 ;
-;ABPASS:EQU 117DH ;set for searle
-ABPASS:EQU 12CCH ;set for feilipu
+MYZEN: EQU 09000H ;set for ORG (Basic RAM below)
+SYMSPC:EQU 01800H ;sets SOFP & EOFP (Symbol table ~0800H)
 ;
 ; Zen for RC2014 MS Basic
 ;
@@ -149,7 +150,7 @@ OR C
 JR NZ,ZAP
 JR LINE
 QUIT:LD SP,(OLDSTK)
-JP ABPASS
+RET
 E0:LD L,M15&255
 ER:LD SP,(STK)
 CALL ERR2
