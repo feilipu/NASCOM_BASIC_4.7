@@ -28,7 +28,10 @@ Phil_G       2/3/2023
 philg@talk21.com
 https://www.youtube.com/@PHILG2864/videos
 
+Files are prepared to use from within MS Basic. Use the "HLOAD" Basic keyword to load your choice of HEX file based on how much RAM you wish to leave available for Basic, and launch Zen with "?USR(0)". Exit back to MS Basic with "Q".
 
-Files are prepared to use from within MS Basic. Use the HLOAD keyword to load the correct HEX file for your machine, and launch Zen with "?USR(0)". Exit back to MS Basic with "Q". Assembled programs can be launched using the USR(0) command either from immediate mode, or within a Basic program, after setting the correct origin. Check the NASCOM Basic manual for further information on USR code.
+Use the Zen "ORG" and "LOAD" keywords to place assembled programs above the Zen "EOFP". Use Zen "H" to determine where "EOFP" is located. On return to Basic, assembled programs can be launched using the "?USR(0)" command either from immediate mode, or from within a Basic program, after setting the correct "USR" location.
+
+Check the NASCOM Basic Manual Appendix D for further information on mixing Basic and Assembly code.
 
 feilipu - March 2023
