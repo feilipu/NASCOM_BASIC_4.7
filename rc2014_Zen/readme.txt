@@ -1,12 +1,12 @@
 Notes for use with Microsoft Basic.
 
-There are several Intel HEX versions of the Zen assembler prepared to use from within RC2014 NASCOM Basic with different RAM origins. Use the "HLOAD" Basic keyword to load your choice of HEX file based on how much RAM you wish to leave available for Basic, and launch Zen with "?USR(0)". Exit back to MS Basic with "Q".
+There are several Intel HEX versions of the Zen assembler with different RAM origins prepared to use from within RC2014 NASCOM Basic. Use the "HLOAD" Basic keyword to load your choice of HEX file based on how much RAM you wish to leave available for Basic, and launch Zen with "?USR(0)". Exit back to MS Basic with "Q".
 
 Use the Zen "ORG" and "LOAD" keywords to place assembled programs above the Zen End of File Pointer "EOFP". Use Zen "H" command to determine where "EOFP" is located. On return to Basic, assembled programs can be launched using the "?USR(0)" command either from immediate mode, or from within a Basic program as a subroutine, after setting the correct "USR" location for the assembly program's "ORG".
 
 Check the NASCOM Basic Manual Appendix D for further information on mixing Basic and Assembly code.
 
-Derived from the original source including edits and improvements by Phil Green.
+Derived from the original source by Neal Crook, and including adaption to RC2014 and improvements by Phil Green.
 https://github.com/nealcrook/nascom/tree/master/ZEN_assembler
 
 feilipu - March 2023

@@ -5,7 +5,7 @@ This repository provides a number of alternative Microsoft (NASCOM) Basic implem
 Support is provided for the following hardware options.
 
  - RC2014 __Mini__, __Micro__, and __Classic__ versions, with 32k of RAM.
- - RC2014 __Classic__ and __Plus__ using 56kB of RAM (with the 64kB RAM Module).
+ - RC2014 Classic and Plus using 56kB of RAM (with the __64kB RAM Module__).
  - RC2014 Mini, Micro, and Classic using the __Am9511A APU Module__.
  - RC2014 Classic and Plus using the __8085 CPU Module__.
  - RC2014 Classic and Plus using the __8085 CPU Module__ and the __Am9511A APU Module__.
@@ -26,9 +26,9 @@ The key differences over previous implementations include.
 
 This ROM works with the Mini, Micro, and Classic versions of the RC2014, with 32k of RAM.
 
-This is the ROM to choose if you want fast I/O from a standard RC2014, together with the capability to upload and run C or assembly programs from within MS Basic. This ROM provides both Intel `HLOAD` function and a `RST`, `INT0`, and `NMI` RAM JumP Table, starting at `0x2000`. This allows you to upload Assembly or compiled C programs, and then run them as described.
+This is the ROM to choose if you want fast I/O from a standard RC2014, together with the capability to upload and run C or assembly programs from within MS Basic. This ROM provides both Intel `HLOAD` function and a `RST`, `INT0`, and `NMI` RAM JumP Table, starting at `0x8000`. This allows you to upload Assembly or compiled C programs, and then run them as described.
 
-### RC2014 Plus: 64kB MS Basic
+### RC2014 Plus: 56kB MS Basic using __64kB RAM Module__
 
 This version works with the Classic or Plus version of the RC2014 running with a [64k/56k RAM Module](https://rc2014.co.uk/modules/64k-ram/). The 56k version utilises the full 56k memory space of the RC2014, with RAM starting at `0x2000`.
 
@@ -87,7 +87,7 @@ Issuing the `RESET` keyword will clear the RC2014 RAM, and return the original m
 
 ## Zen Assembler Notes
 
-There are several Intel HEX versions of the Zen assembler prepared to use from within RC2014 NASCOM Basic with different RAM origins. Use the `HLOAD` Basic keyword to load your choice of HEX file based on how much RAM you wish to leave available for Basic, and launch Zen with `?USR(0)`. Exit back to MS Basic with `Q`.
+There are several Intel HEX versions of the Zen assembler with different RAM origins prepared to use from within RC2014 NASCOM Basic. Use the `HLOAD` Basic keyword to load your choice of HEX file based on how much RAM you wish to leave available for Basic, and launch Zen with `?USR(0)`. Exit back to MS Basic with `Q`.
 
 Use the Zen `ORG` and `LOAD` keywords to place assembled programs above the Zen `EOFP`. Use Zen `H` to determine where `EOFP` is located. On return to Basic, assembled programs can be launched using the `?USR(0)` command either from immediate mode, or from within a Basic program, after setting the correct `USR` location.
 
