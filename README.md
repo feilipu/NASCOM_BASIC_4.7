@@ -1,14 +1,14 @@
 # Microsoft (NASCOM) Basic for RC2014
 
-This repository provides a number of alternative Microsoft (NASCOM) Basic implementations specifically for variants of the RC2014 Mini / Micro / and Classic ][ retro-computers.
+This repository provides a number of alternative Microsoft (NASCOM) Basic implementations specifically for variants of the RC2014 Mini, Micro, and Classic retro-computers.
 
 Support is provided for the following hardware options.
 
  - RC2014 __Mini__, __Micro__, and __Classic__ versions, with 32k of RAM.
- - RC2014 __Classic__ and __Plus__ using 56kB of RAM (with the [64kB RAM Module](https://rc2014.co.uk/modules/64k-ram/))
- - RC2014 Mini, Micro, and Classic using the __Am9511A APU Module__
- - RC2014 Classic and Plus using the __8085 CPU Module__
- - RC2014 Classic and Plus using the __8085 CPU Module__ and the __Am9511A APU Module__
+ - RC2014 __Classic__ and __Plus__ using 56kB of RAM (with the 64kB RAM Module).
+ - RC2014 Mini, Micro, and Classic using the __Am9511A APU Module__.
+ - RC2014 Classic and Plus using the __8085 CPU Module__.
+ - RC2014 Classic and Plus using the __8085 CPU Module__ and the __Am9511A APU Module__.
 
 The code is originally derived from the NASCOM implementation of Microsoft Basic 4.7, and was adapted for the [Simple Z80](http://searle.x10host.com/z80/SimpleZ80.html) by Grant Searle. Further adaptions here have focused on bug fixes, and functional and performance improvements.
 
@@ -48,7 +48,7 @@ This version works with the Classic or Plus version of the RC2014, with 32k of R
 
 # Important Addresses
 
-There are a number of important Z80 addresses or origins that need to be managed within your assembly program.
+There are a number of important Z80 addresses or origins that can be adjusted and managed if you are writing an assembly  or C program.
 
 ## RST locations
 
