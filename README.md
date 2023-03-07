@@ -22,32 +22,29 @@ The key differences over previous implementations include.
   - Instruction and code flow tuning result in approximately 10% to 12% faster execution.
   - Support for the Am9511A APU Module provides a 3x to 5x faster execution of assembly or C floating point programs.
 
-## RC2014 Mini, Micro, Classic: 32kB MS Basic
+### RC2014 Mini, Micro, Classic: 32kB MS Basic
 
 This ROM works with the Mini, Micro, and Classic versions of the RC2014, with 32k of RAM.
 
 This is the ROM to choose if you want fast I/O from a standard RC2014, together with the capability to upload and run C or assembly programs from within MS Basic. This ROM provides both Intel `HLOAD` function and a `RST`, `INT0`, and `NMI` RAM JumP Table, starting at `0x2000`. This allows you to upload Assembly or compiled C programs, and then run them as described.
 
-## RC2014 Plus: 64kB MS Basic
+### RC2014 Plus: 64kB MS Basic
 
-This ROM requires a [64k/56k RAM Module](https://rc2014.co.uk/modules/64k-ram/). The 56k version utilises the full 56k RAM memory space of the RC2014, starting at `0x2000`.
+This version works with the Classic or Plus version of the RC2014 running with a [64k/56k RAM Module](https://rc2014.co.uk/modules/64k-ram/). The 56k version utilises the full 56k memory space of the RC2014, with RAM starting at `0x2000`.
 
-## RC2014 Mini, Micro, Classic: 32kB MS Basic using __Am9511A APU Module__
+### RC2014 Mini, Micro, Classic: 32kB MS Basic using __Am9511A APU Module__
 
-This ROM works with the most basic default versions of the RC2014, with 32k of RAM.
-This is the ROM to choose if you have installed an [Am9511A APU Module](https://www.tindie.com/products/feilipu/am9511a-apu-module-pcb/).
+This ROM works with the Mini, Micro, and Classic versions of the RC2014, with 32k of RAM, if you have installed an [Am9511A APU Module](https://www.tindie.com/products/feilipu/am9511a-apu-module-pcb/).
 
-## RC2014 Classic: 32kB MS Basic using __8085 CPU Module__
+### RC2014 Classic: 32kB MS Basic using __8085 CPU Module__
 
-This version works with the most basic default version of the RC2014 running with an 8085 CPU Module, with 32k of RAM.
-This is the ROM to choose if you have installed an [8085 CPU Module](https://www.tindie.com/products/feilipu/8085-cpu-module-pcb/).
+This ROM works with the Classic or Plus version of the RC2014, with 32k of RAM,  running with an 8085 CPU Module. This is the ROM to choose if you have installed an [8085 CPU Module](https://www.tindie.com/products/feilipu/8085-cpu-module-pcb/).
 
-## RC2014 Classic: 32kB MS Basic using __8085 CPU Module__ and __Am9511A APU Module__
+### RC2014 Classic: 32kB MS Basic using __8085 CPU Module__ and __Am9511A APU Module__
 
-This version works with the most basic default version of the RC2014 running with an 8085 CPU Module, with 32k of RAM.
-This is the ROM to choose if you want fast I/O from a standard RC2014, and you have installed both an [8085 CPU Module](https://www.tindie.com/products/feilipu/8085-cpu-module-pcb/) and an [Am9511A APU Module](https://www.tindie.com/products/feilipu/am9511a-apu-module-pcb/).
+This version works with the Classic or Plus version of the RC2014, with 32k of RAM, running with an 8085 CPU Module and an Am9511A APU Module. This is the ROM to choose if you have installed both an [8085 CPU Module](https://www.tindie.com/products/feilipu/8085-cpu-module-pcb/) and an [Am9511A APU Module](https://www.tindie.com/products/feilipu/am9511a-apu-module-pcb/).
 
-==============================================================================
+---
 
 # Important Addresses
 
@@ -165,7 +162,7 @@ Transmit function busy waits when buffer is full. No Tx characters lost.
 
 https://feilipu.me/2016/05/23/another-z80-project/
 
-===
+---
 
 # Licence
 
@@ -176,16 +173,12 @@ Adapted for the freeware Zilog Macro Assembler 2.10 to produce the original ROM 
 
 http://www.nascomhomepage.com/
 
----
-
 The updates to the original NASCOM BASIC within this file are copyright (C) Grant Searle
 
 You have permission to use this for NON COMMERCIAL USE ONLY.
 If you wish to use it elsewhere, please include an acknowledgement to myself.
 
 http://searle.wales/
-
----
 
 The rework to support MS Basic HLOAD and RESET keywords, and the 8085 and Z80 instruction tuning are copyright (C) 2020-2021 Phillip Stevens
 
