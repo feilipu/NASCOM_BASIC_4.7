@@ -1,67 +1,51 @@
-# NASCOM ROM BASIC Ver 4.7, (C) 1978 Microsoft
+# Microsoft (NASCOM) Basic for RC2014
 
-Scanned from source published in 80-BUS NEWS from Vol 2, Issue 3 (May-June 1983) to Vol 3, Issue 3 (May-June 1984).
+This repository provides a number of alternative Microsoft (NASCOM) Basic implementations specifically for variants of the RC2014 Mini / Micro / and Classic ][ retro-computers.
 
-Adapted for the freeware Zilog Macro Assembler 2.10 to produce the original ROM code (checksum A934H). PA
+Support is provided for the following hardware options.
 
-http://www.nascomhomepage.com/
+ - RC2014 __Mini__, __Micro__, and __Classic__ versions, with 32k of RAM.
+ - RC2014 __Classic__ and __Plus__ using 56kB of RAM (with the [64kB RAM Module](https://rc2014.co.uk/modules/64k-ram/))
+ - RC2014 Mini, Micro, and Classic using the __Am9511A APU Module__
+ - RC2014 Classic and Plus using the __8085 CPU Module__
+ - RC2014 Classic and Plus using the __8085 CPU Module__ and the __Am9511A APU Module__
 
-==============================================================================
+The code is originally derived from the NASCOM implementation of Microsoft Basic 4.7, and was adapted for the [Simple Z80](http://searle.x10host.com/z80/SimpleZ80.html) by Grant Searle. Further adaptions here have focused on bug fixes, and functional and performance improvements.
 
-The updates to the original BASIC within this file are copyright (C) Grant Searle
+The key differences over previous implementations include.
 
-You have permission to use this for NON COMMERCIAL USE ONLY.
-If you wish to use it elsewhere, please include an acknowledgement to myself.
+ - The serial interface is configured for 115200 baud with 8n2 setting and RTS hardware handshake.
+ - ACIA 6850 interrupt driven serial I/O supporting the hardware double buffer, together with a large receive buffer of 255 bytes, to allow efficient pasting of Basic into the editor. The receive RTS handshake shows full before the buffer is totally filled to allow run-on from the sender.
+ - Interrupt driven serial transmission, with a 63 Byte buffer, to ensure the CPU is not held waiting during transmission.
+ - A `RST`, `INT0`, and `NMI` RAM redirection jump table, starting in RAM at `0x8000`, enables the important RST instructions and interrupt vectors to be reconfigured by the user.
+ - These ROMs provides both an Intel HEX `HLOAD` function and software `RESET` function. This allows you to easily upload Z80 (or 8085) assembly or compiled C programs, and then run them as described. The `HLOAD` function automatically adjusts the upper RAM limit for Basic and enters the program origin into the `USR` location.
+  - Instruction and code flow tuning result in approximately 10% to 12% faster execution.
+  - Support for the Am9511A APU Module provides a 3x to 5x faster execution of assembly or C floating point programs.
 
-http://searle.wales/
+## RC2014 Mini, Micro, Classic: 32kB MS Basic
 
-==============================================================================
+This ROM works with the Mini, Micro, and Classic versions of the RC2014, with 32k of RAM.
 
-The rework to support MS Basic HLOAD, RESET, and the 8085 and Z80 instruction tuning are copyright (C) 2020-2021 Phillip Stevens
-
-This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
-
-@feilipu, August 2020
-
-==============================================================================
-
-# RC2014
-
-ACIA 6850 interrupt driven serial I/O to run modified NASCOM Basic 4.7.
-
-Full input and output buffering with incoming data hardware handshaking.
-Handshake shows full before the buffer is totally filled to allow run-on from the sender.
-Transmit and receive are interrupt driven, and are fast. Use 115200 baud with 8n2 setting.
-
-Receive buffer is 255 bytes, to allow efficient pasting of Basic into the editor. The Transmit buffer is 63 bytes.
-
-These ROMs provides both Intel `HLOAD` function and a `RST`, `INT0`, and `NMI` RAM JumP Table, starting at `0x8000`. This allows you to upload Assembly or compiled C programs, and then run them as described.
-
-## RC2014 Mini, Micro, __Classic: 32kB MS Basic__
-
-This ROM works with the most basic default versions of the RC2014, with 32k of RAM.
-This is the ROM to choose if you want fast I/O from a standard Z80 based RC2014.
+This is the ROM to choose if you want fast I/O from a standard RC2014, together with the capability to upload and run C or assembly programs from within MS Basic. This ROM provides both Intel `HLOAD` function and a `RST`, `INT0`, and `NMI` RAM JumP Table, starting at `0x2000`. This allows you to upload Assembly or compiled C programs, and then run them as described.
 
 ## RC2014 Plus: 64kB MS Basic
 
-This version requires a 64k/56k RAM module. The 56k version utilises the full 56k RAM memory space of the RC2014, starting at `0x2000`.
-
-This version provides both Intel `HLOAD` function and a `RST`, `INT0`, and `NMI` RAM JumP Table, starting at `0x2000`. This allows you to upload Assembly or compiled C programs, and then run them as described.
+This ROM requires a [64k/56k RAM Module](https://rc2014.co.uk/modules/64k-ram/). The 56k version utilises the full 56k RAM memory space of the RC2014, starting at `0x2000`.
 
 ## RC2014 Mini, Micro, Classic: 32kB MS Basic using __Am9511A APU Module__
 
 This ROM works with the most basic default versions of the RC2014, with 32k of RAM.
-This is the ROM to choose if you want fast I/O from a standard RC2014, and you have installed an Am9511A APU Module.
+This is the ROM to choose if you have installed an [Am9511A APU Module](https://www.tindie.com/products/feilipu/am9511a-apu-module-pcb/).
 
 ## RC2014 Classic: 32kB MS Basic using __8085 CPU Module__
 
 This version works with the most basic default version of the RC2014 running with an 8085 CPU Module, with 32k of RAM.
-This is the ROM to choose if you want fast I/O from a standard RC2014, and you have installed an 8085 CPU Module.
+This is the ROM to choose if you have installed an [8085 CPU Module](https://www.tindie.com/products/feilipu/8085-cpu-module-pcb/).
 
 ## RC2014 Classic: 32kB MS Basic using __8085 CPU Module__ and __Am9511A APU Module__
 
 This version works with the most basic default version of the RC2014 running with an 8085 CPU Module, with 32k of RAM.
-This is the ROM to choose if you want fast I/O from a standard RC2014, and you have installed both an 8085 CPU Module and Am9511A APU Module.
+This is the ROM to choose if you want fast I/O from a standard RC2014, and you have installed both an [8085 CPU Module](https://www.tindie.com/products/feilipu/8085-cpu-module-pcb/) and an [Am9511A APU Module](https://www.tindie.com/products/feilipu/am9511a-apu-module-pcb/).
 
 ==============================================================================
 
@@ -82,27 +66,35 @@ All `RST xxH` targets can be rewritten in a `JP` table originating at `0x8000` i
 
 ## USR Jump Address & Parameter Access
 
-For the RC2014 with 32k Basic the location for `USR(x)` loaded user program address is `0x8204`, and with 56k Basic the location for `USR(x)` is `0x2204`.
+The NASCOM Basic Manual Appendix D describes the use of the `USR(x)` function to call assembly (or compiled C) programs directly from the Basic command line or from within a Basic program. Please refer to the Manual Appendix D for further information on mixing Basic and Assembly code.
+
+For the RC2014 with 32k Basic the location for the `USR(x)` loaded user program address is `0x8204`, and with 56k Basic the location for `USR(x)` is `0x2204`.
 
 # `HLOAD` Keyword Usage
 
-1. Select the preferred origin `.ORG` for your arbitrary program, and assemble a HEX file using your preferred assembler, or compile a C program using z88dk. For the RC2014 32kB, suitable origins commence from `0x8400`, and the default z88dk origin for RC2014 is `0x9000`.
+1. Select the preferred origin `ORG` for your arbitrary program, and prepare an Intel HEX file from your program using your preferred assembler, or compile a C program using z88dk. For RC2014 Basic 32kB, suitable origins commence from `0x8400`, and the default z88dk origin for the RC2014 target is `0x9000`. For  RC2014 Basic 56kB, suitable origins commence from `0x2400`.
 
 2. Give the `HLOAD` command within Basic.
 
 3. Using a serial terminal, upload the HEX file for your arbitrary program that you prepared in Step 1, using the Linux `cat` utility or similar. If desired the python `slowprint.py` program can also be used for this purpose. `python slowprint.py > /dev/ttyUSB0 < myprogram.hex` or `cat > /dev/ttyUSB0 < myprogram.hex`. The RC2014 interface can absorb full rate uploads, so using `slowprint.py` is an unnecessary precaution.
 
-4. Start your program by typing `PRINT USR(0)`, or `? USR(0)`, or other variant if you have a parameter to pass to your program.
-
-5. Profit.
+4. Start your program by typing `PRINT USR(0)`, or `?USR(0)`, or other variant if you have a parameter to pass to your program. The program should return to Basic on completion.
 
 ## Workflow Notes
 
-Note that your program and the `USR(x)` jump address setting will remain in place through a RC2014 Warm Reset, provided you prevent Basic from initialising the RAM locations you have used. Also, you can reload your assembly program to the same RAM location through multiple Warm Resets, without reprogramming the `USR(x)` jump.
+Note that your program and the `USR(x)` jump address setting will remain in place through a RC2014 Warm Reset, provided you prevent Basic from initialising the RAM locations you have used. Also, you can reload your assembly program to the same RAM location through multiple Warm Resets, without issuing a `RESET` keyword.
 
 Any Basic programs loaded will also remain in place during a Warm Reset.
 
-Issuing the `RESET` keyword will clear the RC2014 RAM, and return the original memory contents.
+Issuing the `RESET` keyword will clear the RC2014 RAM, and return the original memory contents equivalent to a cold start.
+
+## Zen Assembler Notes
+
+There are several Intel HEX versions of the Zen assembler prepared to use from within RC2014 NASCOM Basic with different RAM origins. Use the `HLOAD` Basic keyword to load your choice of HEX file based on how much RAM you wish to leave available for Basic, and launch Zen with `?USR(0)`. Exit back to MS Basic with `Q`.
+
+Use the Zen `ORG` and `LOAD` keywords to place assembled programs above the Zen `EOFP`. Use Zen `H` to determine where `EOFP` is located. On return to Basic, assembled programs can be launched using the `?USR(0)` command either from immediate mode, or from within a Basic program, after setting the correct `USR` location.
+
+Check the NASCOM Basic Manual Appendix D for further information on mixing Basic and Assembly code.
 
 # Modifications to MS Basic
 
@@ -129,7 +121,7 @@ So with these changes we are now at 12% improvement over the original Microsoft 
 
 So at this point I'll call it done. It seems that without rewriting the code substantially that's about all that I can squeeze out. The result is that with no change in function, MS Basic is now simply 12% faster.
 
-==============================================================================
+---
 
 # YAZ180 (deprecated, see [yabios](https://github.com/feilipu/yaz180/tree/master/yabios))
 
@@ -173,3 +165,32 @@ Transmit function busy waits when buffer is full. No Tx characters lost.
 
 https://feilipu.me/2016/05/23/another-z80-project/
 
+===
+
+# Licence
+
+NASCOM ROM BASIC Ver 4.7, (C) 1978 Microsoft
+
+Scanned from source published in 80-BUS NEWS from Vol 2, Issue 3 (May-June 1983) to Vol 3, Issue 3 (May-June 1984).
+Adapted for the freeware Zilog Macro Assembler 2.10 to produce the original ROM code (checksum A934H).
+
+http://www.nascomhomepage.com/
+
+---
+
+The updates to the original NASCOM BASIC within this file are copyright (C) Grant Searle
+
+You have permission to use this for NON COMMERCIAL USE ONLY.
+If you wish to use it elsewhere, please include an acknowledgement to myself.
+
+http://searle.wales/
+
+---
+
+The rework to support MS Basic HLOAD and RESET keywords, and the 8085 and Z80 instruction tuning are copyright (C) 2020-2021 Phillip Stevens
+
+This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+@feilipu, August 2020
+
+---
