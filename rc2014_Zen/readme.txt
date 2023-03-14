@@ -22,23 +22,30 @@ Grant Searle's "Simple Z80" is a brilliant retro computing design, which has spa
 
 The problem is that almost all assemblers use disks or external storage, which the "Simple Z80" or "RC2014 mini/micro" doesnt have. They also need an external source editor which again would normally be disk based.
 
-"Zen" is different - its a truly-retro memory-resident Editor-Assembler which needs no external storage - the assembler itself, your source code, the resulting object code and the symbol table are all stored in RAM, which is a perfect solution to the lack of disks.  Its capable without being feature-laden and is dead easy to use. Zen was popular back in the late 70s to mid 80s then faded away, to be resurrected by retro computer enthusiasts four decades later on a variety of retro Z80 projects.
+"Zen" is different - its a truly-retro memory-resident Editor-Assembler which needs no external storage - the assembler itself, your source code, the resulting object code and the symbol table are all stored in RAM, which is a perfect solution to the lack of disks.  Its capable without being feature-laden and is dead easy to use. Zen was popular back in the late 70s to mid 80s then faded away, to be resurrected by retro computer enthusiasts four decades later on a variety of retro Z80 projects. At under 4k in size it can readily run on the 32k boards.
 
-With Zen, the Grant Searle "Simple Z80", the RC2014 'Mini' and 'Micro' become useful development machines fully capable of serious Z80 assembler coding!   It works really well and allows the full development cycle on the Z80 itself. Its very much like the ZEAP editor/assembler I had on my Nascom-1 back in 1978. Of course I've CP/M systems here that can do the whole cycle with ease and my favourite PC cross-assemblers but this is particularly interesting as it runs on such a basic machine and is totally self-contained.
+With Zen, the Grant Searle "Simple Z80", the RC2014 'Mini' and 'Micro' become useful development machines fully capable of serious Z80 assembler coding.   It works really well and allows the full development cycle on the Z80 itself, very much like the ZEAP editor/assembler I had on my Nascom-1 back in 1978. Of course I've CP/M systems here that can do the whole cycle with ease and my favourite PC cross-assemblers but this is particularly interesting as it runs on such a basic machine and is totally self-contained.
 
-With sincere thanks to Neal Crook who has kindly made public the extensive work he's done on the Nascom version of Zen, on which this is based, heres my port for the "Simple Z80" or "RC2014 mini/micro" computer in either 32k or 56k format.  The manual is included, its short, easy to follow and has only a few commands to remember. There are some changes to the documented commands, to better suit the GS/RC2014 hardware - the cassette tape storage commands are redundant so I've disabled 'R' for read and changed the "W" command such that it outputs source in a re-loadable format, in exactly the same way that a BASIC listing is saved and loaded within Teraterm, either using the log function or simple copy & paste from the Teraterm buffer. "E" loads source, and just as we do when loading BASIC programs, a character delay of 1ms and a line delay of say 300ms ensures nothing is missed.
-Three options are available for the 'A' assembler command ouput, 'V' sends a proper listing to the screen, or 'C' does a tabulated object code dump. A null option (just press return) assembles only to memory which is much faster. The "Q" quit command returns to the monitor in the 8k rom image, so please use the updated rom from http://philg.uk
+With sincere thanks to Neal Crook who has kindly made public the extensive work he's done on the Nascom version of Zen, on which this is based, heres my port for the "Simple Z80" or "RC2014 mini/micro" computer in either 32k or 56k format.  An amended manual specific to this port is included, its short, easy to follow and has only a few commands to remember. 
 
-The editor is as minimal as it could be  - you can enter a line, during which you may use backspace, you can delete a line with "Z" (zap) and enter a new line with "N".
+There are some changes to the documented commands, to better suit the GS/RC2014 hardware:
+The cassette tape storage commands are redundant so I've disabled 'R' for read tape
+The "W" write command is changed to output source in a re-loadable format, in exactly the same way that a BASIC listing is saved and loaded within Teraterm, either using the log function or simple copy & paste from the Teraterm buffer. 
+The "E" command loads source, either manually from the keyboard or from Teraterm 'file-send' just as we do when loading BASIC programs, a character delay of 1ms and a line delay of say 300ms ensures nothing is missed.  
+Three options are available for the 'A' assembler command ouput, 'V' sends a proper listing to the screen, or 'C' does a tabulated object code dump. A null option (just press return) assembles only to memory which is much faster. 
+The "X" command is new, following a successful assembly X can be used to generate an Intel Hex file of the object code. This correctly handles phase differences between ORG and LOAD.
+The "Q" quit command returns to the monitor in the 8k rom image, so please use the updated rom from http://philg.uk
+
+The editor is as minimal as it could be - you can enter a line, during which you may use backspace, you can delete a line with "Z" (zap) and enter a new line with "N".
 "T" takes you to the top of the source, "B" to the bottom, theres "U" for up, "D" for down, and "Pnn" prints nn lines to the screen.
 The manual lists the Editor & Assembler commands and options, please read it  :-)
 
-To minimise the source-code memory used, it helps to keep comments brief and use minimal annotation - Neal actually has two copies of every source file, one commented for human use, and one as brief as possible to be loaded into the assembler.
+To minimise the source-code memory used, it helps to keep comments brief and use minimal annotation - perhaps keep two copies of every source file, one commented for human use, and one as brief as possible to be loaded into the assembler.
 
-"Zen" will happily assemble itself and can locate the object code somewhere other than where it is ORG'd using the LOAD operator.
+With its own minimised source code "Zen" will happily assemble itself and can locate the object code somewhere other than where it is ORG'd using the LOAD operator.   The "X" Intel Hex command takes account of this, and correctly generates loadable HEX code.
 
 Over the decades "Zen" has morphed in many ways but was originally written by John Hawthorne and distributed by Tim Moore of Newbear and by Laurie Shields of Avalon Sofware, with the Nascom port completed by Neal Crook, and all credit goes to these good people  :-)
 
-Phil_G 2/3/2023
+Phil_G 2/3/2023, updated 10/3/2023
 philg@talk21.com
 https://www.youtube.com/@PHILG2864/videos

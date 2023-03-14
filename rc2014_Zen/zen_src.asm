@@ -67,7 +67,7 @@ M1:     DEFB 'Z','>'|S        ;Prompt
 M2:     DEFB "HUH",'?'|S
 ; BS, BS, NL, CR is used at the end of a .NAS format line. When it is displayed on the screen the BS/BS erases
 ; over the 9th (checksum) byte. When printed or sent to tape, the checksum byte is displayed/stored
-M3:     DEFB NBS,NBS,NL,CR
+;M3:     DEFB NBS,NBS,NL,CR
 M5:     DEFB "EO",'F'|S
 M7:     DEFB "OPTION",'>'|S
 M10:    DEFB "MSG",'>'|S
@@ -98,6 +98,8 @@ FEP:    DEFW 0 ; Next free address in the symbol table
 STK:    DEFW 0
 LBLP:   DEFW 0
 PC:     DEFW 0 ; Virtual PC ($) during assembly
+ORGADR: DEFW 0
+OBJS:   DEFW 0 ; Obj start
 OBJ:    DEFW 0 ; Where to store generated code. Loaded by LOADH when pseudo-op LOAD is encountered
 ;
 ; Entry point
@@ -305,9 +307,10 @@ LIN1:   DEC C
         DEC DE
         LD A,CR
         LD (DE),A
-        JP E3
+E3:     LD L,M20&255 ; MEM -> out of memory (see comments in BL3)
+        JP ERR
 ;
-; Command: WRITE: Save edit buffer 
+; Command: WRITE: Save edit buffer
 WRITE:  LD DE,(SOFP)
 WRLP:   LD HL,(EOFP)    
         OR A
@@ -322,33 +325,96 @@ WREND:  LD A,0DH
         LD A,10H
         JP SOUT
 ;
-; Command: READ: Load edit buffer from tape in custom ZEN format. HOW??
-; Data is stored in numbered blocks, with the file name in block 1 and
-; text in subsequent blocks. Lines of text are terminated LF CR but with B7
-; set on the CR.
-
-READ:   LD L,M2&255
-        JP ERR
-        LD B,1
-        CALL BLOK    ; look for block header 1 (file name) load to TBUFF
-        CALL PR1     ; .. and print it
-RD1:    LD HL,(EOFP) ; loaded after any existing edit buffer content
-RD2:    LD B,2
-        CALL BLOK    ; look for block header 2..N (source code) append to current source
-        JR Z,RD3
-        CALL RD4
-E3:     LD L,M20&255 ; MEM -> out of memory (see comments in BL3)
-        JP ERR
 ;
-RD3:    INC B
-        DJNZ RD2
-RD4:    DEC HL
-        LD (EOFP),HL
-        DEC HL
-        LD (HL),CR ; FALL-THROUGH
+; Command: IHEX: Print the assembled code in Intel HEX format
+;
+IHEX:   PUSH IX
+        LD HL,(OBJS)
+        LD DE,(OBJ)
+        LD IX,(ORGADR)
+NEWREC: CALL CRLF ;
+        LD A,E
+        SUB L
+        LD C,A
+        LD A,D
+        SBC A,H
+        LD B,A
+        JR C,HXERR
+        LD A,16
+        JR NZ,NEW2
+        CP C
+        JR C,NEW2
+        LD A,B
+        OR C
+        JR Z,DONE
+        LD A,C
+NEW2:   LD C,A
+        CALL PCOLN
+        LD A,C
+        LD B,0
+        CALL PNHEX
+        PUSH HL
+        PUSH IX
+        POP HL
+        CALL PUNHL
+        POP HL
+        XOR A
+        CALL PNHEX
+PMEM:   LD A,(HL)
+        CALL PNHEX
+        INC HL
+        INC IX
+        DEC C
+        JR NZ,PMEM
+        CALL CSUM
+        JR NEWREC
+;
+HXERR:  LD A,'?'
+        POP IX
+        JR POUT
+;
+DONE:   CALL PCOLN
+        XOR A
+        CALL PNHEX
+        LD HL,0 
+        CALL PUNHL
+        LD HL,01FFH
+        CALL PUNHL
+        POP IX
+        JP PCRLF
+;
+PUNHL:  LD A,H
+        CALL PNHEX
+        LD A,L
+PNHEX:  PUSH AF
+        ADD A,B
+        LD B,A
+        POP AF
+        PUSH AF
+        RRA
+        RRA
+        RRA
+        RRA
+        CALL PHEX1
+        POP AF
+PHEX1:  AND 0FH
+        ADD A,90H
+        DAA
+        ADC A,40H
+        DAA
+        JR POUT
+CSUM:   LD A,B
+        CPL
+        INC A 
+        JR PNHEX
+PCRLF:  LD A,CR
+        JR POUT
+PCOLN:  LD A,':'
+POUT:   RST 08H 
+        RET
 ;
 ; Command: HOWBIG: report start/end of edit buffer
-
+;
 HOWBIG: LD HL,(SOFP)
         CALL WORD
         LD HL,(EOFP)
@@ -357,7 +423,7 @@ HOWBIG: LD HL,(SOFP)
 ;
 ; Command: SORT: print sorted symbol table or, if argument given, all symbols that start with that character
 ; BUG: sorted list only prints symbols starting A-Z but a-z are also legal..
-
+;
 SORT:   LD HL,CRLF
         PUSH HL
         LD A,(TBUFF+1) ;search for symbols starting with this letter (CR means.. all symbols)
@@ -374,7 +440,7 @@ SRT2:   CALL SCAN
         CP 'Z'+1 ; ..and ending with Z
         JR NZ,SRT2
         RET
-
+;
 ; Input Char to search for in C
 ; HL > source buffer area (end marked with FFh)
 ;
@@ -422,8 +488,8 @@ COMTB:  DEFB 'U'|S
         DEFW UP
         DEFB 'Q'|S
         DEFW QUIT
-        DEFB 'R'|S
-        DEFW READ
+        DEFB 'X'|S
+        DEFW IHEX
         DEFB 'W'|S
         DEFW WRITE
         DEFB 'A'|S
@@ -573,50 +639,6 @@ CRLF:   LD A,CR
         CALL OUTPUT
         LD A,LF
         JP OUTPUT
-;
-RIN:    CALL SIN
-        CP 10H
-        RET NZ
-        CALL SIN
-        RES 7,A
-        RET
-;
-; Tape load: look for and load a block. B=block number, HL=destination address
-; The block number is repeated 8 times but this code does not look rugged:
-; it looks for 1 instance of the block number and then simply skips the next
-; 7 bytes.
-BLOK:   CALL SIN
-        CP B
-        JR NZ,BLOK ; keep looking
-        LD B,7     ; found it, skip next 7 bytes
-BL2:    CALL SIN
-        DJNZ BL2
-        LD D,B     ; D=0 Used for accumulating checksum?
-        CALL PAR
-BL3:    CALL RIN   ; RIN only works on LF (0ah) if found gets next chr with bit 7 stripped
-        LD (HL),A  ; store..
-        CP (HL)    ; ..can we read what we read?
-        RET NZ     ; no! No RAM here => out of memory
-        ADD A,D
-        LD D,A
-        INC HL
-        DJNZ BL3
-        CALL PAR
-        LD A,B
-        ADD A,D
-        LD A,'*'
-        CALL NZ,OUTPUT
-PAR:    LD BC,0107H
-        CALL RIN
-        LD E,A
-PAR2:   CALL RIN
-        CP E
-        LD E,A
-        JR NZ,PAR3
-        LD B,A
-PAR3:   DEC C
-        JR NZ,PAR2
-        RET
 ;
 ; String output: Enter with L=string offset from 0C00
 ;
@@ -1759,6 +1781,7 @@ DSH:    CALL RESOLV
         RET
 ;
 LOADH:  CALL RESOLV
+        LD (OBJS),HL; obj start?
         LD (OBJ),HL
         RES 4,(IX+F1) ; LOAD is OK??
         XOR A
@@ -1766,6 +1789,7 @@ LOADH:  CALL RESOLV
 ;
 ORGH:   CALL RESOLV
         LD (PC),HL
+        LD (ORGADR),HL
         SET 4,(IX+F1) ; LOAD is not OK (LOAD is reset by an ORG - see manual)
         RES 7,(IX+F1) ; ORG encountered
         CALL NZ,EQ2
