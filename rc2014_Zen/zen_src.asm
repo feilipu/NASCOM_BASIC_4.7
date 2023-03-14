@@ -20,6 +20,11 @@ SYMSPC: EQU 01800H ;sets SOFP & EOFP (Symbol table ~0800H)
 ;
 ORG     MYZEN
 ;
+POUT:   EQU 0008H ; Address of Output routine (RST 08H)
+VID:    EQU 0008H ; Address of Output routine (RST 08H)
+SOUT:   EQU 0008H ; Address of Output routine (RST 08H)
+SIN:    EQU 0010H ; Address of Input routine (RST 10H) - Unused
+;
 NBS:    EQU 08 ;(08h)
 NL:     EQU 13 ;(0Dh)
 CR:     EQU 13 ;(0Dh)  ASCII carriage return for printer output/edit buffer storage
@@ -371,7 +376,7 @@ PMEM:   LD A,(HL)
 ;
 HXERR:  LD A,'?'
         POP IX
-        JR POUT
+        JP POUT
 ;
 DONE:   CALL PCOLN
         XOR A
@@ -402,16 +407,15 @@ PHEX1:  AND 0FH
         DAA
         ADC A,40H
         DAA
-        JR POUT
+        JP POUT
 CSUM:   LD A,B
         CPL
         INC A 
         JR PNHEX
 PCRLF:  LD A,CR
-        JR POUT
+        JP POUT
 PCOLN:  LD A,':'
-POUT:   RST 08H 
-        RET
+        JP POUT
 ;
 ; Command: HOWBIG: report start/end of edit buffer
 ;
@@ -533,59 +537,27 @@ ERR2:   LD (IX+F1),'V' ; set output to Video
 ;
 SPACE:  LD A,20H
 OUTPUT: BIT 1,(IX+F1)
-        JR Z,EXT      ; output to EXT (Printer)
+        JR Z,EXT        ; output to EXT (Printer)
         BIT 2,(IX+F1)
-        JR Z,SOUT     ; output to Cassette
-VDU:    RES 7,A       ; must Video. Strip top bit if any
+        JP Z,SOUT       ; output to Cassette
+VDU:    RES 7,A         ; must Video. Strip top bit if any
         CP LF
         RET Z           ; if LF exit
         CP CR
-        JR NZ,VID3      ; output without LF
+        JP NZ,VID       ; output without LF
         LD A,NL         ; add LF
-VID3:   RST 08H
-        RET
-KI:     PUSH HL
-        PUSH DE
-        RST 10H
+        JP VID
+KI:     RST 10H
         RES 7,A
-        POP DE
-        POP HL
-        RET
-        NOP
-        NOP
-        NOP
-        NOP
-SIN:    RST 10H  ; input, but JP would be faster
         RET
 EXT:    RES 7,A  ; ensure no bit 7 set
-        NOP      ; patched to NOP?
-        NOP
-        NOP
         CP NFF   ; check T4 FF
         JR NZ,EXT2
-        LD A,FF       ; make form feed
-EXT2:   NOP      ; space for user to patch in code to
-        NOP      ; drive EXTERNAL device (printer)
-        NOP      ; .. in this case it just falls through
-        NOP      ; to serial output (aka CASSETTE)
-        NOP
-        NOP
-        NOP
-        NOP
-        NOP
-        NOP
-        NOP
-        NOP
-        NOP
-        NOP
-        NOP
-        NOP
-        NOP
-        NOP
-        NOP
-        NOP
-SOUT:   RST 08H  ; output, but JP would be faster
-        RET
+        LD A,FF  ; make form feed
+EXT2:   JP SOUT  ; space for user to patch in code to
+                 ; drive EXTERNAL device (printer)...
+                 ; in this case it just jumps
+                 ; to serial output (aka CASSETTE)
 ;
 ; Print prompt message @(HL) (well, L; H is implied) then fall through
 CUE:    CALL STRING ; FALL-THROUGH
