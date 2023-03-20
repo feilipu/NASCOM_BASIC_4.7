@@ -206,13 +206,13 @@ SETTOP: DEC     HL              ; Back one byte
         LD      A,L             ; Get L
         SUB     E               ; Compare with E
         JP      C,MSIZE         ; Ask again if not enough RAM
-        LD      DE,0-50         ; 50 Bytes string space
+        LD      DE,-50          ; 50 Bytes string space
         LD      (LSTRAM),HL     ; Save last available RAM
         ADD     HL,DE           ; Allocate string space
         LD      (STRSPC),HL     ; Save string space
         CALL    CLRPTR          ; Clear program area
         LD      HL,(STRSPC)     ; Get end of memory
-        LD      DE,0-17         ; Offset for free bytes
+        LD      DE,-17          ; Offset for free bytes
         ADD     HL,DE           ; Adjust HL
         LD      DE,PROGST       ; Start of program text
         LD      A,L             ; Get LSB
@@ -2472,7 +2472,7 @@ FRE:    LD      HL,(ARREND)     ; Start of free memory
         LD      HL,(STRBOT)     ; Bottom of string space
 FRENUM: LD      A,L             ; Get LSB of end
         SUB     E               ; Subtract LSB of beginning
-        LD      C,A             ; Save difference if C
+        LD      C,A             ; Save difference in C
         LD      A,H             ; Get MSB of end
         SBC     A,D             ; Subtract MSB of beginning
 ACPASS: LD      B,C             ; Return integer AC
