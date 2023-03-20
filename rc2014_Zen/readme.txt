@@ -36,7 +36,7 @@ There are some changes to the documented commands, to better suit the GS/RC2014 
  - The "X" command is new, following a successful assembly X can be used to generate an Intel Hex file of the object code. This correctly handles phase differences between ORG and LOAD.
  - The "Q" quit command returns to the monitor in the 8k rom image, so please use the updated rom from http://philg.uk
 
-The editor is as minimal as it could be - you can enter a line, during which you may use backspace, you can delete a line with "Z" (zap) and enter a new line with "N". "T" takes you to the top of the source, "B" to the bottom, theres "U" for up, "D" for down, and "Pnn" prints nn lines to the screen.
+The editor is as minimal as it could be - you can enter a line, during which you may use backspace, you can delete a line with "Z" (zap) and enter a new line with "N". "T" takes you to the top of the source, "B" to the bottom, theres "U" for up, "D" for down, and "Pnn" prints nn lines to the screen. "Gnn" goes to line nn. Remember that "E" enters text BEFORE the current line, as it always has.
 
 The manual lists the Editor & Assembler commands and options, please read it  :-)
 
@@ -46,6 +46,6 @@ With its own minimised source code "Zen" will happily assemble itself and can lo
 
 Over the decades "Zen" has morphed in many ways but was originally written by John Hawthorne and distributed by Tim Moore of Newbear and by Laurie Shields of Avalon Sofware, with the Nascom port completed by Neal Crook, and all credit goes to these good people  :-)
 
-Phil_G 2/3/2023, updated 10/3/2023
+Phil_G 2/3/2023, updated 10/3/2023, 18/3/2023
 philg@talk21.com
 https://www.youtube.com/@PHILG2864/videos

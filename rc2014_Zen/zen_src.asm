@@ -330,9 +330,15 @@ WREND:  LD A,0DH
         LD A,10H
         JP SOUT
 ;
+; Command: GO2LN: Go to a specific line number
+GO2LN:  CALL TOP
+        DEC BC
+        LD A,B
+        OR C
+        RET Z
+        JP DOWN
 ;
 ; Command: IHEX: Print the assembled code in Intel HEX format
-;
 IHEX:   PUSH IX
         LD HL,(OBJS)
         LD DE,(OBJ)
@@ -494,6 +500,8 @@ COMTB:  DEFB 'U'|S
         DEFW QUIT
         DEFB 'X'|S
         DEFW IHEX
+        DEFB 'G'|S
+        DEFW GO2LN
         DEFB 'W'|S
         DEFW WRITE
         DEFB 'A'|S
