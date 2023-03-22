@@ -53,6 +53,8 @@
 
 ; BASIC WORK SPACE LOCATIONS
 
+        PUBLIC WRKSPC                   ; Start of BASIC RAM
+
         DEFC    WRKSPC  =   2200H       ; <<<< BASIC Work space ** Rx buffer & Tx buffer located from 2080H **
         DEFC    USR     =   WRKSPC+003H ; "USR (x)" jump
         DEFC    OUTSUB  =   WRKSPC+006H ; "OUT p,n"
