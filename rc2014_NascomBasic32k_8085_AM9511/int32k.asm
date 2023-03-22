@@ -329,7 +329,8 @@ SECTION init_strings                ; ORG $01F0
 ; 8085 INTERRUPT VECTOR PROTOTYPE ASSIGNMENTS
 ;
 
-EXTERN  NULL_RET, NULL_INT
+EXTERN  NULL_INT                            ; EI RET
+EXTERN  UFERR                               ; User Function undefined (RSTnn) error
 
 PUBLIC  RST_00, RST_08, RST_10; RST_18
 PUBLIC  RST_20, RST_28, RST_30, RST_38
@@ -340,15 +341,15 @@ DEFC    RST_00      =       INIT            ; Initialise, should never get here
 DEFC    RST_08      =       TXA             ; TX character, loop until space
 DEFC    RST_10      =       RXA             ; RX character, loop until byte
 ;       RST_18      =       RXA_CHK         ; Check receive buffer status, return # bytes available
-DEFC    RST_20      =       NULL_RET        ; RET
+DEFC    RST_20      =       UFERR           ; User Function undefined (RST20)
 DEFC    TRAP        =       NULL_INT        ; 8085 TRAP - RC2014 Bus /NMI
-DEFC    RST_28      =       NULL_RET        ; RET
+DEFC    RST_28      =       UFERR           ; User Function undefined (RST28)
 DEFC    IRQ_55      =       NULL_INT        ; 8085 IRQ 5.5 - 8085 CPU Module
-DEFC    RST_30      =       NULL_RET        ; RET
+DEFC    RST_30      =       UFERR           ; User Function undefined (RST30)
 DEFC    IRQ_65      =       acia_int        ; 8085 IRQ 6.5 - RC2014 Bus /INT
-DEFC    RST_38      =       NULL_RET        ; RET
+DEFC    RST_38      =       UFERR           ; User Function undefined (RST38)
 DEFC    IRQ_75      =       NULL_INT        ; 8085 IRQ 7.5 - 8085 CPU Module /RX
-DEFC    RST_40      =       NULL_RET        ; 8085 JP V Overflow
+DEFC    RST_40      =       UFERR           ; 8085 JP V Overflow
 
 ;==============================================================================
 

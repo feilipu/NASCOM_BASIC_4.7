@@ -464,7 +464,8 @@ LoadOKStr:      DEFM    CR,LF,"Done",CR,LF,0
 ;
 
 EXTERN  REINIT
-EXTERN  NULL_RET, NULL_INT, NULL_NMI
+EXTERN  NULL_INT, NULL_NMI
+EXTERN  UFERR                           ; User Function undefined (RSTnn) error
 
 PUBLIC  Z180_TRAP
 PUBLIC  RST_08, RST_10, RST_18, RST_20, RST_28, RST_30
@@ -474,9 +475,9 @@ DEFC    Z180_TRAP   =   REINIT          ; Initialise again, for the moment
 DEFC    RST_08      =   TX0             ; TX a byte over ASCI0
 DEFC    RST_10      =   RX0             ; RX a byte over ASCI0, loop byte available
 DEFC    RST_18      =   RX0_CHK         ; Check ASCI0 status, return # bytes available
-DEFC    RST_20      =   NULL_RET        ; RET
-DEFC    RST_28      =   NULL_RET        ; RET
-DEFC    RST_30      =   NULL_RET        ; RET
+DEFC    RST_20      =   UFERR           ; User Function undefined (RST20)
+DEFC    RST_28      =   UFERR           ; User Function undefined (RST28)
+DEFC    RST_30      =   UFERR           ; User Function undefined (RST30)
 DEFC    INT_INT0    =   NULL_INT        ; EI RETI
 DEFC    INT_NMI     =   NULL_NMI        ; RETN
 

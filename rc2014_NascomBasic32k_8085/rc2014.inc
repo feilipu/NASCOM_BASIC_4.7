@@ -60,15 +60,15 @@ DEFC    VECTOR_SIZE         =   $34
 ;DEFC       RST_08          =   TX          TX a character over SOD / ACIA
 ;DEFC       RST_10          =   RX          RX a character over SID / ACIA, block no bytes available
 ;DEFC       RST_18          =   RX_CHK      Check SID / ACIA status, return # bytes available
-;DEFC       RST_20          =   NULL_RET
+;DEFC       RST_20          =   UFERR       User Function undefined (RSTnn) error
 ;DEFC       TRAP            =   NULL_INT    8085 TRAP $0024
-;DEFC       RST_28          =   NULL_RET
+;DEFC       RST_28          =   UFERR       User Function undefined (RSTnn) error
 ;DEFC       IRQ_55          =   NULL_INT    8085 IRQ 5.5
-;DEFC       RST_30          =   NULL_RET
+;DEFC       RST_30          =   UFERR       User Function undefined (RSTnn) error
 ;DEFC       IRQ_65          =   NULL_INT    8085 IRQ 6.5
-;DEFC       RST_38          =   NULL_RET
+;DEFC       RST_38          =   UFERR       User Function undefined (RSTnn) error
 ;DEFC       IRQ_75          =   NULL_INT    8085 IRQ 7.5
-;DEFC       RST_40          =   NULL_RET    8085 JP V Overflow
+;DEFC       RST_40          =   UFERR       8085 JP V Overflow
 
 ;   8085 Interrupt Service Routine Addresses - rewrite as needed
 
