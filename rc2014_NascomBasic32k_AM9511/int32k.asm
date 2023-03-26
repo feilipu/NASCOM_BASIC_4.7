@@ -56,7 +56,7 @@ SECTION acia_interrupt              ; ORG $0070
         jr NC,acia_tx_send          ; if not, go check for bytes to transmit
 
 .acia_rx_get
-        in a,(SER_DATA_ADDR)        ; Get the received byte from the ACIA 
+        in a,(SER_DATA_ADDR)        ; Get the received byte from the ACIA
         ld l,a                      ; Move Rx byte to l
 
         ld a,(serRxBufUsed)         ; Get the number of bytes in the Rx buffer
@@ -227,9 +227,9 @@ PUBLIC  INIT
 
 .MEM_ERR
         LD L,A                      ; preserve the error byte
-        DEFB    01H                 ; skip "LD L,' '"
+        DEFB 01H                    ; skip "LD L,BEL"
 .INIT
-        LD L,' '                    ; prepare a space, to indicate normal boot
+        LD L,07H                    ; prepare a BEL, to indicate normal boot
 
         LD A,SER_RESET              ; master RESET the ACIA
         OUT (SER_CTRL_ADDR),A
@@ -284,7 +284,7 @@ PUBLIC  INIT
                                     ; 8n2 at 115200 baud
                                     ; receive interrupt enabled
                                     ; transmit interrupt disabled
-                            
+
         LD (serControl),A           ; write the ACIA control byte echo
         OUT (SER_CTRL_ADDR),A       ; output to the ACIA control byte
 
@@ -372,4 +372,3 @@ DEFC    INT_INT     =       acia_int        ; ACIA interrupt
 DEFC    INT_NMI     =       NULL_NMI        ; RETN
 
 ;==============================================================================
-
