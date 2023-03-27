@@ -235,7 +235,7 @@ PUBLIC  INIT
         OUT (SER_CTRL_ADDR),A
 
         LD A,SER_TDI_RTS0|SER_8N2|SER_CLK_DIV_64
-                                    ; load the default ACIA configuration
+                                    ; load the initial ACIA configuration
                                     ; 8n2 at 115200 baud
                                     ; receive interrupt disabled
                                     ; transmit interrupt disabled
