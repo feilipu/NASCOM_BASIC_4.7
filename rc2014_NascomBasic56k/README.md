@@ -56,7 +56,6 @@ Immediately following a RAM Module sanity check will ensure that the serial port
 
 5. Start your program by typing `PRINT USR(0)`, or `? USR(0)`, or other variant if you have an input parameter to pass to your program.
 
-
 The `HLOAD` program can be exited without uploading a valid file by typing `:` followed by `CR CR CR CR CR CR`, or any other character.
 
 The top of Basic memory can be readjusted by using the `RESET` function, when required. `RESET` is functionally equivalent to a cold start.
