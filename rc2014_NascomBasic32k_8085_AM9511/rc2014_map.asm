@@ -30,7 +30,7 @@ SECTION     acia_txa
 ORG         $0120
 
 SECTION     init
-ORG         $0170
+ORG         $0168
 
 SECTION     init_strings
 ORG         $01F0

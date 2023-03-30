@@ -221,7 +221,7 @@ SECTION acia_txa                    ; ORG $0120
         ret
 
 ;------------------------------------------------------------------------------
-SECTION init                        ; ORG $0170
+SECTION init                        ; ORG $0168
 
 PUBLIC  INIT
 
@@ -232,10 +232,8 @@ PUBLIC  INIT
         LD DE,VECTOR_BASE
         LD B,VECTOR_SIZE
 .COPY
-        LD A,(HL)
-        LD (DE),A
-        INC HL
-        INC DE
+        LD A,(HL+)
+        LD (DE+),A
         DEC B
         JP NZ,COPY
 
@@ -268,6 +266,8 @@ PUBLIC  INIT
         EI                          ; enable interrupts
 
 .START
+        LD A,BEL                    ; prepare a BEL, to indicate normal boot
+        RST 08H
         LD HL,SIGNON1               ; sign-on message
         CALL PRINT                  ; output string
         LD A,(basicStarted)         ; check the BASIC STARTED flag

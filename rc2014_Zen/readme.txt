@@ -6,6 +6,9 @@ Use the Zen "ORG" and "LOAD" keywords to place assembled programs above the Zen 
 
 Check the NASCOM Basic Manual Appendix D for further information on mixing Basic and Assembly code.
 
+A MS BASIC monitor for the RC2014 is available, which can be used together with Zen to manage large assembly programs.
+https://github.com/RC2014Z80/RC2014/tree/master/BASIC-Programs/Monitor
+
 Derived from the original source by Neal Crook, and including adaption to RC2014 and improvements by Phil Green.
 https://github.com/nealcrook/nascom/tree/master/ZEN_assembler
 
