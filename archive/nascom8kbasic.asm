@@ -1175,7 +1175,7 @@ FOR:    LD      A,64H           ; Flag "FOR" assignment
         POP     BC              ; Drop RETurn address
         PUSH    HL              ; Save code string address
         CALL    DATA            ; Get next statement address
-        LD      (LOOPST),HL     ; Save it for start of lo6p
+        LD      (LOOPST),HL     ; Save it for start of loop
         LD      HL,2            ; Offset for "FOR" block
         ADD     HL,SP           ; Point to it
 FORSLP: CALL    LOKFOR          ; Look for existing "FOR" block

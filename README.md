@@ -57,7 +57,7 @@ For convenience, because we can't easily change the ROM code interrupt routines 
 * Tx: `RST 08H` expects a byte to transmit in the `a` register.
 * Rx: `RST 10H` returns a received byte in the `a` register, and will block (loop) until it has a byte to return.
 * Rx Check: `RST 18H` will immediately return the number of bytes in the Rx buffer (0 if buffer empty) in the `a` register.
-* ACIA Interrupt: `RST 38H` is used by the ACIA 68B50 Serial Device.
+* ACIA Interrupt: `RST 38H` is used by the ACIA 68B50 Serial Device (8085 CPU Module systems use IRQ 6.5).
 
 All `RST xxH` targets can be rewritten in a `JP` table originating at `0x8000` in RAM. This allows the use of debugging tools and reorganising the efficient `RST` call instructions as needed.
 
