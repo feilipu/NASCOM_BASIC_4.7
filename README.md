@@ -98,7 +98,7 @@ Issuing the `RESET` statement will clear the RC2014 RAM, and return the original
 
 There are several Intel HEX versions of the Zen assembler with different RAM origins prepared to use from within RC2014 NASCOM Basic. Use the `HLOAD` Basic statement to load your choice of HEX file based on how much RAM you wish to leave available for Basic, and launch Zen with `?USR(0)`. Exit back to MS Basic with `Q`.
 
-Use the Zen `ORG` and `LOAD` statments to place assembled programs above the Zen `EOFP`. Use Zen `H` to determine where `EOFP` is located. On return to Basic, assembled programs can be launched using the `?USR(0)` command either from immediate mode, or from within a Basic program, after setting the correct `USR` location.
+Use the Zen `ORG` and `LOAD` statements to place assembled programs above the Zen `EOFP`. Use Zen `H` to determine where `EOFP` is located. On return to Basic, assembled programs can be launched using the `?USR(0)` command either from immediate mode, or from within a Basic program, after setting the correct `USR` location.
 
 Check the NASCOM Basic Manual Appendix D for further information on mixing Basic and Assembly code.
 
