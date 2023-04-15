@@ -141,7 +141,6 @@
         DEFC    UF      =   22H ; UnDEFined user function FN
         DEFC    MO      =   24H ; Missing operand
         DEFC    HX      =   26H ; HEX error
-        DEFC    BN      =   28H ; BIN error
 
 ; BASIC CODE COMMENCES
 
@@ -267,7 +266,6 @@ FNCTAB: DEFW    SGN
         DEFW    ASC
         DEFW    CHR
         DEFW    HEX
-        DEFW    BIN
         DEFW    LEFT
         DEFW    RIGHT
         DEFW    MID
@@ -297,6 +295,8 @@ WORDS:  DEFB    'E'+80H,"ND"    ; 80h
         DEFB    'D'+80H,"EF"
         DEFB    'P'+80H,"OKE"
         DEFB    'D'+80H,"OKE"
+        DEFB    'M'+80H,"OKE"
+        DEFB    'M'+80H,"EEK"
         DEFB    'L'+80H,"INES"
         DEFB    'C'+80H,"LS"
         DEFB    'W'+80H,"IDTH"
@@ -304,9 +304,9 @@ WORDS:  DEFB    'E'+80H,"ND"    ; 80h
         DEFB    'R'+80H,"ESET"
         DEFB    'P'+80H,"RINT"
         DEFB    'C'+80H,"ONT"
-        DEFB    'L'+80H,"IST"
+        DEFB    'L'+80H,"IST"   ; A0h
         DEFB    'C'+80H,"LEAR"
-        DEFB    'H'+80H,"LOAD"  ; A0h
+        DEFB    'H'+80H,"LOAD"
         DEFB    'N'+80H,"EW"
 
         DEFB    'T'+80H,"AB("
@@ -317,14 +317,15 @@ WORDS:  DEFB    'E'+80H,"ND"    ; 80h
         DEFB    'N'+80H,"OT"
         DEFB    'S'+80H,"TEP"
 
+        DEFB    '&'+80H
         DEFB    '+'+80H
         DEFB    '-'+80H
         DEFB    '*'+80H
         DEFB    '/'+80H
-        DEFB    '^'+80H
+        DEFB    '^'+80H        ; B0h
         DEFB    'A'+80H,"ND"
         DEFB    'O'+80H,"R"
-        DEFB    '>'+80H         ; B0h
+        DEFB    '>'+80H
         DEFB    '='+80H
         DEFB    '<'+80H
 
@@ -338,10 +339,10 @@ WORDS:  DEFB    'E'+80H,"ND"    ; 80h
         DEFB    'S'+80H,"QR"
         DEFB    'R'+80H,"ND"
         DEFB    'L'+80H,"OG"
-        DEFB    'E'+80H,"XP"
+        DEFB    'E'+80H,"XP"    ; C0h
         DEFB    'C'+80H,"OS"
         DEFB    'S'+80H,"IN"
-        DEFB    'T'+80H,"AN"    ; C0h
+        DEFB    'T'+80H,"AN"
         DEFB    'A'+80H,"TN"
         DEFB    'P'+80H,"EEK"
         DEFB    'D'+80H,"EEK"
@@ -351,7 +352,6 @@ WORDS:  DEFB    'E'+80H,"ND"    ; 80h
         DEFB    'A'+80H,"SC"
         DEFB    'C'+80H,"HR$"
         DEFB    'H'+80H,"EX$"
-        DEFB    'B'+80H,"IN$"
         DEFB    'L'+80H,"EFT$"
         DEFB    'R'+80H,"IGHT$"
         DEFB    'M'+80H,"ID$"
@@ -382,6 +382,8 @@ WORDTB: DEFW    PEND
         DEFW    DEF
         DEFW    POKE
         DEFW    DOKE
+        DEFW    MOKE
+        DEFW    MEEK
         DEFW    LINES
         DEFW    CLS
         DEFW    WIDTH
@@ -402,27 +404,28 @@ WORDTB: DEFW    PEND
         DEFC    ZGOTO   =   088H        ; GOTO
         DEFC    ZGOSUB  =   08CH        ; GOSUB
         DEFC    ZREM    =   08EH        ; REM
-        DEFC    ZPRINT  =   09CH        ; PRINT
-        DEFC    ZNEW    =   0A1H        ; NEW
+        DEFC    ZPRINT  =   09EH        ; PRINT
+        DEFC    ZNEW    =   0A3H        ; NEW
 
-        DEFC    ZTAB    =   0A2H        ; TAB
-        DEFC    ZTO     =   0A3H        ; TO
-        DEFC    ZFN     =   0A4H        ; FN
-        DEFC    ZSPC    =   0A5H        ; SPC
-        DEFC    ZTHEN   =   0A6H        ; THEN
-        DEFC    ZNOT    =   0A7H        ; NOT
-        DEFC    ZSTEP   =   0A8H        ; STEP
+        DEFC    ZTAB    =   0A4H        ; TAB
+        DEFC    ZTO     =   0A5H        ; TO
+        DEFC    ZFN     =   0A6H        ; FN
+        DEFC    ZSPC    =   0A7H        ; SPC
+        DEFC    ZTHEN   =   0A8H        ; THEN
+        DEFC    ZNOT    =   0A9H        ; NOT
+        DEFC    ZSTEP   =   0AAH        ; STEP
 
-        DEFC    ZPLUS   =   0A9H        ; +
-        DEFC    ZMINUS  =   0AAH        ; -
-        DEFC    ZTIMES  =   0ABH        ; *
-        DEFC    ZDIV    =   0ACH        ; /
-        DEFC    ZOR     =   0AFH        ; OR
-        DEFC    ZGTR    =   0B0H        ; >
-        DEFC    ZEQUAL  =   0B1H        ; =
-        DEFC    ZLTH    =   0B2H        ; <
-        DEFC    ZSGN    =   0B3H        ; SGN
-        DEFC    ZLEFT   =   0CBH        ; LEFT$
+        DEFC    ZAMP    =   0ABH        ; &
+        DEFC    ZPLUS   =   0ACH        ; +
+        DEFC    ZMINUS  =   0ADH        ; -
+        DEFC    ZTIMES  =   0AEH        ; *
+        DEFC    ZDIV    =   0AFH        ; /
+        DEFC    ZOR     =   0B2H        ; OR
+        DEFC    ZGTR    =   0B3H        ; >
+        DEFC    ZEQUAL  =   0B4H        ; =
+        DEFC    ZLTH    =   0B5H        ; <
+        DEFC    ZSGN    =   0B6H        ; SGN
+        DEFC    ZLEFT   =   0CDH        ; LEFT$
 
 ; ARITHMETIC PRECEDENCE TABLE
 
@@ -469,7 +472,6 @@ ERRORS: DEFB    "NF"            ; NEXT without FOR
         DEFB    "UF"            ; Undefined FN function
         DEFB    "MO"            ; Missing operand
         DEFB    "HX"            ; HEX error
-        DEFB    "BN"            ; BIN error
 
 ; INITIALISATION TABLE --------------------------------------------------------
 
@@ -518,7 +520,7 @@ INITAB: JP      WARMST          ; Warm start jump
         DEFB    0               ; Break not by NMI
         DEFB    0               ; Break flag
 
-         JP     TTYLIN          ; Input reflection (set to TTY)
+        JP      TTYLIN          ; Input reflection (set to TTY)
 
         DEFW    STLOOK          ; Temp string space
         DEFW    -2              ; Current line number (cold)
@@ -605,6 +607,8 @@ UFERR:  LD      E,UF            ; ?UF Error
 OVERR:  LD      E,OV            ; ?OV Error
         DEFB    01H             ; Skip "LD E,TM"
 TMERR:  LD      E,TM            ; ?TM Error
+        DEFB    01H             ; Skip "LD E,HX"
+HXERR:  LD      E,HX            ; ?HEX Error
 
 ERROR:  CALL    CLREG           ; Clear registers and stack
         LD      (CTLOFG),A      ; Enable output (A is 0)
@@ -1954,16 +1958,9 @@ OPRND:  XOR     A               ; Get operand routine
         JP      Z,EVNOT         ; Yes - Eval NOT expression
         CP      ZFN             ; "FN" Token ?
         JP      Z,DOFN          ; Yes - Do FN routine
-        CP      '&'             ; &H = HEX, &B = BINARY
-        JP      NZ,NOTAMP       ; No - Skip to functions
-        CALL    GETCHR          ; Get next character
-        CP      'H'             ; Hex number indicated? [Searle function added]
+        CP      ZAMP            ; &H = HEX
         JP      Z,HEXTFP        ; Convert Hex to FPREG
-        CP      'B'             ; Binary number indicated? [Searle function added]
-        JP      Z,BINTFP        ; Convert Bin to FPREG
-        LD      E,SN            ; If neither then a ?SN Error
-        JP      Z,ERROR         ;
-NOTAMP: SUB     ZSGN            ; Is it a function?
+        SUB     ZSGN            ; Is it a function?
         JP      NC,FNOFST       ; Yes - Evaluate function
 EVLPAR: CALL    OPNPAR          ; Evaluate expression in "()"
         CALL    CHKSYN          ; Make sure ")" follows
@@ -2398,7 +2395,7 @@ FNDELP: POP     HL              ; Address of next dim' size
         ADD     HL,DE           ; Add index to pointer
         POP     AF              ; Number of dimensions
         DEC     A               ; Count them
-        LD      BC,HL           ; MSB,LSB of pointer
+        LD      BC,HL           ; MSB, LSB of pointer
         JP      NZ,FNDELP       ; More - Keep going
         ADD     HL,HL           ; 4 Bytes per element
         ADD     HL,HL
@@ -2946,16 +2943,8 @@ VAL:    CALL    GETLEN          ; Get length of string
         EX      (SP),HL         ; Save string end,get start
         PUSH    BC              ; Save end+1 byte
         LD      A,(HL)          ; Get starting byte
-        CP      '$'             ; Hex number indicated? [Searle function added]
-        JP      NZ,VAL1
-        CALL    HEXTFP          ; Convert Hex to FPREG
-        JP      VAL3
-VAL1:   CP      '%'             ; Binary number indicated? [Searle function added]
-        JP      NZ,VAL2
-        CALL    BINTFP          ; Convert Bin to FPREG
-        JP      VAL3
-VAL2:   CALL    ASCTFP          ; Convert ASCII string to FP
-VAL3:   POP     BC              ; Restore end+1 byte
+        CALL    ASCTFP          ; Convert ASCII string to FP
+        POP     BC              ; Restore end+1 byte
         POP     HL              ; Restore end+1 address
         LD      (HL),B          ; Put back original byte
         RET
@@ -4227,12 +4216,108 @@ DOKE:   CALL    GETNUM          ; Get a number
         DEFB    ','
         CALL    GETNUM          ; Get a number
         CALL    DEINT           ; Get integer -32768 to 32767
-        EX      (SP),HL         ; Save value,get address
+        EX      (SP),HL         ; Save value, get address
         LD      (HL),E          ; Save LSB of value
         INC     HL
         LD      (HL),D          ; Save MSB of value
         POP     HL              ; Restore code string address
         RET
+
+
+        ; MEEK I,J where I is signed integer and J is 16 byte blocks
+        ; uses  : af, hl
+        ; (C) feilipu
+
+MEEK:   CALL    GETNUM          ; Get address
+        CALL    DEINT           ; Get integer -32768 to 32767 to DE
+        PUSH    DE              ; Save address
+        CALL    CHKSYN          ; Make sure ',' follows
+        DEFB    ','
+        CALL    GETINT          ; Get integer 0-255 in A
+        LD      C,A             ; Get blocks (of 16 bytes) to C
+        OR      A               ; Check for zero blocks
+        POP     HL              ; Recover address
+MEEKLP: JP      Z,BRKRET        ; Return to command line
+        CALL    PRNTCRLF        ; New line
+        CALL    PRHL            ; Print address
+        LD      A,':'           ; Load colon
+        CALL    OUTC            ; Output character
+        LD      B,16            ; 16 byte blocks
+MEEKLLP:LD      A,' '           ; Load space
+        CALL    OUTC            ; Output character
+        LD      A,(HL)          ; Read byte at address
+        CALL    PRHEX           ; Print byte in HEX
+        INC     HL              ; Get next address
+        DJNZ    MEEKLLP         ; Do 16 byte blocks
+
+        DEC     C               ; Decrement block count
+        JP      MEEKLP
+
+
+        ; MOKE I where I is signed integer
+        ; uses  : af, de, hl
+        ; (C) feilipu
+
+MOKE:   CALL    GETNUM          ; Get address
+        CALL    DEINT           ; Get integer -32768 to 32767
+        EX      DE,HL           ; Move address
+MOKELP: PUSH    HL              ; Save address
+        CALL    PRHL            ; Print address in HEX
+        LD      A,' '           ; Space
+        CALL    OUTC            ; Output character
+        LD      A,(HL)          ; Read byte at address
+        CALL    PRHEX           ; Print byte in HEX
+        CALL    PROMPT          ; Output "? ", get input RINPUT
+        JP      C,BRKRET        ; Return to command line
+        CALL    HLHEX           ; Get (HL) HEX into HL
+        POP     DE              ; Restore address
+        EX      DE,HL
+        LD      (HL),E          ; Save byte in address
+        INC     HL              ; Next address
+        JP      MOKELP          ; Do another address
+
+
+        ; To print HEX numbers from HL
+        ; uses  : af, hl
+        ; (C) feilipu
+
+PRHL:   LD      A,H
+        CALL    PRHEX
+        LD      A,L
+PRHEX:  PUSH    AF
+        RRCA
+        RRCA
+        RRCA
+        RRCA
+        CALL    PRHEXN
+        POP     AF
+PRHEXN: AND     0FH
+        ADD     A,90H
+        DAA
+        ADC     A,40H
+        DAA
+        JP      OUTC            ; Output character
+
+
+        ; To get number in (HL) HEX into HL
+        ; uses  : af, de, hl
+        ; (C) feilipu
+
+HLHEX:  EX      DE,HL           ; Move code string pointer to DE
+        LD      HL,0            ; Zero out the value
+        CALL    GETHEX          ; Check the number for valid hex
+        JP      C,HXERR         ; First value wasn't hex, HX error
+        JP      HLHEXH          ; Convert first character
+HLHEXL: CALL    GETHEX          ; Get second and additional characters
+        RET     C               ; Exit if not a hex character
+HLHEXH :ADD     HL,HL           ; Rotate 4 bits to the left
+        ADD     HL,HL
+        ADD     HL,HL
+        ADD     HL,HL
+        OR      L               ; Add in D0-D3 into L
+        LD      L,A             ; Save new value
+        JP      HLHEXL          ; And continue until all hex characters are in HL
+
 
         ; Load Intel HEX into program memory.
         ; uses  : af, bc, de, hl
@@ -4321,11 +4406,10 @@ HLD_READ_NIBBLE:
         sub 7                   ; else subtract 'A'-'0' (17) and add 10
         ret
 
-        ; HEX$(nn) Convert 16 bit number to Hexadecimal string
+        ; HEX$(nn) Convert signed 16 bit number to Hexadecimal string
         ; (C) Searle
 
-HEX:    CALL    TSTNUM          ; Verify it's a number
-        CALL    DEINT           ; Get integer -32768 to 32767
+HEX:    CALL    DEINT           ; Get integer -32768 to 32767
         PUSH    BC              ; Save contents of BC
         LD      HL,PBUFF
         LD      A,D             ; Get high order into A
@@ -4379,8 +4463,8 @@ ADD301: ADD     A,$30           ; And make it full ASCII
         LD      B,A             ; Store high order byte
         RET
 
-        ; Convert "&Hnnnn" to FPREG
-        ; Gets a character from (HL) checks for Hexadecimal ASCII numbers "&Hnnnn"
+        ; Convert "&nnnn" ASCII HEX to FPREG
+        ; Gets a character from (HL) checks for Hexadecimal ASCII numbers "&nnnn"
         ; Char is in A, NC if char is ;<=>?@ A-z, CY is set if 0-9
         ; (C) Searle
 
@@ -4389,7 +4473,7 @@ HEXTFP: EX      DE,HL           ; Move code string pointer to DE
         CALL    GETHEX          ; Check the number for valid hex
         JP      C,HXERR         ; First value wasn't hex, HX error
         JP      HEXLP1          ; Convert first character
-HEXLP:  CALL    GETHEX          ; Get second and addtional characters
+HEXLP:  CALL    GETHEX          ; Get second and additional characters
         JP      C,HEXIT         ; Exit if not a hex character
 HEXLP1: ADD     HL,HL           ; Rotate 4 bits to the left
         ADD     HL,HL
@@ -4401,6 +4485,8 @@ HEXLP1: ADD     HL,HL           ; Rotate 4 bits to the left
 
 GETHEX: INC     DE              ; Next location
         LD      A,(DE)          ; Load character at pointer
+        CP      'H'
+        JP      Z,GETHEX        ; Skip "H"
         CP      ' '
         JP      Z,GETHEX        ; Skip spaces
         SUB     $30             ; Get absolute value
@@ -4421,81 +4507,6 @@ HEXIT:  EX      DE,HL           ; Value into DE, Code string into HL
         CALL    ACPASS          ; ACPASS to set AC as integer into FPREG
         POP     HL
         RET
-
-HXERR:  LD      E,HX            ; ?HEX Error
-        JP      ERROR
-
-        ; BIN$(NN) Convert integer to a 1-16 char binary string
-        ; (C) Searle
-
-BIN:    CALL    TSTNUM          ; Verify it's a number
-        CALL    DEINT           ; Get integer -32768 to 32767
-BIN2:   PUSH    BC              ; Save contents of BC
-        LD      HL,PBUFF
-        LD      B,17            ; One higher than max char count
-ZEROSUP:                        ; Suppress leading zeros
-        DEC     B               ; Max 16 chars
-        LD      A,B
-        CP      $01
-        JP      Z,BITOUT        ; Always output at least one character
-        RL      E
-        RL      D
-        JP      NC,ZEROSUP
-        JP      BITOUT2
-BITOUT:
-        RL      E
-        RL      D               ; Top bit now in carry
-BITOUT2:
-        LD      A,'0'           ; Char for '0'
-        ADC     A,0             ; If carry set then '0' --> '1'
-        LD      (HL),A
-        INC     HL
-        DEC     B
-        JP      NZ,BITOUT
-        XOR     A               ; Terminating character
-        LD      (HL),A          ; Store zero to terminate
-        INC     HL              ; Make sure PBUFF is terminated
-        LD      (HL),A          ; Store the double zero there
-        POP     BC
-        LD      HL,PBUFF
-        JP      STR1
-
-        ; Convert "&Bnnnn" to FPREG
-        ; Gets a character from (HL) checks for Binary ASCII numbers "&Bnnnn"
-        ; (C) Searle
-
-BINTFP: EX      DE,HL           ; Move code string pointer to DE
-        LD      HL,0            ; Zero out the value
-        CALL    CHKBIN          ; Check the number for valid bin
-        JP      C,BINERR        ; First value wasn't bin, HX error
-BINIT:  SUB     '0'
-        ADD     HL,HL           ; Rotate HL left
-        OR      L
-        LD      L,A
-        CALL    CHKBIN          ; Get second and addtional characters
-        JP      NC,BINIT        ; Process if a bin character
-        EX      DE,HL           ; Value into DE, Code string into HL
-        LD      A,D             ; Load DE into AC
-        LD      C,E             ; For prep to
-        PUSH    HL
-        CALL    ACPASS          ; ACPASS to set AC as integer into FPREG
-        POP     HL
-        RET
-
-        ; Char is in A, NC if char is 0 or 1
-
-CHKBIN: INC     DE
-        LD      A,(DE)
-        CP      ' '
-        JP      Z,CHKBIN        ; Skip spaces
-        CP      '0'             ; Set C if < '0'
-        RET     C
-        CP      '2'
-        CCF                     ; Set C if > '1'
-        RET
-
-BINERR: LD      E,BN            ; ?BIN Error
-        JP      ERROR
 
 END:
 
