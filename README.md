@@ -16,17 +16,20 @@ The key differences over previous implementations include.
 
  - The serial interface is configured for 115200 baud with 8n2 setting and RTS hardware handshake.
  - ACIA 6850 interrupt driven serial I/O supporting the hardware double buffer, together with a large receive buffer of 255 bytes, to allow efficient pasting of Basic into the editor. The receive RTS handshake shows full before the buffer is totally filled to allow run-on from the sender.
+ - A serial and memory sanity self check is undertaken on startup, to ensure that I/O and RAM is available and is working.
  - Interrupt driven serial transmission, with a 63 Byte buffer, to ensure the CPU is not held waiting during transmission.
  - A `RST`, `INT0`, and `NMI` RAM redirection jump table, starting in RAM at `0x8000`, enables the important RST instructions and interrupt vectors to be reconfigured by the user.
- - These ROMs provides both an Intel HEX `HLOAD` function and software `RESET` function. This allows you to easily upload Z80 (or 8085) assembly or compiled C programs, and then run them as described. The `HLOAD` function automatically adjusts the upper RAM limit for Basic and enters the program origin into the `USR` location.
-  - Instruction and code flow tuning result in approximately 10% to 12% faster execution.
-  - Support for the Am9511A APU Module provides a 3x to 5x faster execution of assembly or C floating point programs.
+ - These ROMs provides both an Intel HEX `HLOAD` statement and software `RESET` statement. This allows you to easily upload Z80 (or 8085) assembly or compiled C programs, and then run them as described. The `HLOAD` statement automatically adjusts the upper RAM limit for Basic and enters the program origin into the `USR` location.
+ - Added `MEEK` and `MOKE` statements allow bulk memory to be examined in 16 byte blocks, and support continuous editing (assembly language entry) of memory. Addresses and values can be entered as signed decimal integers, or as hexadecimal numbers using the `&` keyword.
+ - The standard `WIDTH` command has been extended to support setting the column width using `WIDTH I,J` where`J` is the comma column width.
+ - Instruction and code flow tuning result in faster execution.
+ - Support for the Am9511A APU Module provides a 3x to 5x faster execution of assembly or C floating point programs.
 
 ### RC2014 Mini, Micro, Classic: 32kB MS Basic
 
 This ROM works with the Mini, Micro, and Classic versions of the RC2014, with 32k of RAM.
 
-This is the ROM to choose if you want fast I/O from a standard RC2014, together with the capability to upload and run C or assembly programs from within MS Basic. This ROM provides both Intel `HLOAD` function and a `RST`, `INT0`, and `NMI` RAM JumP Table, starting at `0x8000`. This allows you to upload Assembly or compiled C programs, and then run them as described.
+This is the ROM to choose if you want fast I/O from a standard RC2014, together with the capability to upload and run C or assembly programs from within MS Basic. This ROM provides both the `HLOAD`, `RESET`, `MEEK`, `MOKE` statements, and a `RST`, `INT0`, and `NMI` RAM Jump Table, starting at `0x8000`. This allows you to upload Assembly or compiled C programs, and then run them as described.
 
 ### RC2014 Plus: 56kB MS Basic using __64kB RAM Module__
 
@@ -67,7 +70,13 @@ The NASCOM Basic Manual Appendix D describes the use of the `USR(x)` function to
 
 For the RC2014 with 32k Basic the location for the `USR(x)` loaded user program address is `0x8204`, and with 56k Basic the location for `USR(x)` is `0x2204`.
 
-# `HLOAD` Keyword Usage
+# Assembly (or compiled C) Program Usage
+
+The `MEEK I,J` and `MOKE I` statements can be used to hand edit assembly programs, where `I` is the address of interest as a signed integer, and `J` is the number of 16 Byte blocks to display. `MOKE` Byte entry can be exited with `CTRL C` or just carriage return. For hand assembly programs the user program address needs to be manually entered into the `USRLOC` address `0x8204` using `DOKE`.
+
+Address entry can also be converted from HEX to signed integer using the `&` HEX prefix, i.e. in `MOKE &9000` `0x9000` is converted to `−28672` which is simpler than calculating this signed 16 bit integer by hand, and `MEEK &2000,&10` will tabulate and print 16 blocks of 16 bytes of memory from memory address `0x2000`.
+
+## Using `HLOAD` for uploading compiled and assembled programs.
 
 1. Select the preferred origin `ORG` for your arbitrary program, and prepare an Intel HEX file from your program using your preferred assembler, or compile a C program using z88dk. For RC2014 Basic 32kB, suitable origins commence from `0x8400`, and the default z88dk origin for the RC2014 target is `0x9000`. For  RC2014 Basic 56kB, suitable origins commence from `0x2400`.
 
@@ -79,17 +88,17 @@ For the RC2014 with 32k Basic the location for the `USR(x)` loaded user program 
 
 ## Workflow Notes
 
-Note that your program and the `USR(x)` jump address setting will remain in place through a RC2014 Warm Reset, provided you prevent Basic from initialising the RAM locations you have used. Also, you can reload your assembly program to the same RAM location through multiple Warm Resets, without issuing a `RESET` keyword.
+Note that your program and the `USR(x)` jump address setting will remain in place through a RC2014 Warm Reset, provided you prevent Basic from initialising the RAM locations you have used. Also, you can reload your assembly program to the same RAM location through multiple Warm Resets, without issuing a `RESET` statement.
 
 Any Basic programs loaded will also remain in place during a Warm Reset.
 
-Issuing the `RESET` keyword will clear the RC2014 RAM, and return the original memory contents equivalent to a cold start.
+Issuing the `RESET` statement will clear the RC2014 RAM, and return the original memory contents equivalent to a cold start.
 
 ## Zen Assembler Notes
 
-There are several Intel HEX versions of the Zen assembler with different RAM origins prepared to use from within RC2014 NASCOM Basic. Use the `HLOAD` Basic keyword to load your choice of HEX file based on how much RAM you wish to leave available for Basic, and launch Zen with `?USR(0)`. Exit back to MS Basic with `Q`.
+There are several Intel HEX versions of the Zen assembler with different RAM origins prepared to use from within RC2014 NASCOM Basic. Use the `HLOAD` Basic statement to load your choice of HEX file based on how much RAM you wish to leave available for Basic, and launch Zen with `?USR(0)`. Exit back to MS Basic with `Q`.
 
-Use the Zen `ORG` and `LOAD` keywords to place assembled programs above the Zen `EOFP`. Use Zen `H` to determine where `EOFP` is located. On return to Basic, assembled programs can be launched using the `?USR(0)` command either from immediate mode, or from within a Basic program, after setting the correct `USR` location.
+Use the Zen `ORG` and `LOAD` statments to place assembled programs above the Zen `EOFP`. Use Zen `H` to determine where `EOFP` is located. On return to Basic, assembled programs can be launched using the `?USR(0)` command either from immediate mode, or from within a Basic program, after setting the correct `USR` location.
 
 Check the NASCOM Basic Manual Appendix D for further information on mixing Basic and Assembly code.
 
@@ -100,13 +109,13 @@ MS Basic uses 4 Byte values extensively as floating point numbers in [Microsoft 
 - 4 `LDI` instructions are used to move values from one location (the Floating Point Register `FPREG`) to another location in memory, and these are in-lined to also save the call-return cycles.
 - The `LD (x),DE` `LD(x+2),BC` instruction pair is used to grab values into registers and save from registers, avoiding the need to preserve `HL` and often saving push-pop cycles and of course the call-return cycles.
 - There is a 16_16x16 multiply `MLDEBC` used to calculate table offsets, which was optimised to use shift instructions available to the Z80. I experimented with different zero multiplier checks, and with removing the checks, but Microsoft had already done the right optimisation there, so it was left as it was.
-- The extensions that Grant Searle had inserted into the operand evaluation chain to check for Hex and Binary numbers were moved to the end of the operand checks, so as not to slow down the normal operand or function evaluation.
+- The extensions that Grant Searle had inserted into the operand evaluation chain to check for Hex and Binary numbers were moved to the end of the operand checks, so as not to slow down the normal operand or function evaluation. Code flow for Hex support was simplified and more fully integrated.
 
 Doing these changes got about 6% improvement in the benchmarks.
 
 The next step was to use the [`z88dk-ticks`](https://github.com/z88dk/z88dk/wiki/Tool---ticks) tool to evaluate hotspots and try to remediate them. Using the debug mode it is possible to capture exactly how many iterations (visits) and how many cycles are consumed by each instruction.
 
-The testing revealed that the comparison function `CPDEHL` was a very heavily used function. As it is quite small, and through removing the call-return overhead, it adds only a few bytes per instance to in-line it. There is plenty of space in the 8kB ROM to allow this change so it was made.
+The testing revealed that the comparison function `CPDEHL` was very heavily used. As it is quite small, and through removing the call-return overhead, it adds only a few bytes per instance to in-line it. There is plenty of space in the 8kB ROM to allow this change so it was made. __EDIT__ the `CPDEHL` inline optimisation was reverted to provide space to add the `MEEK` and `MOKE` statements.
 
 Then, the paths taken by the `JR` and `JP` conditional instructions were examined, by checking which path was taken most frequently across the benchmarks. This resulted in changing a few `JR` instructions for `JP` instructions, when the conditional path was mostly true, and one replacement of a `JP` instruction where the conditional was most often false.
 
@@ -173,14 +182,14 @@ Adapted for the freeware Zilog Macro Assembler 2.10 to produce the original ROM 
 
 http://www.nascomhomepage.com/
 
-The updates to the original NASCOM BASIC within this file are copyright (C) Grant Searle
+The HEX number handling updates to the original NASCOM BASIC within this file are copyright (C) Grant Searle
 
 You have permission to use this for NON COMMERCIAL USE ONLY.
 If you wish to use it elsewhere, please include an acknowledgement to myself.
 
 http://searle.wales/
 
-The rework to support MS Basic HLOAD and RESET keywords, and the 8085 and Z80 instruction tuning are copyright (C) 2020-2021 Phillip Stevens
+The rework to support MS Basic MEEK, MOKE, HLOAD, RESET, and the 8085 and Z80 instruction tuning are copyright (C) 2020-2023 Phillip Stevens
 
 This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 

@@ -33,16 +33,21 @@ This ROM works with the 8085 CPU Module for the RC2014, with 32k of RAM. This is
 
 ACIA 6850 interrupt driven serial I/O to run modified NASCOM Basic 4.7. Full input and output buffering with incoming data hardware handshaking. The handshake shows full 16 bytes before the buffer is totally filled, to allow run-on from the sender. Transmit and receive are interrupt driven, and are fast. The receive buffer is 255 bytes and the transmit buffer is 63 bytes. Use 115200 baud with 8n2.
 
-Also, this ROM provides both Intel HEX loading functions and an `RST`, `INT`, and `TRAP` RAM JumP Table, starting at `0x8000`.
-This allows you to upload Assembly or compiled C programs, and then run them as described below.
+Also, this ROM provides both Intel HEX loading functions and an `RST`, `INT`, and `TRAP` RAM Jump Table, starting at `0x8000`. This allows you to upload Assembly or compiled C programs, and then run them as described below.
 
 The goal of this extension to standard MS Basic is to load an arbitrary program in Intel HEX format into an arbitrary location in the Z80 address space, and allow you to start and use your program from NASCOM Basic. Your program can be created in assembler, or in C, provided the code is available in Intel HEX format.
 
 Additional BASIC statements `MEEK I,J` and `MOKE I` allow convenient editing of small assembly programs from the BASIC command line.
 
+## Start up debugging
+
+On initial power up, or on `RESET`, there is a `BEL` (`0x07`) character output from the serial port. If you have a terminal supporting `BEL` you will hear it. Otherwise check that `0x07` is being transmited by looking at the characters received. If you do not hear or see `BEL` then it is likely that your terminal is not properly configured, or that the Z80 Module, ACIA Serial Module, or ROM Module has a fault.
+
 # Assembly (or compiled C) Program Usage
 
-The `MEEK I,J` and `MOKE I` keywords can be used to hand edit assembly programs, where `I` is the address of interest as a signed integer, and `J` is the number of 16 Byte blocks to display. `MOKE` Byte entry can be exited with `CTRL C` or just carriage return. For hand assembly programs the user program address needs to be manually entered into the `USRLOC` address `0x8204` using `DOKE`. Address entry can also be converted from HEX to signed integer using the `&` HEX prefix, i.e. in `MOKE &9000` `&9000` is converted to `−28672`.
+The `MEEK I,J` and `MOKE I` statements can be used to hand edit assembly programs, where `I` is the address of interest as a signed integer, and `J` is the number of 16 Byte blocks to display. `MOKE` Byte entry can be exited with `CTRL C` or just carriage return. For hand assembly programs the user program address needs to be manually entered into the `USRLOC` address `0x8204` using `DOKE`.
+
+Address entry can also be converted from HEX to signed integer using the `&` HEX prefix, i.e. in `MOKE &9000` `0x9000` is converted to `−28672` which is simpler than calculating this signed 16 bit integer by hand, and `MEEK &2000,&10` will tabulate and print 16 blocks of 16 bytes of memory from memory address `0x2000`.
 
 ## Using `HLOAD` for uploading compiled and assembled programs.
 
@@ -58,11 +63,11 @@ The `MEEK I,J` and `MOKE I` keywords can be used to hand edit assembly programs,
 
 The `HLOAD` program can be exited without uploading a valid file by typing `:` followed by `CR CR CR CR CR CR`, or any other character.
 
-The top of BASIC memory can be readjusted by using the `RESET` function, when required. `RESET` is functionally equivalent to a cold start.
+The top of BASIC memory can be readjusted by using the `RESET` statement, when required. `RESET` is functionally equivalent to a cold start.
 
 ## USR Jump Address & Parameter Access
 
-For the RC2014 with 32k Basic the `USR(x)` loaded user program address is located at `0x8204`.
+For the RC2014 with 32k Nascom Basic the `USR(x)` loaded user program address is located at `0x8204`.
 
 Your assembly program can receive a 16 bit parameter passed in from the function by calling `DEINT` at `0x0AE2`. The parameter is stored in register pair `DE`.
 
@@ -106,6 +111,8 @@ Note that your C or assembly program and the `USR(x)` jump address setting will 
 Any BASIC programs loaded will also remain in place during a Warm Reset.
 
 Issuing the `RESET` keyword will clear the RC2014 RAM, and provide an option to return the original memory size. `RESET` is functionally equivalent to a cold start.
+
+The standard `WIDTH` statement has been extended to support setting the column width using `WIDTH I,J` where `I` is the screen width, and `J` is the comma column width.
 
 # Credits
 
