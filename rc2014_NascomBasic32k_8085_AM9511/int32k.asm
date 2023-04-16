@@ -1,7 +1,7 @@
 ;==============================================================================
 ;
-; The rework to support MS Basic HLOAD, Am9511 APU, and the 8085 instruction
-; tuning are copyright (C) 2021 Phillip Stevens
+; The rework to support MS Basic HLOAD, RESET, MEEK, MOKE,
+; and the 8085 instruction tuning are copyright (C) 2021-23 Phillip Stevens
 ;
 ; This Source Code Form is subject to the terms of the Mozilla Public
 ; License, v. 2.0. If a copy of the MPL was not distributed with this

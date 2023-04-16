@@ -115,7 +115,7 @@ Doing these changes got about 6% improvement in the benchmarks.
 
 The next step was to use the [`z88dk-ticks`](https://github.com/z88dk/z88dk/wiki/Tool---ticks) tool to evaluate hotspots and try to remediate them. Using the debug mode it is possible to capture exactly how many iterations (visits) and how many cycles are consumed by each instruction.
 
-The testing revealed that the comparison function `CPDEHL` was very heavily used. As it is quite small, and through removing the call-return overhead, it adds only a few bytes per instance to in-line it. There is plenty of space in the 8kB ROM to allow this change so it was made. __EDIT__ the `CPDEHL` inline optimisation was reverted to provide space to add the `MEEK` and `MOKE` statements.
+The testing revealed that the comparison function `CPDEHL` was very heavily used. As it is quite small, and through removing the call-return overhead, it adds only a few bytes per instance to in-line it. There is plenty of space in the 8kB ROM to allow this change so it was made.
 
 Then, the paths taken by the `JR` and `JP` conditional instructions were examined, by checking which path was taken most frequently across the benchmarks. This resulted in changing a few `JR` instructions for `JP` instructions, when the conditional path was mostly true, and one replacement of a `JP` instruction where the conditional was most often false.
 
@@ -124,6 +124,8 @@ Looking further at `z88dk-ticks` hotspot results, the next most used function is
 As the Z80 and 8085 have better shift instructions than the 8080, these instructions have been used where possible. Specifically for the 8085 the `rl de` and the `sra hl` undocumented instructions have been used where appropriate.
 
 So with these changes we are now at 12% improvement over the original Microsoft code.
+
+__EDIT__ the `CPDEHL` inline optimisation was reverted to provide space to add the `MEEK` and `MOKE` statements, so we're back to 6% improvement.
 
 So at this point I'll call it done. It seems that without rewriting the code substantially that's about all that I can squeeze out. The result is that with no change in function, MS Basic is now simply 12% faster.
 

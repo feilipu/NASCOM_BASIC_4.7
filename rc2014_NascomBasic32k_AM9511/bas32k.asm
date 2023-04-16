@@ -1,7 +1,7 @@
 ;==============================================================================
 ;
-; The rework to support MS Basic HLOAD, Am9511 APU, and the Z80 instruction
-; tuning are copyright (C) 2020 Phillip Stevens
+; The rework to support MS Basic HLOAD, RESET, MEEK, MOKE,
+; and the Z80 instruction tuning are copyright (C) 2020-23 Phillip Stevens
 ;
 ; This Source Code Form is subject to the terms of the Mozilla Public
 ; License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -3998,9 +3998,9 @@ MOKELP: PUSH    HL              ; Save address
         ; uses  : af, hl
         ; (C) feilipu
 
-PRHL:   LD      A,H
+PRHL:   LD      A,H             ; Load high byte
         CALL    PRHEX
-        LD      A,L
+        LD      A,L             ; Load low byte
 PRHEX:  PUSH    AF
         RRCA
         RRCA
@@ -4009,7 +4009,7 @@ PRHEX:  PUSH    AF
         CALL    PRHEXN
         POP     AF
 PRHEXN: AND     0FH
-        ADD     A,90H
+        ADD     A,90H           ; Standard HEX to ASCII routine
         DAA
         ADC     A,40H
         DAA
@@ -4027,7 +4027,7 @@ HLHEX:  EX      DE,HL           ; Move code string pointer to DE
         JP      HLHEXH          ; Convert first character
 HLHEXL: CALL    GETHEX          ; Get second and additional characters
         RET     C               ; Exit if not a hex character
-HLHEXH :ADD     HL,HL           ; Rotate 4 bits to the left
+HLHEXH :ADD     HL,HL           ; Shift 4 bits to the left
         ADD     HL,HL
         ADD     HL,HL
         ADD     HL,HL
@@ -4192,7 +4192,7 @@ HEXTFP: EX      DE,HL           ; Move code string pointer to DE
         JP      HEXLP1          ; Convert first character
 HEXLP:  CALL    GETHEX          ; Get second and additional characters
         JP      C,HEXIT         ; Exit if not a hex character
-HEXLP1: ADD     HL,HL           ; Rotate 4 bits to the left
+HEXLP1: ADD     HL,HL           ; Shift 4 bits to the left
         ADD     HL,HL
         ADD     HL,HL
         ADD     HL,HL
