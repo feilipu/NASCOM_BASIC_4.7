@@ -4303,9 +4303,9 @@ PRHEXN: AND     0FH
         ; uses  : af, de, hl
         ; (C) feilipu
 
-HLHEX:  EX      DE,HL           ; Move code string pointer to DE
+HLHEX:  EX      DE,HL           ; Move address to DE
         LD      HL,0            ; Zero out the value
-        CALL    GETHEX          ; Check the number for valid hex
+        CALL    GETHEX          ; Check the address (DE) for valid hex
         JP      C,HXERR         ; First value wasn't hex, HX error
         JP      HLHEXH          ; Convert first character
 HLHEXL: CALL    GETHEX          ; Get second and additional characters
