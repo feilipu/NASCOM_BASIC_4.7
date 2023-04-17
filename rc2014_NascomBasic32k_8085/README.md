@@ -41,7 +41,7 @@ Additional BASIC statements `MEEK I,J` and `MOKE I` allow convenient editing of 
 
 ## Start up debugging
 
-On initial power up, or on `RESET`, there is a `BEL` (`0x07`) character output from the serial port. If you have a terminal supporting `BEL` you will hear it. Otherwise check that `0x07` is being transmited by looking at the characters received. If you do not hear or see `BEL` then it is likely that your terminal is not properly configured, or that the Z80 Module, ACIA Serial Module, or ROM Module has a fault.
+On initial power up, or on `RESET`, there is a `BEL` (`0x07`) character output from the serial port. If you have a terminal supporting `BEL` you will hear it. Otherwise check that `0x07` is being transmitted by looking at the characters received. If you do not hear or see `BEL` then it is likely that your terminal is not properly configured, or that the 8085 Module, ACIA Serial Module, or ROM Module has a fault.
 
 # Assembly (or compiled C) Program Usage
 
