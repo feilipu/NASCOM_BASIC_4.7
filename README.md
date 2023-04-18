@@ -19,7 +19,7 @@ The key differences over previous implementations include.
  - A serial and memory sanity self check is undertaken on startup, to ensure that I/O and RAM is available and is working.
  - Interrupt driven serial transmission, with a 63 Byte buffer, to ensure the CPU is not held waiting during transmission.
  - A `RST`, `INT0`, and `NMI` RAM redirection jump table, starting in RAM at `0x8000`, enables the important RST instructions and interrupt vectors to be reconfigured by the user.
- - These ROMs provides both an Intel HEX `HLOAD` statement and software `RESET` statement. This allows you to easily upload Z80 (or 8085) assembly or compiled C programs, and then run them as described. The `HLOAD` statement automatically adjusts the upper RAM limit for Basic and enters the program origin into the `USR` location.
+ - These ROMs provides both an Intel HEX `HLOAD` statement and software `RESET` statement. This allows you to easily upload Z80 (or 8085) assembly or compiled C programs, and then run them as described. The `HLOAD` statement automatically adjusts the upper RAM limit for Basic and enters the program origin into the `USRLOC` location.
  - Added `MEEK` and `MOKE` statements allow bulk memory to be examined in 16 byte blocks, and support continuous editing (assembly language entry) of memory. Addresses and values can be entered as signed decimal integers, or as hexadecimal numbers using the `&` keyword.
  - The standard `WIDTH` command has been extended to support setting the column screen width using `WIDTH I,J` where `I` is the screen width and `J` is the comma column screen width.
  - Instruction and code flow tuning result in faster execution.
@@ -68,11 +68,11 @@ All `RST xxH` targets can be rewritten in a `JP` table originating at `0x8000` i
 
 The NASCOM Basic Manual Appendix D describes the use of the `USR(x)` function to call assembly (or compiled C) programs directly from the Basic command line or from within a Basic program. Please refer to the Manual Appendix D for further information on mixing Basic and Assembly code.
 
-For the RC2014 with 32k Basic the location for the `USR(x)` loaded user program address is `0x8204`, and with 56k Basic the location for `USR(x)` is `0x2204`.
+For the RC2014 with 32k Basic the location for the `USRLOC` user program address is `0x8204`, and with 56k Basic the location for `USRLOC` is `0x2204`.
 
 # Assembly (or compiled C) Program Usage
 
-The `MEEK I,J` and `MOKE I` statements can be used to hand edit assembly programs, where `I` is the address of interest as a signed integer, and `J` is the number of 16 Byte blocks to display. `MOKE` Byte entry can be exited with `CTRL C` or just carriage return. For hand assembly programs the user program address needs to be manually entered into the `USRLOC` address `0x8204` using `DOKE`.
+The `MEEK I,J` and `MOKE I` statements can be used to hand edit assembly programs, where `I` is the address of interest as a signed integer, and `J` is the number of 16 Byte blocks to display. `MOKE` Byte entry can be exited with `CTRL C` or just carriage return. For hand assembly programs the user program address needs to be manually entered into the `USRLOC` address `0x8204` (or `0x2204`) using `DOKE`.
 
 Address entry can also be converted from HEX to signed integer using the `&` HEX prefix, i.e. in `MOKE &9000` `0x9000` is converted to `−28672` which is simpler than calculating this signed 16 bit integer by hand, and `MEEK &2000,&10` will tabulate and print 16 blocks of 16 bytes of memory from memory address `0x2000`.
 
@@ -88,7 +88,7 @@ Address entry can also be converted from HEX to signed integer using the `&` HEX
 
 ## Workflow Notes
 
-Note that your program and the `USR(x)` jump address setting will remain in place through a RC2014 Warm Reset, provided you prevent Basic from initialising the RAM locations you have used. Also, you can reload your assembly program to the same RAM location through multiple Warm Resets, without issuing a `RESET` statement.
+Note that your program and the `USRLOC` jump address setting will remain in place through a RC2014 Warm Reset, provided you prevent Basic from initialising the RAM locations you have used. Also, you can reload your assembly program to the same RAM location through multiple Warm Resets, without issuing a `RESET` statement.
 
 Any Basic programs loaded will also remain in place during a Warm Reset.
 
@@ -98,7 +98,7 @@ Issuing the `RESET` statement will clear the RC2014 RAM, and return the original
 
 There are several Intel HEX versions of the Zen assembler with different RAM origins prepared to use from within RC2014 NASCOM Basic. Use the `HLOAD` Basic statement to load your choice of HEX file based on how much RAM you wish to leave available for Basic, and launch Zen with `?USR(0)`. Exit back to MS Basic with `Q`.
 
-Use the Zen `ORG` and `LOAD` statements to place assembled programs above the Zen `EOFP`. Use Zen `H` to determine where `EOFP` is located. On return to Basic, assembled programs can be launched using the `?USR(0)` command either from immediate mode, or from within a Basic program, after setting the correct `USR` location.
+Use the Zen `ORG` and `LOAD` statements to place assembled programs above the Zen `EOFP`. Use Zen `H` to determine where `EOFP` is located. On return to Basic, assembled programs can be launched using the `?USR(0)` command either from immediate mode, or from within a Basic program, after setting the correct `USRLOC` location.
 
 Check the NASCOM Basic Manual Appendix D for further information on mixing Basic and Assembly code.
 

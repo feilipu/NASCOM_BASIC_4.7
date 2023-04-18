@@ -67,7 +67,7 @@ The top of BASIC memory can be readjusted by using the `RESET` statement, when r
 
 ## USR Jump Address & Parameter Access
 
-For the RC2014 with 32k Nascom Basic the `USR(x)` loaded user program address is located at `0x8204`.
+For the RC2014 with 32k Nascom Basic the `USRLOC` loaded user program address is located at `0x8204`.
 
 Your assembly program can receive a 16 bit parameter passed in from the function by calling `DEINT` at `0x0AE2`. The parameter is stored in register pair `DE`.
 
@@ -102,11 +102,11 @@ For convenience, because we can't easily change the ROM code interrupt routines 
 * IRQ 7.5: is connected to the 8085 Module FTDI `RX` and may be used to trigger bit banged serial on SID.
 * TRAP: is connected to the RC2014 Bus `NMI`, is unused and is available to the user.
 
-All `RST nn` targets can be rewritten in a `JP` table originating at `0x8000` in RAM. This allows the use of debugging tools and reorganising the efficient `RST` instructions as needed. Check the source to see the address of each `RST xx`. By default, if not defined, the unused `RST nn` targets return a "?UF Error" code.
+All `RST nn` targets can be rewritten in a `JP` table originating at `0x8000` in RAM. This allows the use of debugging tools and reorganising the efficient `RST` instructions as needed. Check the source to see the address of each `RST xx`. By default, if not defined, the unused `RST nn` targets return a `?UF Error` code.
 
 ## Notes
 
-Note that your C or assembly program and the `USR(x)` jump address setting will remain in place through a RC2014 Warm Reset, provided you prevent BASIC from initialising the RAM locations you have used. Also, you can reload your assembly program to the same RAM location through multiple Warm Resets, without reprogramming the `USR(x)` jump.
+Note that your C or assembly program and the `USRLOC` address setting will remain in place through a RC2014 Warm Reset, provided you prevent BASIC from initialising the RAM locations you have used. Also, you can reload your assembly program to the same RAM location through multiple Warm Resets, without reprogramming the `USRLOC` jump.
 
 Any BASIC programs loaded will also remain in place during a Warm Reset.
 
