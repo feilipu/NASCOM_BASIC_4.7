@@ -3959,8 +3959,8 @@ MEEK:   CALL    GETNUM          ; Get address
         CALL    GETINT          ; Get integer 0-255 in A
         LD      C,A             ; Get blocks (of 16 bytes) to C
         OR      A               ; Check for zero blocks
-        POP     HL              ; Recover address
-MEEKLP: JP      Z,BRKRET        ; Return to command line
+        EX      (SP),HL         ; Recover address, save code string address
+MEEKLP: JP      Z,MEEKRET       ; Return
         CALL    PRNTCRLF        ; New line
         CALL    PRHL            ; Print address
         LD      A,':'           ; Load colon
@@ -3971,12 +3971,16 @@ MEEKLLP:LD      A,' '           ; Load space
         LD      A,(HL)          ; Read byte at address
         CALL    PRHEX           ; Print byte in HEX
         INC     HL              ; Get next address
-        DEC     B
-        JP      NZ,MEEKLLP      ; Do 16 byte blocks
+        DJNZ    MEEKLLP         ; Do 16 byte blocks
 
         DEC     C               ; Decrement block count
         JP      MEEKLP
 
+MEEKRET:LD      B,L
+        LD      A,H
+        CALL    ABPASS          ; Return final address
+        POP     HL              ; Restore code string address
+        RET
 
         ; MOKE I where I is signed integer
         ; uses  : af, de, hl
