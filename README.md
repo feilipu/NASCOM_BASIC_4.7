@@ -125,7 +125,7 @@ As the Z80 and 8085 have better shift instructions than the 8080, these instruct
 
 So with these changes we are now at 12% improvement over the original Microsoft code.
 
-__EDIT__ the `CPDEHL` inline optimisation was reverted to provide space to add the `MEEK` and `MOKE` statements, so we're back to 6% improvement.
+__EDIT__ the `CPDEHL` inline optimisation was reverted to provide space to add the `MEEK` and `MOKE` statements, so we're back to 9% improvement.
 
 So at this point I'll call it done. It seems that without rewriting the code substantially that's about all that I can squeeze out. The result is that with no change in function, MS Basic is now simply 12% faster.
 
