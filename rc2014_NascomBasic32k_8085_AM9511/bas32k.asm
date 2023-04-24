@@ -3802,6 +3802,7 @@ LINES:  CALL    GETNUM          ; Get a number
         EX      DE,HL
         LD      (LINESC),HL     ; Set lines counter
         LD      (LINESN),HL     ; Set lines number
+        EX      DE,HL           ; Restore code string address
         RET
 
 DEEK:   CALL    DEINT           ; Get integer -32768 to 32767
