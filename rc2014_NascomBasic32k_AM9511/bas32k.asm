@@ -956,9 +956,9 @@ ECHDEL: DEC     B               ; Count bytes in buffer
         CALL    OUTC            ; Echo it
         JP      MORINP          ; Get more input
 
-DELCHR: DEC     B               ; Count bytes in buffer
+DELCHR: CALL    OUTC            ; Output character in A
         DEC     HL              ; Back space buffer
-        CALL    OUTC            ; Output character in A
+        DEC     B               ; Count bytes in buffer
         JP      NZ,MORINP       ; Not end - Get more
 OTKLN:  CALL    OUTC            ; Output character in A
 KILIN:  CALL    PRNTCRLF        ; Output CRLF
@@ -3780,12 +3780,11 @@ ATN:    CALL    PUSHF_FPREG     ; Load FPREG to APU
         OUT     (IO_APU_CONTROL),A
         JP      POPF_FPREG
 
-MONITR: JP      $0000           ; Cold Start (Normally Monitor Start)
-
-CLS:    LD      A,CS            ; ASCII Clear screen
-        RST     08H             ; Output character
 ARET:   RET                     ; A RETurn instruction
 ARETN:  RETN                    ; A RETurN from NMI
+
+CLS:    LD      A,CS            ; ASCII Clear screen
+        JP      $0008           ; Output character
 
 WIDTH:  CALL    GETINT          ; Get integer 0-255 in A
         LD      (LWIDTH),A      ; Set width
@@ -3822,6 +3821,9 @@ DOKE:   CALL    GETNUM          ; Get a number
         LD      (HL),D          ; Save MSB of value
         POP     HL              ; Restore code string address
         RET
+
+MONITR: JP      $0000           ; Cold Start (Normally Monitor Start)
+
 
         ; push MBF32 floating point in FPREG into Am9511 stack.
         ; Convert from MBF32_float to am9511_float.
@@ -3879,6 +3881,7 @@ PUSHF_BCDE_ZERO:
         ld d,b
         ld e,c
         jp PUSHF_BCDE_REJOIN
+
 
         ; float primitive
         ; pop a MBF32 floating point from the Am9511 stack.

@@ -21,7 +21,7 @@ The key differences over previous implementations include.
  - A `RST`, `INT0`, and `NMI` RAM redirection jump table, starting in RAM at `0x8000`, enables the important RST instructions and interrupt vectors to be reconfigured by the user.
  - These ROMs provides both an Intel HEX `HLOAD` statement and software `RESET` statement. This allows you to easily upload Z80 (or 8085) assembly or compiled C programs, and then run them as described. The `HLOAD` statement automatically adjusts the upper RAM limit for Basic and enters the program origin into the `USRLOC` location.
  - Added `MEEK` and `MOKE` statements allow bulk memory to be examined in 16 byte blocks, and support continuous editing (assembly language entry) of memory. Addresses and values can be entered as signed decimal integers, or as hexadecimal numbers using the `&` keyword.
- - The standard `WIDTH` command has been extended to support setting the column screen width using `WIDTH I,J` where `I` is the screen width and `J` is the comma column screen width.
+ - The standard `WIDTH` command has been extended to support setting the comma column screen width using `WIDTH I,J` where `I` is the screen width and `J` is the comma column screen width.
  - Instruction and code flow tuning result in faster execution.
  - Support for the Am9511A APU Module provides a 3x to 5x faster execution of assembly or C floating point programs.
 
