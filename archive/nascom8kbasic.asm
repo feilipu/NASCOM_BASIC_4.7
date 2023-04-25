@@ -4503,8 +4503,10 @@ WIDTH:  CALL    GETINT          ; Get integer 0-255
 
 LINES:  CALL    GETNUM          ; Get a number
         CALL    DEINT           ; Get integer -32768 to 32767
-        LD      (LINESC),DE     ; Set lines counter
-        LD      (LINESN),DE     ; Set lines number
+        EX      DE,HL
+        LD      (LINESC),HL     ; Set lines counter
+        LD      (LINESN),HL     ; Set lines number
+        EX      DE,HL           ; Restore code string address
         RET
 
 DEEK:   CALL    DEINT           ; Get integer -32768 to 32767
