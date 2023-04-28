@@ -76,6 +76,10 @@ The `MEEK I,J` and `MOKE I` statements can be used to hand edit assembly program
 
 Address entry can also be converted from HEX to signed integer using the `&` HEX prefix, i.e. in `MOKE &9000` `0x9000` is converted to `−28672` which is simpler than calculating this signed 16 bit integer by hand, and `MEEK &2000,&10` will tabulate and print 16 blocks of 16 bytes of memory from memory address `0x2000`.
 
+### Usage Example
+
+<a href="https://raw.githubusercontent.com/feilipu/NASCOM_BASIC_4.7/master/HexLoadr-v1.0.png" target="_blank"><img src="https://raw.githubusercontent.com/feilipu/NASCOM_BASIC_4.7/master/HexLoadr-v1.0.png"/></a>
+
 ## Using `HLOAD` for uploading compiled and assembled programs.
 
 1. Select the preferred origin `ORG` for your arbitrary program, and prepare an Intel HEX file from your program using your preferred assembler, or compile a C program using z88dk. For RC2014 Basic 32kB, suitable origins commence from `0x8400`, and the default z88dk origin for the RC2014 target is `0x9000`. For  RC2014 Basic 56kB, suitable origins commence from `0x2400`.
