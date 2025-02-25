@@ -9,21 +9,11 @@ http://www.nascomhomepage.com/
 
 ==============================================================================
 
-The HEX number handling updates to the original BASIC within this file are copyright (C) Grant Searle
-
-You have permission to use this for NON COMMERCIAL USE ONLY.
-If you wish to use it elsewhere, please include an acknowledgement to myself.
-
-http://searle.wales/
-
-==============================================================================
-
-The rework to support MS Basic MEEK, MOKE, HLOAD, RESET, and the 8085 and Z80 instruction tuning are copyright (C) 2020-23 Phillip Stevens.
-
+The ACIA drivers and rework to support MS Basic MEEK, MOKE, HLOAD, RESET, and the 8085 and Z80 instruction tuning are copyright (C) 2020-25 Phillip Stevens.
 
 This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-@feilipu, August 2020
+@feilipu, August 2020-25
 
 ==============================================================================
 
@@ -31,11 +21,11 @@ This Source Code Form is subject to the terms of the Mozilla Public License, v. 
 
 This ROM works with most basic versions of the RC2014, with 32k of RAM. This is the ROM to choose if you want fast I/O from a standard RC2014, together with the capability to upload C programs from within Basic.
 
-ACIA 6850 interrupt driven serial I/O to run modified NASCOM Basic 4.7. Full input and output buffering with incoming data hardware handshaking. The handshake shows full 16 bytes before the buffer is totally filled, to allow run-on from the sender. Transmit and receive are interrupt driven, and are fast. The receive buffer is 255 bytes and the transmit buffer is 63 bytes. Use 115200 baud with 8n2.
+ACIA 68B50 interrupt driven serial I/O to run modified NASCOM Basic 4.7. Full input and output buffering with receive `/RTS` hardware handshaking. The handshake shows full 16 bytes before the buffer is totally filled, to allow run-on from the sender. Transmit and receive are interrupt driven. The receive buffer is 255 bytes and the transmit buffer is 63 bytes. Use 115200 baud with 8n2.
 
 Also, this ROM provides both Intel HEX loading functions and an `RST`, `INT0`, and `NMI` RAM Jump Table, starting at `0x8000`. This allows you to upload Assembly or compiled C programs, and then run them as described below.
 
-The goal of this extension to standard MS Basic is to load an arbitrary program in Intel HEX format into an arbitrary location in the Z80 address space, and allow you to start and use your program from NASCOM Basic. Your program can be created in assembler, or in C, provided the code is available in Intel HEX format.
+The goal of this extension to standard MS Basic is to load an arbitrary C or assembly program in Intel HEX format into an arbitrary location in the Z80 address space, and allow you to start and use your program from NASCOM Basic. Your program can be created in assembler, or in C, provided the code is available in Intel HEX format.
 
 Additional BASIC statements `MEEK I,J` and `MOKE I` allow convenient editing of small assembly programs from the BASIC command line.
 
@@ -118,6 +108,9 @@ The standard `WIDTH` statement has been extended to support setting the comma co
 
 # Credits
 
-Derived from the work of @fbergama and @foxweb at RC2014.
+HEX program uploading is derived from the work of @fbergama and @foxweb at RC2014.
 
-https://github.com/RC2014Z80/RC2014/blob/master/ROMs/hexload/hexload.asm
+The HEX number handling updates to the original BASIC within this file are copyright (C) Grant Searle
+You have permission to use this for NON COMMERCIAL USE ONLY.
+If you wish to use it elsewhere, please include an acknowledgement to myself.
+

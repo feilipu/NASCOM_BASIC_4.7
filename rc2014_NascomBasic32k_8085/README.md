@@ -9,17 +9,7 @@ http://www.nascomhomepage.com/
 
 ==============================================================================
 
-The HEX number handling updates to the original BASIC within this file are copyright (C) Grant Searle
-
-You have permission to use this for NON COMMERCIAL USE ONLY.
-If you wish to use it elsewhere, please include an acknowledgement to myself.
-
-http://searle.wales/
-
-==============================================================================
-
-The rework to support MS Basic MEEK, MOKE, HLOAD, RESET, and the 8085 and Z80 instruction tuning are copyright (C) 2020-23 Phillip Stevens.
-
+The ACIA drivers and rework to support MS Basic MEEK, MOKE, HLOAD, RESET, and the 8085 and Z80 instruction tuning are copyright (C) 2020-25 Phillip Stevens.
 
 This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
@@ -118,6 +108,9 @@ The standard `WIDTH` statement has been extended to support setting the comma co
 
 # Credits
 
-Derived from the work of @fbergama and @foxweb at RC2014.
+HEX program uploading is derived from the work of @fbergama and @foxweb at RC2014.
 
-https://github.com/RC2014Z80/RC2014/blob/master/ROMs/hexload/hexload.asm
+The HEX number handling updates to the original BASIC within this file are copyright (C) Grant Searle
+You have permission to use this for NON COMMERCIAL USE ONLY.
+If you wish to use it elsewhere, please include an acknowledgement to myself.
+

@@ -56,16 +56,10 @@ SECTION acia_interrupt              ; ORG $0080
         jr NC,acia_tx_send          ; if not, go check for bytes to transmit
 
 .acia_rx_get
-        in a,(SER_DATA_ADDR)        ; Get the received byte from the ACIA 
-        ld l,a                      ; Move Rx byte to l
-
-        ld a,(serRxBufUsed)         ; Get the number of bytes in the Rx buffer
-        cp SER_RX_BUFSIZE-1         ; check whether there is space in the buffer
-        jr NC,acia_tx_check         ; buffer full, check if we can send something
-
-        ld a,l                      ; get Rx byte from l
+        in a,(SER_DATA_ADDR)        ; Get the received byte from the ACIA
         ld hl,(serRxInPtr)          ; get the pointer to where we poke
         ld (hl),a                   ; write the Rx byte to the serRxInPtr address
+
         inc l                       ; move the Rx pointer low byte along, 0xFF rollover
         ld (serRxInPtr),hl          ; write where the next byte should be poked
 
@@ -257,7 +251,7 @@ PUBLIC  INIT
                                     ; 8n2 at 115200 baud
                                     ; receive interrupt enabled
                                     ; transmit interrupt disabled
-                            
+
         LD (serControl),A           ; write the ACIA control byte echo
         OUT (SER_CTRL_ADDR),A       ; output to the ACIA control byte
 
