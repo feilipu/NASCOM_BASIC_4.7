@@ -64,13 +64,6 @@ SECTION uart_interrupt              ; ORG $0070
     jp Z,uartb                  ; if not, go check UART B
 
     in a,(UARTA_DATA_REGISTER)  ; Get the received byte from the UART A
-    ld l,a                      ; move Rx byte to l
-
-    ld a,(uartRxCount)          ; Get the number of bytes in the Rx buffer
-    cp UART_RX_SIZE-1           ; check whether there is space in the buffer
-    jr NC,rxa_dtr               ; buffer full, check DTR
-
-    ld a,l                      ; get Rx byte from l
     ld hl,(uartRxIn)            ; get the pointer to where we poke
     ld (hl),a                   ; write the Rx byte to the uartRxIn address
 
@@ -91,9 +84,9 @@ ENDIF
     sub UART_RX_FULLISH         ; compare the count with the preferred full size
     jr C,rxa_check              ; leave the DTR low, and check for Rx possibility
 
-    in a,(UARTA_MCR_REGISTER)           ; get the UART A MODEM Control Register
-    and ~(UART_MCR_RTS|UART_MCR_DTR)    ; set RTS & DTR high
-    out (UARTA_MCR_REGISTER),a          ; set the MODEM Control Register
+    in a,(UARTA_MCR_REGISTER)       ; get the UART A MODEM Control Register
+    and ~UART_MCR_RTS               ; set RTShigh
+    out (UARTA_MCR_REGISTER),a      ; set the MODEM Control Register
 
 .rxa_check
     in a,(UARTA_IIR_REGISTER)   ; get the status of the UART A
@@ -120,13 +113,6 @@ ENDIF
     jr Z,int_end                ; if not exit
 
     in a,(UARTB_DATA_REGISTER)  ; Get the received byte from the UART B
-    ld l,a                      ; move Rx byte to l
-
-    ld a,(uartRxCount)          ; Get the number of bytes in the Rx buffer
-    cp UART_RX_SIZE-1           ; check whether there is space in the buffer
-    jr NC,rxb_dtr               ; buffer full, check DTR
-
-    ld a,l                      ; get Rx byte from l
     ld hl,(uartRxIn)            ; get the pointer to where we poke
     ld (hl),a                   ; write the Rx byte to the uartRxIn address
 
@@ -147,9 +133,9 @@ ENDIF
     sub UART_RX_FULLISH         ; compare the count with the preferred full size
     jr C,rxb_check              ; leave the DTR low, and check for Rx possibility
 
-    in a,(UARTB_MCR_REGISTER)           ; get the UART B MODEM Control Register
-    and ~(UART_MCR_RTS|UART_MCR_DTR)    ; set RTS & DTR high
-    out (UARTB_MCR_REGISTER),a          ; set the MODEM Control Register
+    in a,(UARTB_MCR_REGISTER)       ; get the UART B MODEM Control Register
+    and ~UART_MCR_RTS               ; set RTS & DTR high
+    out (UARTB_MCR_REGISTER),a      ; set the MODEM Control Register
 
 .rxb_check
     in a,(UARTB_IIR_REGISTER)   ; get the status of the UART B
@@ -178,11 +164,11 @@ SECTION uart_rx_tx                  ; ORG $00F0
         jr Z,RXA                    ; wait, if there are no bytes available
 
         sub UART_RX_EMPTYISH        ; compare the count with the preferred empty size
-        jr C,getc_clean_up_rx       ; if the buffer is too full, don't change the RTS
+        jr NC,getc_clean_up_rx      ; if the buffer is too full, don't change the RTS
 
-        in a,(UARTA_MCR_REGISTER)       ; get the UART A MODEM Control Register
-        or UART_MCR_RTS|UART_MCR_DTR    ; set RTS & DTR low
-        out (UARTA_MCR_REGISTER),a      ; set the MODEM Control Register
+        in a,(UARTA_MCR_REGISTER)   ; get the UART A MODEM Control Register
+        or UART_MCR_RTS             ; set RTS low
+        out (UARTA_MCR_REGISTER),a  ; set the MODEM Control Register
 
 .getc_clean_up_rx
         push hl                     ; store HL so we don't clobber it
@@ -245,24 +231,26 @@ PUBLIC  INIT
         xor a
         out (UARTA_DLM_REGISTER),a      ; divisor MSB
 
-        ; reset divisor latch bit
-        out (UARTA_LCR_REGISTER),a      ; output to LCR
-
+        ; reset divisor latch bit DLAB
         ; set word length, parity, and stop bits
         ld a,UART_LCR_STOP|UART_LCR_8BIT    ; default to 8n2
         out (UARTA_LCR_REGISTER),a          ; output to LCR
 
         ; enable and reset the FIFOs
-        ld a,UART_FCR_FIFO_04|UART_FCR_FIFO_TX_RESET|UART_FCR_FIFO_RX_RESET|UART_FCR_FIFO_ENABLE
+        ld a,UART_FCR_FIFO_08|UART_FCR_FIFO_TX_RESET|UART_FCR_FIFO_RX_RESET|UART_FCR_FIFO_ENABLE
         out (UARTA_FCR_REGISTER),a
 
-        ; set up modem control register to enable interrupt line and RTS / DTR
-        ld a,UART_MCR_INT_ENABLE|UART_MCR_RTS|UART_MCR_DTR
+        ; set up modem control register to enable auto flow control, interrupt line, and RTS
+        ld a,UART_MCR_AUTO_FLOW_CONTROL|UART_MCR_INT_ENABLE|UART_MCR_RTS
         out (UARTA_MCR_REGISTER),a
 
         ; enable the receive interrupt (only)   XXX To do handle line errors
         ld a,UART_IER_ERBI
         out (UARTA_IER_REGISTER),a
+
+        ; set the control flag, to signal that this channel exists
+        ld a,UARTA_DATA_REGISTER
+        ld (uartaControl),a
 
         ; now do UART B
 
@@ -297,18 +285,16 @@ PUBLIC  INIT
         out (UARTB_DLM_REGISTER),a      ; divisor MSB
 
         ; reset divisor latch bit
-        out (UARTB_LCR_REGISTER),a      ; output to LCR
-
         ; set word length, parity, and stop bits
         ld a,UART_LCR_STOP|UART_LCR_8BIT    ; default to 8n2
         out (UARTB_LCR_REGISTER),a          ; output to LCR
 
         ; enable and reset the FIFOs
-        ld a,UART_FCR_FIFO_04|UART_FCR_FIFO_TX_RESET|UART_FCR_FIFO_RX_RESET|UART_FCR_FIFO_ENABLE
+        ld a,UART_FCR_FIFO_08|UART_FCR_FIFO_TX_RESET|UART_FCR_FIFO_RX_RESET|UART_FCR_FIFO_ENABLE
         out (UARTB_FCR_REGISTER),a
 
-        ; set up modem control register to enable interrupt line and RTS / DTR
-        ld a,UART_MCR_INT_ENABLE|UART_MCR_RTS|UART_MCR_DTR
+        ; set up modem control register to enable auto flow control, interrupt line, and RTS
+        ld a,UART_MCR_AUTO_FLOW_CONTROL|UART_MCR_INT_ENABLE|UART_MCR_RTS
         out (UARTB_MCR_REGISTER),a
 
         ; enable the receive interrupt (only)   XXX To do handle line errors

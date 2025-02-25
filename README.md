@@ -10,14 +10,17 @@ Support is provided for the following hardware options.
  - RC2014 Classic and Plus using the __8085 CPU Module__.
  - RC2014 Classic and Plus using the __8085 CPU Module__ and the __Am9511A APU Module__.
 
+ - RC2014 Classic and Plus using the __Single UART Module__ or the __Dual UART Module__.
+
 The code is originally derived from the NASCOM implementation of Microsoft Basic 4.7, and was adapted for the [Simple Z80](http://searle.x10host.com/z80/SimpleZ80.html) by Grant Searle. Further adaptions here have focused on bug fixes, and functional and performance improvements.
 
 The key differences over previous implementations include.
 
  - The serial interface is configured for 115200 baud with 8n2 setting and RTS hardware handshake.
  - A serial and memory sanity self check is undertaken on startup, to ensure that I/O and RAM are available and are working.
- - ACIA 6850 interrupt driven serial I/O supporting the hardware double buffer, together with a large receive buffer of 255 bytes, to allow efficient pasting of Basic into the editor. The receive RTS handshake shows full before the buffer is totally filled to allow run-on from the sender.
- - Interrupt driven serial transmission, with a 63 byte buffer, to ensure the CPU is not held waiting during transmission.
+ - ACIA 68B50 interrupt driven serial I/O supporting the hardware double buffer, together with a large receive buffer of 255 bytes, to allow efficient pasting of Basic into the editor. The receive RTS handshake shows full before the buffer is totally filled to allow run-on from the sender.
+ - ACIA 68B50 interrupt driven serial transmission, with a 63 byte buffer, to ensure the CPU is not held waiting during transmission.
+ - UART 16C550 interrupt driven serial I/O. Full input and output buffering with receive `/RTS` and transmit `/CTS` hardware handshaking. The handshake shows full 16 bytes before the buffer is totally filled, to allow run-on from the sender. The receive software buffer is 255 bytes and the transmit hardware buffer is 16 bytes.
  - A `RST`, `INT0`, and `NMI` RAM redirection jump table, starting in RAM at `0x8000`, enables the important RST instructions and interrupt vectors to be reconfigured by the user.
  - These ROMs provides both an Intel HEX `HLOAD` statement and software `RESET` statement. This allows you to easily upload Z80 (or 8085) assembly or compiled C programs, and then run them as described. The `HLOAD` statement automatically adjusts the upper RAM limit for Basic and enters the program origin into the `USRLOC` location.
  - Added `MEEK` and `MOKE` statements allow bulk memory to be examined in 16 byte blocks, and support continuous editing (assembly language entry) of memory. Addresses and values can be entered as signed decimal integers, or as hexadecimal numbers using the `&` keyword.
@@ -46,6 +49,10 @@ This ROM works with the Classic or Plus version of the RC2014, with 32k of RAM, 
 ### RC2014 Classic: 32kB MS Basic using __8085 CPU Module__ and __Am9511A APU Module__
 
 This version works with the Classic or Plus version of the RC2014, with 32k of RAM, running with an 8085 CPU Module and an Am9511A APU Module. This is the ROM to choose if you have installed both an [8085 CPU Module](https://www.tindie.com/products/feilipu/8085-cpu-module-pcb/) and an [Am9511A APU Module](https://www.tindie.com/products/feilipu/am9511a-apu-module-pcb/).
+
+### RC2014 Classic: 32kB MS Basic using __Single UART Module__ or __Dual UART Module__
+
+This version works with the Classic or Plus version of the RC2014, with 32k of RAM, running with a Single or Dual UART Module for the serial interface. Please enable `RTS/CTS` flow control. If equipped with a Dual UART Module, the B channel can be used to upload both BASIC and Intel HEX programs, or to even to connect an additional keyboard. Characters will be output on the A channel as normal.
 
 ---
 
@@ -115,7 +122,7 @@ MS Basic uses 4 byte values extensively as floating point numbers in [Microsoft 
 - There is a 16_16x16 multiply `MLDEBC` used to calculate table offsets, which was optimised to use shift instructions available to the Z80. I experimented with different zero multiplier checks, and with removing the checks, but Microsoft had already done the right optimisation there, so it was left as it was.
 - The extensions that Grant Searle had inserted into the operand evaluation chain to check for Hex and Binary numbers were moved to the end of the operand checks, so as not to slow down the normal operand or function evaluation. Code flow for Hex support was simplified and more fully integrated.
 
-Doing these changes got about 6% improvement in the benchmarks.
+Doing these changes achieved about 6% improvement in the benchmarks.
 
 The next step was to use the [`z88dk-ticks`](https://github.com/z88dk/z88dk/wiki/Tool---ticks) tool to evaluate hotspots and try to remediate them. Using the debug mode it is possible to capture exactly how many iterations (visits) and how many cycles are consumed by each instruction.
 
@@ -188,17 +195,17 @@ Adapted for the freeware Zilog Macro Assembler 2.10 to produce the original ROM 
 
 http://www.nascomhomepage.com/
 
+The serial interface drivers, and rework to support MS Basic MEEK, MOKE, HLOAD, RESET, and the 8085 and Z80 instruction tuning are copyright (C) 2020-2023 Phillip Stevens
+
+This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+@feilipu, August 2020-25
+
+# Credits
+
 The HEX number handling updates to the original NASCOM BASIC within this file are copyright (C) Grant Searle
 
 You have permission to use this for NON COMMERCIAL USE ONLY.
 If you wish to use it elsewhere, please include an acknowledgement to myself.
-
-http://searle.wales/
-
-The rework to support MS Basic MEEK, MOKE, HLOAD, RESET, and the 8085 and Z80 instruction tuning are copyright (C) 2020-2023 Phillip Stevens
-
-This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
-
-@feilipu, August 2020
 
 ---

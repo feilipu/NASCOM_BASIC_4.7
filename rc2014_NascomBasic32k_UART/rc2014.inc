@@ -210,7 +210,8 @@ DEFC    uartRxIn        =     VECTOR_BASE+VECTOR_SIZE
 DEFC    uartRxOut       =     uartRxIn+2
 DEFC    uartRxCount     =     uartRxOut+2
 
-DEFC    uartbControl    =     uartRxCount+1
+DEFC    uartaControl    =     uartRxCount+1
+DEFC    uartbControl    =     uartaControl+1
 
 DEFC    basicStarted    =     uartbControl+1
 
