@@ -8,7 +8,6 @@
 ;
 ; https://feilipu.me/
 ;
-
 ;==============================================================================
 ;
 ; ACIA 68B50 interrupt driven serial I/O to run modified NASCOM Basic 4.7.
@@ -19,7 +18,6 @@
 ; https://github.com/feilipu/
 ; https://feilipu.me/
 ;
-
 ;==============================================================================
 ;
 ; INCLUDES SECTION
@@ -40,6 +38,7 @@ DEFC    SER_RX_BUFSIZE      = $100  ; FIXED Rx buffer size, 256 Bytes, no range 
 DEFC    SER_RX_FULLSIZE     = SER_RX_BUFSIZE - $10
                                     ; Fullness of the Rx Buffer, when not_RTS is signalled
 DEFC    SER_RX_EMPTYSIZE    = $08   ; Fullness of the Rx Buffer, when RTS is signalled
+
 DEFC    SER_TX_BUFSIZE      = $40   ; Size of the Tx Buffer, 2^n Bytes, n = 6 here
 
 ;==============================================================================
