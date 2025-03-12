@@ -81,12 +81,12 @@ ENDIF
 
 .rxa_dtr
     ld a,(uartRxCount)          ; get the current Rx count
-    sub UART_RX_FULLISH         ; compare the count with the preferred full size
-    jr C,rxa_check              ; leave the DTR low, and check for Rx possibility
+    cp UART_RX_FULLISH          ; compare the count with the preferred full size
+    jr NZ,rxa_check             ; leave the RTS low, and check for Rx possibility
 
-    in a,(UARTA_MCR_REGISTER)       ; get the UART A MODEM Control Register
-    and ~UART_MCR_RTS               ; set RTShigh
-    out (UARTA_MCR_REGISTER),a      ; set the MODEM Control Register
+    in a,(UARTA_MCR_REGISTER)           ; get the UART A MODEM Control Register
+    and ~(UART_MCR_RTS|UART_MCR_DTR)    ; set RTS & DTR high
+    out (UARTA_MCR_REGISTER),a          ; set the MODEM Control Register
 
 .rxa_check
     in a,(UARTA_IIR_REGISTER)   ; get the status of the UART A
@@ -130,12 +130,12 @@ ENDIF
 
 .rxb_dtr
     ld a,(uartRxCount)          ; get the current Rx count
-    sub UART_RX_FULLISH         ; compare the count with the preferred full size
-    jr C,rxb_check              ; leave the DTR low, and check for Rx possibility
+    cp UART_RX_FULLISH          ; compare the count with the preferred full size
+    jr NZ,rxb_check             ; leave the RTS low, and check for Rx possibility
 
-    in a,(UARTB_MCR_REGISTER)       ; get the UART B MODEM Control Register
-    and ~UART_MCR_RTS               ; set RTS & DTR high
-    out (UARTB_MCR_REGISTER),a      ; set the MODEM Control Register
+    in a,(UARTB_MCR_REGISTER)           ; get the UART B MODEM Control Register
+    and ~(UART_MCR_RTS|UART_MCR_DTR)    ; set RTS & DTR high
+    out (UARTB_MCR_REGISTER),a          ; set the MODEM Control Register
 
 .rxb_check
     in a,(UARTB_IIR_REGISTER)   ; get the status of the UART B
@@ -163,12 +163,16 @@ SECTION uart_rx_tx                  ; ORG $00F0
         or a                        ; see if there are zero bytes available
         jr Z,RXA                    ; wait, if there are no bytes available
 
-        sub UART_RX_EMPTYISH        ; compare the count with the preferred empty size
-        jr NC,getc_clean_up_rx      ; if the buffer is too full, don't change the RTS
+        cp UART_RX_EMPTYISH         ; compare the count with the preferred empty size
+        jr NZ,getc_clean_up_rx      ; if the buffer is too full, don't change the RTS
 
-        in a,(UARTA_MCR_REGISTER)   ; get the UART A MODEM Control Register
-        or UART_MCR_RTS             ; set RTS low
-        out (UARTA_MCR_REGISTER),a  ; set the MODEM Control Register
+        in a,(UARTA_MCR_REGISTER)       ; get the UART A MODEM Control Register
+        or UART_MCR_RTS|UART_MCR_DTR    ; set RTS & DTR low
+        out (UARTA_MCR_REGISTER),a      ; set the MODEM Control Register
+
+        in a,(UARTB_MCR_REGISTER)       ; get the UART B MODEM Control Register
+        or UART_MCR_RTS|UART_MCR_DTR    ; set RTS & DTR low
+        out (UARTB_MCR_REGISTER),a      ; set the MODEM Control Register
 
 .getc_clean_up_rx
         push hl                     ; store HL so we don't clobber it
