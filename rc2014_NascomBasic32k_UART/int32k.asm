@@ -7,7 +7,7 @@
 ; License, v. 2.0. If a copy of the MPL was not distributed with this
 ; file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ;
-; ACIA 6850 interrupt driven serial I/O to run modified NASCOM Basic 4.7.
+; UART 16550 interrupt driven serial I/O to run modified NASCOM Basic 4.7.
 ; Full input and output buffering with incoming data hardware handshaking.
 ; Handshake shows full before the buffer is totally filled to allow run-on
 ; from the sender. Transmit and receive are interrupt driven.
