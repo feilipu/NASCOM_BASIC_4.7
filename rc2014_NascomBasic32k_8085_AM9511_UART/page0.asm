@@ -16,7 +16,7 @@ INCLUDE         "rc2014.inc"
 
 ;==============================================================================
 ;
-; Z80 INTERRUPT ORIGINATING VECTOR TABLE
+; 8085 INTERRUPT ORIGINATING VECTOR TABLE
 ;
 SECTION         vector_rst
 
@@ -48,9 +48,19 @@ EXTERN          INIT
                 JP      VECTOR_BASE-VECTOR_PROTO+RST_20_LBL
 
 ;------------------------------------------------------------------------------
+; TRAP
+                ALIGN   0x0024          ; ORG     0024H
+                JP      VECTOR_BASE-VECTOR_PROTO+TRAP_LBL
+
+;------------------------------------------------------------------------------
 ; RST 28
                 ALIGN   0x0028          ; ORG     0028H
                 JP      VECTOR_BASE-VECTOR_PROTO+RST_28_LBL
+
+;------------------------------------------------------------------------------
+; IRQ 5.5
+                ALIGN   0x002C          ; ORG     002CH
+                JP      VECTOR_BASE-VECTOR_PROTO+IRQ_55_LBL
 
 ;------------------------------------------------------------------------------
 ; RST 30
@@ -58,20 +68,29 @@ EXTERN          INIT
                 JP      VECTOR_BASE-VECTOR_PROTO+RST_30_LBL
 
 ;------------------------------------------------------------------------------
-; RST 38 - INTERRUPT VECTOR INT [ with IM 1 ]
-
-                ALIGN   0x0038          ; ORG     0038H
-                JP      VECTOR_BASE-VECTOR_PROTO+INT_INT_LBL
+; IRQ 6.5
+                ALIGN   0x0034          ; ORG     0034H
+                JP      VECTOR_BASE-VECTOR_PROTO+IRQ_65_LBL
 
 ;------------------------------------------------------------------------------
-; NMI - INTERRUPT VECTOR NMI
+; RST 38
 
-SECTION         vector_nmi
-                JP      VECTOR_BASE-VECTOR_PROTO+INT_NMI_LBL
+                ALIGN   0x0038          ; ORG     0038H
+                JP      VECTOR_BASE-VECTOR_PROTO+RST_38_LBL
+
+;------------------------------------------------------------------------------
+; IRQ 7.5
+                ALIGN   0x003C          ; ORG     003CH
+                JP      VECTOR_BASE-VECTOR_PROTO+IRQ_75_LBL
+
+;------------------------------------------------------------------------------
+; RST 40 - OVERFLOW
+                ALIGN   0x0040          ; ORG     0040H
+                JP      VECTOR_BASE-VECTOR_PROTO+RST_40_LBL
 
 ;==============================================================================
 ;
-; Z80 INTERRUPT VECTOR TABLE PROTOTYPE
+; 8085 INTERRUPT VECTOR TABLE PROTOTYPE
 ;
 ; WILL BE DUPLICATED DURING INIT TO:
 ;
@@ -80,9 +99,9 @@ SECTION         vector_nmi
 SECTION         vector_table_prototype
 
 EXTERN          RST_00, RST_08, RST_10, RST_18
-EXTERN          RST_20, RST_28, RST_30
+EXTERN          RST_20, RST_28, RST_30, RST_38
 
-EXTERN          INT_INT, INT_NMI
+EXTERN          TRAP, IRQ_55, IRQ_65, IRQ_75, RST_40
 
 .RST_00_LBL
                 JP      RST_00
@@ -99,17 +118,29 @@ EXTERN          INT_INT, INT_NMI
 .RST_20_LBL
                 JP      RST_20
                 NOP
+.TRAP_LBL
+                JP      TRAP
+                NOP
 .RST_28_LBL
                 JP      RST_28
+                NOP
+.IRQ_55_LBL
+                JP      IRQ_55
                 NOP
 .RST_30_LBL
                 JP      RST_30
                 NOP
-.INT_INT_LBL
-                JP      INT_INT
+.IRQ_65_LBL
+                JP      IRQ_65
                 NOP
-.INT_NMI_LBL
-                JP      INT_NMI
+.RST_38_LBL
+                JP      RST_38
+                NOP
+.IRQ_75_LBL
+                JP      IRQ_75
+                NOP
+.RST_40_LBL
+                JP      RST_40
                 NOP
 
 ;------------------------------------------------------------------------------
@@ -117,10 +148,12 @@ EXTERN          INT_INT, INT_NMI
 
 SECTION         vector_null_ret
 
-PUBLIC          NULL_NMI
+PUBLIC          NULL_INT, NULL_RET
 
-.NULL_NMI
-                RETN
+.NULL_INT
+                EI
+.NULL_RET
+                RET
 
 ;==============================================================================
 

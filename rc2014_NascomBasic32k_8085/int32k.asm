@@ -259,9 +259,9 @@ PUBLIC  INIT
         SIM                         ; reset R7.5, set MSE and unmask R6.5
         EI                          ; enable interrupts
 
-.START
         LD A,BEL                    ; prepare a BEL, to indicate normal boot
-        RST 08H
+        RST 08H                     ; output the BEL
+
         LD HL,SIGNON1               ; sign-on message
         CALL PRINT                  ; output string
         LD A,(basicStarted)         ; check the BASIC STARTED flag
@@ -346,4 +346,3 @@ DEFC    IRQ_75      =       NULL_INT        ; 8085 IRQ 7.5 - 8085 CPU Module /RX
 DEFC    RST_40      =       UFERR           ; 8085 JP V Overflow
 
 ;==============================================================================
-

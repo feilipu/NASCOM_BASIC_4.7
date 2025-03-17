@@ -1,0 +1,120 @@
+
+# NASCOM ROM BASIC Ver 4.7, (C) 1978 Microsoft
+
+Scanned from source published in 80-BUS NEWS from Vol 2, Issue 3 (May-June 1983) to Vol 3, Issue 3 (May-June 1984).
+
+Adapted for the freeware Zilog Macro Assembler 2.10 to produce the original ROM code (checksum A934H). PA
+
+http://www.nascomhomepage.com/
+
+==============================================================================
+
+The UART drivers and rework to support MS Basic MEEK, MOKE, HLOAD, RESET, and the 8085 and Z80 instruction tuning are copyright (C) 2020-25 Phillip Stevens.
+
+This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+@feilipu, August 2020-25
+
+==============================================================================
+
+# 8085 CPU Module for the RC2014 with APU Module for the RC2014
+
+This ROM works with the 8085 CPU Module for the RC2014 and the APU Module for the RC2014, with 32k of RAM. This is the ROM to choose if you want fast I/O from the 8085 CPU for RC2014, together with the capability to upload C programs from within Basic.
+
+UART 16C550 interrupt driven serial I/O to run modified NASCOM Basic 4.7. Full input and output buffering with receive `/RTS` and transmit `/CTS` hardware handshaking. The handshake shows full 16 bytes before the buffer is totally filled, to allow run-on from the sender. The receive software buffer is 255 bytes and the transmit hardware buffer is 16 bytes. Use 115200 baud with 8n2.
+
+This version of the standard MS Basic 4.7 is to support the AMD Am9511A Arithmetic Processor for floating point calculations. The Am9511A was produced prior to this version of MS Basic, and the Microsoft Binary Format for floating point numbers is very closely aligned to the APU floating point format.
+
+Also, this ROM provides both Intel HEX loading functions and an `RST`, `INT`, and `TRAP` RAM Jump Table, starting at `0x8000`. This allows you to upload Assembly or compiled C programs, and then run them as described below.
+
+The goal of this extension to standard MS Basic is to load an arbitrary C or assembly program in Intel HEX format into an arbitrary location in the Z80 address space, and allow you to start and use your program from NASCOM Basic. Your program can be created in assembler, or in C, provided the code is available in Intel HEX format.
+
+If equipped with a Dual UART Module, the B channel can be used to upload both BASIC and Intel HEX programs, or to even to connect an additional keyboard. Characters will be output on the A channel as normal.
+
+Additional BASIC statements `MEEK I,J` and `MOKE I` allow convenient editing of small assembly programs from the BASIC command line.
+
+## Start up debugging
+
+On initial power up, or on `RESET`, there is a `BEL` (`0x07`) character output from the serial port. If you have a terminal supporting `BEL` you will hear it. Otherwise check that `0x07` is being transmitted by looking at the characters received. If you do not hear or see `BEL` then it is likely that your terminal is not properly configured, or that the 8085 Module, UART Serial Module, or ROM Module has a fault.
+
+# Assembly (or compiled C) Program Usage
+
+Please refer to [Appendix D of the NASCOM 2 Basic Manual](https://github.com/feilipu/NASCOM_BASIC_4.7/blob/master/NASCOM_Basic_Manual.pdf) for information on loading and running Assembly Language programs.
+
+The `MEEK I,J` and `MOKE I` statements can be used to hand edit assembly programs, where `I` is the address of interest as a signed integer, and `J` is the number of 16 byte blocks to display. `MOKE` byte entry can be skipped with carriage return, and is exited with `CTRL C`. For hand assembly programs the user program address needs to be manually entered into the `USRLOC` address `0x8204` using `DOKE`.
+
+Address entry can also be converted from HEX to signed integer using the `&` HEX prefix, i.e. in `MOKE &9000` `0x9000` is converted to `−28672` which is simpler than calculating this signed 16 bit integer by hand, and `MEEK &2000,&10` will tabulate and print 16 blocks of 16 bytes of memory from memory address `0x2000`.
+
+## Using `HLOAD` for uploading compiled and assembled programs.
+
+1. Select the preferred origin `.ORG` for your arbitrary program, and assemble a HEX file using your preferred assembler, or compile a C program using z88dk. For the RC2014 32kB suitable origins commence from `0x8400`, and the default origin for z88dk RC2014 is `0x9000`.
+
+2. At the BASIC interpreter type `HLOAD`, then the command will initiate and look for your program's Intel HEX formatted information on the serial interface.
+
+3. Using a serial terminal, upload the HEX file for your arbitrary program that you prepared in Step 1, using the Linux `cat` utility or similar. If desired the python `slowprint.py` program can also be used for this purpose. `python slowprint.py > /dev/ttyUSB0 < myprogram.hex` or `cat > /dev/ttyUSB0 < myprogram.hex`. The RC2014 interface can absorb full rate uploads, so using `slowprint.py` is an unnecessary precaution. Where a Dual UART Module is available the /dev/ttyUSB1 channel (or B channel) can also be used if desired.
+
+4. Once the final line of the HEX code is read into memory, `HLOAD` will return to NASCOM Basic with `ok`.
+
+5. Start your program by typing `PRINT USR(0)`, or `? USR(0)`, or other variant if you have an input parameter to pass to your program.
+
+The `HLOAD` program can be exited without uploading a valid file by typing `:` followed by `CR CR CR CR CR CR`, or any other character.
+
+The top of BASIC memory can be readjusted by using the `RESET` statement, when required. `RESET` is functionally equivalent to a cold start.
+
+## USR Jump Address & Parameter Access
+
+For the RC2014 with 32k Nascom Basic the `USRLOC` loaded user program address is located at `0x8204`.
+
+Your assembly program can receive a 16 bit parameter passed in from the function by calling `DEINT` at `0x0AEC`. The parameter is stored in register pair `DE`.
+
+When your assembly program is finished it can return a 16 bit parameter stored in `A` (MSB) and `B` (LSB) by jumping to `ABPASS` which is located at `0x1256`.
+
+Note that these address of these functions can also be read from `0x025B` for `DEINT` and `0x025D` for `ABPASS`, as noted in the NASCOM Basic Manual.
+
+``` asm
+                                ; from Nascom Basic Symbol Tables
+DEINT           .EQU    $0AEC   ; Function DEINT to get USR(x) into DE registers
+ABPASS          .EQU    $1256   ; Function ABPASS to put output into AB register for return
+
+
+                .ORG    9000H   ; your code origin, for example
+                CALL    DEINT   ; get the USR(x) argument in DE
+
+                                ; your code here
+
+                JP      ABPASS  ; return the 16 bit value to USR(x). Note JP not CALL
+```
+
+## RST locations
+
+For convenience, because we can't easily change the ROM code interrupt routines this ROM provides for the RC2014, the UART serial Tx and Rx routines are reachable from your assembly program by calling the `RST` instructions from your program.
+
+* Tx: `RST 08` expects a byte to transmit in the `a` register.
+* Rx: `RST 10` returns a received byte in the `a` register, and will block (loop) until it has a byte to return.
+* Rx Check: `RST 18` will immediately return the number of bytes in the Rx buffer (0 if buffer empty) in the `a` register.
+* Unused: `RST 20`, `RST 28`, `RST 30`, `RST 38` are available to the user.
+* IRQ 5.5: is available to the user
+* IRQ 6.5: is connected to the RC2014 Bus `INT`, and is used by the 8085 CPU Module UART 16C550 Serial Device.
+* IRQ 7.5: is connected to the 8085 Module FTDI `RX` and may be used to trigger bit banged serial on SID.
+* TRAP: is connected to the RC2014 Bus `NMI`, is unused and is available to the user.
+
+All `RST nn` targets can be rewritten in a `JP` table originating at `0x8000` in RAM. This allows the use of debugging tools and reorganising the efficient `RST` instructions as needed. Check the source to see the address of each `RST xx`. By default, if not defined, the unused `RST nn` targets return a `?UF Error` code.
+
+## Notes
+
+Note that your C or assembly program and the `USRLOC` address setting will remain in place through a RC2014 Warm Reset, provided you prevent BASIC from initialising the RAM locations you have used. Also, you can reload your assembly program to the same RAM location through multiple Warm Resets, without reprogramming the `USRLOC` jump.
+
+Any BASIC programs loaded will also remain in place during a Warm Reset.
+
+Issuing the `RESET` keyword will clear the RC2014 RAM, and provide an option to return the original memory size. `RESET` is functionally equivalent to a cold start.
+
+The standard `WIDTH` statement has been extended to support setting the comma column screen width using `WIDTH I,J` where `I` is the screen width, and `J` is the comma column screen width.
+
+# Credits
+
+HEX program uploading is derived from the work of @fbergama and @foxweb at RC2014.
+
+The HEX number handling updates to the original BASIC within this file are copyright (C) Grant Searle
+You have permission to use this for NON COMMERCIAL USE ONLY.
+If you wish to use it elsewhere, please include an acknowledgement to myself.
+

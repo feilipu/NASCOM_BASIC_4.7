@@ -1,7 +1,7 @@
 ;==============================================================================
 ;
 ; The rework to support MS Basic HLOAD, RESET, MEEK, MOKE,
-; and the Z80 instruction tuning are copyright (C) 2020-23 Phillip Stevens
+; and the 8085 instruction tuning are copyright (C) 2021-23 Phillip Stevens
 ;
 ; This Source Code Form is subject to the terms of the Mozilla Public
 ; License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -10,10 +10,10 @@
 ; UART 16C550 interrupt driven serial I/O to run modified NASCOM Basic 4.7.
 ; Full input and output buffering with incoming data hardware handshaking.
 ; Handshake shows full before the buffer is totally filled to allow run-on
-; from the sender. Receive is interrupt driven.
+; from the sender. Receive is interrupt driven using IRQ_65.
 ; 115200 baud, 8n2
 ;
-; feilipu, February 2025
+; feilipu, March 2025
 ;
 ;==============================================================================
 ;
@@ -45,7 +45,7 @@ INCLUDE "rc2014.inc"
 ;
 
 ;------------------------------------------------------------------------------
-SECTION uart_interrupt              ; ORG $0070
+SECTION uart_interrupt              ; ORG $0080
 
 .uart_interrupt
     push af
@@ -192,7 +192,7 @@ SECTION uart_rx_tx                  ; ORG $00F0
 
 ;------------------------------------------------------------------------------
 
-SECTION init                        ; ORG $0120
+SECTION init                        ; ORG $0128
 
 PUBLIC  INIT
 
@@ -290,10 +290,14 @@ PUBLIC  INIT
 .START
         LD SP,TEMPSTACK             ; set up a temporary stack
 
-        LD HL,VECTOR_PROTO          ; establish Z80 RST Vector Table
+        LD HL,VECTOR_PROTO          ; establish 8085 RST Vector Table
         LD DE,VECTOR_BASE
-        LD BC,VECTOR_SIZE
-        LDIR
+        LD B,VECTOR_SIZE
+.COPY
+        LD A,(HL+)
+        LD (DE+),A
+        DEC B
+        JP NZ,COPY
 
         LD HL,uartRxBuffer           ; initialise Rx Buffer
         LD (uartRxIn),HL
@@ -302,7 +306,8 @@ PUBLIC  INIT
         XOR A                       ; zero the RXA Buffer Count
         LD (uartRxCount),A
 
-        IM 1                        ; interrupt mode 1
+        LD A,$1D
+        SIM                         ; reset R7.5, set MSE and unmask R6.5
         EI                          ; enable interrupts
 
         LD A,BEL                    ; prepare a BEL, to indicate normal boot
@@ -357,7 +362,7 @@ SECTION init_strings                ; ORG $01F0
 
 .SIGNON1
         DEFM    CR,LF
-        DEFM    "RC2014 - MS Basic Loader",CR,LF
+        DEFM    "RC2014-8085 - MS Basic Loader",CR,LF
         DEFM    "z88dk - feilipu",CR,LF,0
 
 .SIGNON2
@@ -366,25 +371,29 @@ SECTION init_strings                ; ORG $01F0
 
 ;==============================================================================
 ;
-; Z80 INTERRUPT VECTOR PROTOTYPE ASSIGNMENTS
+; 8085 INTERRUPT VECTOR PROTOTYPE ASSIGNMENTS
 ;
 
-EXTERN  NULL_NMI                            ; RETN
+EXTERN  NULL_INT                            ; EI RET
 EXTERN  UFERR                               ; User Function undefined (RSTnn) error
 
 PUBLIC  RST_00, RST_08, RST_10; RST_18
-PUBLIC  RST_20, RST_28, RST_30
+PUBLIC  RST_20, RST_28, RST_30, RST_38
 
-PUBLIC  INT_INT, INT_NMI
+PUBLIC  TRAP, IRQ_55, IRQ_65, IRQ_75, RST_40
 
 DEFC    RST_00      =       INIT            ; Initialise, should never get here
 DEFC    RST_08      =       TXA             ; TX character, loop until space
 DEFC    RST_10      =       RXA             ; RX character, loop until byte
 ;       RST_18      =       RXA_CHK         ; Check receive buffer status, return # bytes available
 DEFC    RST_20      =       UFERR           ; User Function undefined (RST20)
+DEFC    TRAP        =       NULL_INT        ; 8085 TRAP - RC2014 Bus /NMI
 DEFC    RST_28      =       UFERR           ; User Function undefined (RST28)
+DEFC    IRQ_55      =       NULL_INT        ; 8085 IRQ 5.5 - 8085 CPU Module
 DEFC    RST_30      =       UFERR           ; User Function undefined (RST30)
-DEFC    INT_INT     =       uart_interrupt  ; UART interrupt
-DEFC    INT_NMI     =       NULL_NMI        ; RETN
+DEFC    IRQ_65      =       uart_interrupt  ; 8085 IRQ 6.5 - RC2014 Bus /INT
+DEFC    RST_38      =       UFERR           ; User Function undefined (RST38)
+DEFC    IRQ_75      =       NULL_INT        ; 8085 IRQ 7.5 - 8085 CPU Module /RX
+DEFC    RST_40      =       UFERR           ; 8085 JP V Overflow
 
 ;==============================================================================

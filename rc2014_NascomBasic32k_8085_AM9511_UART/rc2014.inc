@@ -42,39 +42,47 @@ DEFC    UART_RX_EMPTYISH    = $08       ; Fullness of the Rx Buffer, when RTS is
 
 ;==============================================================================
 ;
-; Interrupt vectors (offsets) for Z80 RST, INT0, and NMI interrupts
+; Interrupt vectors (offsets) for 8085 RST and IRQ interrupts
 ;
 
-DEFC    VECTOR_BASE         =   RAMSTART    ; RAM vector address for Z80 RST Table
+DEFC    VECTOR_BASE         =   RAMSTART    ; RAM vector address for 8085 RST Table
 
-; Squeezed between INT0 0x0038 and NMI 0x0066
+; 8085 Following Overflow TRAP 0x0040
 
-DEFC    VECTOR_PROTO        =   $003C
-DEFC    VECTOR_SIZE         =   $24
+DEFC    VECTOR_PROTO        =   $0048
+DEFC    VECTOR_SIZE         =   $34
 
 ;   Prototype Interrupt Service Routines - complete in main program
 ;
-;DEFC       RST_00          =    INIT        Reboot
-;DEFC       RST_08          =    TXA         TX a character over UART
-;DEFC       RST_10          =    RXA         RX a character over UART, block no bytes available
-;DEFC       RST_18          =    RXA_CHK     Check UART status, return # bytes available
-;DEFC       RST_20          =    UFERR       User Function undefined (RSTnn) error
-;DEFC       RST_28          =    UFERR       User Function undefined (RSTnn) error
-;DEFC       RST_30          =    UFERR       User Function undefined (RSTnn) error
-;DEFC       INT_INT         =    NULL_INT
-;DEFC       INT_NMI         =    NULL_NMI
+;DEFC       RST_00          =   INIT        Reboot
+;DEFC       RST_08          =   TX          TX a character over SOD / UART
+;DEFC       RST_10          =   RX          RX a character over SID / UART, block no bytes available
+;DEFC       RST_18          =   RX_CHK      Check SID / UART status, return # bytes available
+;DEFC       RST_20          =   UFERR       User Function undefined (RSTnn) error
+;DEFC       TRAP            =   NULL_INT    8085 TRAP $0024
+;DEFC       RST_28          =   UFERR       User Function undefined (RSTnn) error
+;DEFC       IRQ_55          =   NULL_INT    8085 IRQ 5.5
+;DEFC       RST_30          =   UFERR       User Function undefined (RSTnn) error
+;DEFC       IRQ_65          =   NULL_INT    8085 IRQ 6.5
+;DEFC       RST_38          =   UFERR       User Function undefined (RSTnn) error
+;DEFC       IRQ_75          =   NULL_INT    8085 IRQ 7.5
+;DEFC       RST_40          =   UFERR       8085 JP V Overflow
 
-;   Z80 Interrupt Service Routine Addresses - rewrite as needed
+;   8085 Interrupt Service Routine Addresses - rewrite as needed
 
 DEFC    RST_00_ADDR         =   VECTOR_BASE+$01
 DEFC    RST_08_ADDR         =   VECTOR_BASE+$05
 DEFC    RST_10_ADDR         =   VECTOR_BASE+$09
 DEFC    RST_18_ADDR         =   VECTOR_BASE+$0D
 DEFC    RST_20_ADDR         =   VECTOR_BASE+$11
-DEFC    RST_28_ADDR         =   VECTOR_BASE+$15
-DEFC    RST_30_ADDR         =   VECTOR_BASE+$19
-DEFC    INT_INT0_ADDR       =   VECTOR_BASE+$1D
-DEFC    INT_NMI_ADDR        =   VECTOR_BASE+$21
+DEFC    TRAP_ADDR           =   VECTOR_BASE+$15
+DEFC    RST_28_ADDR         =   VECTOR_BASE+$19
+DEFC    IRQ_55_ADDR         =   VECTOR_BASE+$1D
+DEFC    RST_30_ADDR         =   VECTOR_BASE+$21
+DEFC    IRQ_65_ADDR         =   VECTOR_BASE+$25
+DEFC    RST_38_ADDR         =   VECTOR_BASE+$29
+DEFC    IRQ_75_ADDR         =   VECTOR_BASE+$2D
+DEFC    RST_40_ADDR         =   VECTOR_BASE+$31
 
 ;==============================================================================
 ;
