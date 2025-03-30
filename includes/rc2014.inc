@@ -162,4 +162,3 @@ DEFC    serTxBuf        =     BUFSTART_TX_IO
 DEFC    serRxBuf        =     BUFSTART_RX_IO
 
 ;==============================================================================
-
