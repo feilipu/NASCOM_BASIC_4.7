@@ -56,13 +56,13 @@ SECTION uart_interrupt              ; ORG $0080
     rrca                        ; check whether an interrupt was generated
     jp C,uartb                  ; if not, go check UART B
 
-.rxa_get
-    ; read the IIR to access the relevant interrupts
-    in a,(UARTA_IIR_REGISTER)   ; get the status of the UART A
-    and UART_IIR_DATA           ; Rx data is available
+    ; read the LSR to check for received data
+    in a,(UARTA_LSR_REGISTER)   ; get the status of the UART A data
+    rrca                        ; Rx data is available
                                 ; XXX To do handle line errors
-    jp Z,uartb                  ; if not, go check UART B
+    jr NC,uartb                 ; if not, go check UART B
 
+.rxa_get
     in a,(UARTA_DATA_REGISTER)  ; Get the received byte from the UART A
     ld hl,(uartRxIn)            ; get the pointer to where we poke
     ld (hl),a                   ; write the Rx byte to the uartRxIn address
@@ -75,16 +75,17 @@ SECTION uart_interrupt              ; ORG $0080
 
     ld a,(uartRxCount)          ; get the current Rx count
     cp UART_RX_FULLISH          ; compare the count with the preferred full size
-    jr NZ,rxa_check             ; leave the RTS low, and check for Rx possibility
+    jp NZ,rxa_check             ; leave the RTS low, and check for Rx possibility
 
     in a,(UARTA_MCR_REGISTER)           ; get the UART A MODEM Control Register
     and ~(UART_MCR_RTS|UART_MCR_DTR)    ; set RTS & DTR high
     out (UARTA_MCR_REGISTER),a          ; set the MODEM Control Register
 
 .rxa_check
-    in a,(UARTA_IIR_REGISTER)   ; get the status of the UART A
-    rrca                        ; check whether an interrupt remains
-    jr NC,rxa_get               ; another byte received, go get it
+    ; read the LSR to check for additional received data
+    in a,(UARTA_LSR_REGISTER)   ; get the status of the UART A data
+    rrca                        ; Rx data is available
+    jp C,rxa_get                ; another byte received, go get it
 
     ; now do the same with the UART B channel, because the interrupt is shared
 
@@ -92,19 +93,19 @@ SECTION uart_interrupt              ; ORG $0080
     ; check the UART B channel exists
     ld a,(uartbControl)         ; load the control flag
     or a                        ; check it is non-zero
-    jp Z,int_end
+    jr Z,int_end
 
     in a,(UARTB_IIR_REGISTER)   ; get the status of the UART B
     rrca                        ; check whether an interrupt was generated
-    jp C,int_end                ; if not, exit interrupt
+    jr C,int_end                ; if not, exit interrupt
+
+    ; read the LSR to check for received data
+    in a,(UARTB_LSR_REGISTER)   ; get the status of the UART B data
+    rrca                        ; Rx data is available
+                                ; XXX To do handle line errors
+    jr NC,int_end               ; if not exit
 
 .rxb_get
-    ; read the IIR to access the relevant interrupts
-    in a,(UARTB_IIR_REGISTER)   ; get the status of the UART B
-    and UART_IIR_DATA           ; Rx data is available
-                                ; XXX To do handle line errors
-    jr Z,int_end                ; if not exit
-
     in a,(UARTB_DATA_REGISTER)  ; Get the received byte from the UART B
     ld hl,(uartRxIn)            ; get the pointer to where we poke
     ld (hl),a                   ; write the Rx byte to the uartRxIn address
@@ -117,16 +118,17 @@ SECTION uart_interrupt              ; ORG $0080
 
     ld a,(uartRxCount)          ; get the current Rx count
     cp UART_RX_FULLISH          ; compare the count with the preferred full size
-    jr NZ,rxb_check             ; leave the RTS low, and check for Rx possibility
+    jp NZ,rxb_check             ; leave the RTS low, and check for Rx possibility
 
     in a,(UARTB_MCR_REGISTER)           ; get the UART B MODEM Control Register
     and ~(UART_MCR_RTS|UART_MCR_DTR)    ; set RTS & DTR high
     out (UARTB_MCR_REGISTER),a          ; set the MODEM Control Register
 
 .rxb_check
-    in a,(UARTB_IIR_REGISTER)   ; get the status of the UART B
-    rrca                        ; check whether an interrupt remains
-    jr NC,rxb_get               ; another byte received, go get it
+    ; read the LSR to check for additional received data
+    in a,(UARTB_LSR_REGISTER)   ; get the status of the UART B data
+    rrca                        ; Rx data is available
+    jp C,rxb_get                ; another byte received, go get it
 
 .int_end
     pop hl
@@ -219,7 +221,7 @@ PUBLIC  INIT
         out (UARTA_LCR_REGISTER),a          ; output to LCR
 
         ; enable and reset the FIFOs
-        ld a,UART_FCR_FIFO_08|UART_FCR_FIFO_TX_RESET|UART_FCR_FIFO_RX_RESET|UART_FCR_FIFO_ENABLE
+        ld a,UART_FCR_FIFO_04|UART_FCR_FIFO_TX_RESET|UART_FCR_FIFO_RX_RESET|UART_FCR_FIFO_ENABLE
         out (UARTA_FCR_REGISTER),a
 
         ; set up modem control register to enable auto flow control, interrupt line, and RTS & DTR
@@ -272,7 +274,7 @@ PUBLIC  INIT
         out (UARTB_LCR_REGISTER),a          ; output to LCR
 
         ; enable and reset the FIFOs
-        ld a,UART_FCR_FIFO_08|UART_FCR_FIFO_TX_RESET|UART_FCR_FIFO_RX_RESET|UART_FCR_FIFO_ENABLE
+        ld a,UART_FCR_FIFO_04|UART_FCR_FIFO_TX_RESET|UART_FCR_FIFO_RX_RESET|UART_FCR_FIFO_ENABLE
         out (UARTB_FCR_REGISTER),a
 
         ; set up modem control register to enable auto flow control, interrupt line, and RTS & DTR
