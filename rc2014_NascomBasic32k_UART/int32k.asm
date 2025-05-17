@@ -52,10 +52,6 @@ SECTION uart_interrupt              ; ORG $0070
     push hl
 
 .uarta
-    in a,(UARTA_IIR_REGISTER)   ; get the status of the UART A
-    rrca                        ; check whether an interrupt was generated
-    jp C,uartb                  ; if not, go check UART B
-
     ; read the LSR to check for received data
     in a,(UARTA_LSR_REGISTER)   ; get the status of the UART A data
     rrca                        ; Rx data is available
@@ -94,10 +90,6 @@ SECTION uart_interrupt              ; ORG $0070
     ld a,(uartbControl)         ; load the control flag
     or a                        ; check it is non-zero
     jr Z,int_end
-
-    in a,(UARTB_IIR_REGISTER)   ; get the status of the UART B
-    rrca                        ; check whether an interrupt was generated
-    jr C,int_end                ; if not, exit interrupt
 
     ; read the LSR to check for received data
     in a,(UARTB_LSR_REGISTER)   ; get the status of the UART B data
